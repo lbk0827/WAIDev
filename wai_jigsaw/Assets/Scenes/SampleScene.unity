@@ -151,29 +151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d75acd1478c3440a9337b2fdcf247d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  puzzleSprites:
-  - {fileID: -1238376234, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -907727509, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -545061479, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -436198476, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -1834746916, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -2076413933, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -1730483108, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 1637532876, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -1544378420, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 1247153927, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -1641525955, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 88838831, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 982108692, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -506336790, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 1078209909, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -1715616022, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 320259975, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -454182763, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: -2128774752, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  - {fileID: 267910850, guid: 4ad69ec68e61cb848a2a5ed4ed5cf1a8, type: 3}
-  columns: 4
-  rows: 5
+  currentPuzzleData: {fileID: 11400000, guid: 6344d0c3762e70b41aad77c36adf258b, type: 2}
+  difficulty: 0
+  padding: 1
 --- !u!4 &475670902
 Transform:
   m_ObjectHideFlags: 0
@@ -183,7 +163,7 @@ Transform:
   m_GameObject: {fileID: 475670900}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.9012192, y: -0.20197654, z: 0.004732306}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -1,0 +1,2252 @@
+fileFormatVersion: 2
+guid: b7a5092d82aeddb47a6ff7a67401ba22
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: iPhone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9f83fe2aca1ffa443bd6a2dc2240c1d3
+      internalID: 1420021036
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_1
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 41a7f0611462d0b40924eee58b1b5d21
+      internalID: -1114720923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_2
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ce7e7eaaf005f544d9a840aef541753a
+      internalID: 831869085
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_3
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1d6c1cf1d1986524a8677bee3a2db2cd
+      internalID: 410319265
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_4
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cc51d9625c846944c965c5d4bc8b73f6
+      internalID: 1412550734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_5
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 81fd667bd7e5dc045abae33a446eef65
+      internalID: 301215248
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_6
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1b0828e360a2c1748b37ebcc34950eb7
+      internalID: 1160901272
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_7
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 27196ecae7d3fae439914dbcf3f827fd
+      internalID: 2066689780
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_8
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 13aaf655040baca449afe8a5589716c5
+      internalID: -91007188
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_9
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b6390e09dd63da5449af791a1e1a05ee
+      internalID: 784277095
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_10
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d83f698fb297f444c86fc47b412fb10f
+      internalID: 245305098
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_11
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 1344
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 41c20e8735d09534db3474ed33c285ef
+      internalID: 571518061
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_12
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f40b4d3fcecfcfb45b14ccb8593011c0
+      internalID: 1678439435
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_13
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5890ce0ee8cbb5841bc03b542e29b6bf
+      internalID: -863207704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_14
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bb64f49e90e6ac747a8fc356436e0073
+      internalID: 336084145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_15
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2c952f12f36f9504cb1392b2fb1aea67
+      internalID: -889759802
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_16
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b4d8b87f796e964fbe30d7413d8771a
+      internalID: -135263035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_17
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2a299917e8789874099d8a9b2107b7c5
+      internalID: 683659062
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_18
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 168a02e6ba3f0d943aa780cc678b74e5
+      internalID: -204561857
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_19
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 33609e353d3490d49b941163f0c8043b
+      internalID: -865202330
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_20
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f3de4c6c4bf2b384b8926376f8f953d6
+      internalID: 599468447
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_21
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 88ec708b25a341e439b4a0484e1a19d1
+      internalID: -1099913207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_22
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4252db446d08588439675f33b31d3f7b
+      internalID: 367717454
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_23
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 1152
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e79daf59dd55153449f49b2ca35de6e7
+      internalID: 958374869
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_24
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e80f47e7a950ff84c971d377a53e6808
+      internalID: -374203654
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_25
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 870b413ce72b3da46b02fb535e6d51e5
+      internalID: 831504221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_26
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f6d5f848c9b58b44cbef106b1350f559
+      internalID: -701937422
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_27
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bbfabd050d5cc544fbd2ff049f4dcf59
+      internalID: -1505578411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_28
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c65ccfee5ec06124db83314aa099609e
+      internalID: 1492925586
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_29
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9580e0603f43ea349821f8b8f2660ee1
+      internalID: -683564508
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_30
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b7499e32baec8bd458f11aee327fd3b4
+      internalID: -1126667474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_31
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 802172815bb894f488498a2358cb71a4
+      internalID: -1704987016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_32
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 72277ec07592479408e53a9869add85c
+      internalID: -1065676262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_33
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4958e73dbb144c24c82ab015583e25a6
+      internalID: 1658315830
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_34
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0e5a10402bf0e3449bce0366ba156701
+      internalID: -675848996
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_35
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 960
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 197cbc9c9f7059c45abe5e3fa98e48ae
+      internalID: 1161633703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_36
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a5f88c3f46b23a147a1cd7e6d4588271
+      internalID: -1705138488
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_37
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d5b065ce1ce06f747b098e55ffd33723
+      internalID: 1697778716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_38
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 13853c986d2c00e4d890fd910beda4af
+      internalID: -1011311606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_39
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d4e5fc15c9a220b4cbb058657250a9e0
+      internalID: -1660074674
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_40
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7338fd2d5df845544b47343367138c99
+      internalID: -1132569220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_41
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e35e1e5cba8b78442854cc482c910446
+      internalID: 1902472557
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_42
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e4badcb7b0a5da6448f274ec1956942e
+      internalID: -925456088
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_43
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 17ae4f5881d9b2348bfd3cda5c69cb9c
+      internalID: -2012396480
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_44
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2a5489ded2c86f94c92f10ced125d303
+      internalID: -845426602
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_45
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6280878357007de40a10a7ad8a83a538
+      internalID: 2047017691
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_46
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ba2c0e7d15d7b8447ba195a2ef4832d4
+      internalID: 1169817571
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_47
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 768
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4a5465b89ce4de24d9f6499aec9337b5
+      internalID: 1056656730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_48
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 060d3306f3dfa9e468fa0c724a90c9a7
+      internalID: -128923275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_49
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 21006ea2ebd118a449b893524676f420
+      internalID: 1435502324
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_50
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a352aaea1d25d1445ba89b1ee30a763f
+      internalID: 108460916
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_51
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7083d71b05aad49438fbc534104ee1a0
+      internalID: -1342622051
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_52
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 99427f7f9a23afc48bc045da2d90e4ad
+      internalID: -500098906
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_53
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d4b93d7e40292b54187eaa86dcdc7241
+      internalID: -1434040027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_54
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2a753ddc226cbda499ba449fae956f17
+      internalID: 1170200135
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_55
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3a346b16ce7d5aa4395c9d1a0cfcdcc8
+      internalID: -1354667060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_56
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bc22b6a13a15b1a41a59c49b447927f7
+      internalID: -1546397443
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_57
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 67e781672539d9d4280225df23cd1598
+      internalID: 828716308
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_58
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a8626bf3b7ae28a4587796cae1c205fe
+      internalID: -1562086466
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_59
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 576
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 503236b6ffdd1c844bfd62b1550bdb55
+      internalID: -1588823489
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_60
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 58c9e06c210529f4dae29566b1c02dbe
+      internalID: -1451751351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_61
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5a79119eabfca5f4ba7639e12d06738a
+      internalID: 1732881654
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_62
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0f0e75857109f2b4a8b7c3e7c5315d42
+      internalID: 892360673
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_63
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b73f8be63e9fe024296c8bb4c81de5e4
+      internalID: 1761439146
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_64
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 24d3e8c6dec12694da0d33c1cbfb751e
+      internalID: -349939822
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_65
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c3be2cfb60b952d4487bd3abc0ed449a
+      internalID: 1872997442
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_66
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 98da58a62467d2a4db1c89f93d00d1ca
+      internalID: -1952596307
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_67
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 923bbe3379e4ce1499ff8ca3c73cb891
+      internalID: 1394801755
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_68
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 35e920ad2c78a1344b56afe1fdeda9d0
+      internalID: 1267233374
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_69
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b2bdab465119a94db21f80e1ac46b26
+      internalID: 402526894
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_70
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8df05d5e01d395b4cb2c826f136cb83e
+      internalID: -1624611115
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_71
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 384
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ec7391262a1112c418420e9000520a4b
+      internalID: -741165311
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_72
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5d940a5c68f0a7944be3825e940ae545
+      internalID: 2141937818
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_73
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d05807fbe5bee4e4e87333ac09665f88
+      internalID: -1711031727
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_74
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6e5a37fa68ee8524eaee4d7e74bc5343
+      internalID: -1515134167
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_75
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1a6d52cdb7801f34b85c52c4fcc51a59
+      internalID: -626033122
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_76
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6de4ad14cd7fa934b9d71363158ffd3c
+      internalID: -259183524
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_77
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 47f5010612a81da418a809c07b44d3ac
+      internalID: 2100223927
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_78
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3a97e127fe118d64cadcaee98bf11f40
+      internalID: -1616438548
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_79
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7a255a67353141e4d8af8292aab7a88a
+      internalID: 154930027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_80
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7259a5e2a765134fac9e6c5fe9029d9
+      internalID: 1010039708
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_81
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 674d062d6c5330d49aae6cab80a5e05d
+      internalID: -823157707
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_82
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9243eeb3ce4374842a6d2b1535474ea0
+      internalID: -120762744
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_83
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 192
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f9571757badb5be44aa84fe5eba87320
+      internalID: 1532276978
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_84
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4c6344bf89a27e44d9f187c914971f75
+      internalID: -259986260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_85
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a45c2773bf0d0f44a98f65a966763b67
+      internalID: -2085936875
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_86
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2da3eb1f51b6f9441b3ecf264b2f7aff
+      internalID: -779295186
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_87
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6481296e43d153649ba434e518d10491
+      internalID: -388456370
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_88
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3447fe273148af74da2f66931dc56634
+      internalID: -50223516
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_89
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1f61652e41d09394f8cfa8dae5528b3f
+      internalID: 500251532
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_90
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8d6b8c31e3c7b8541ac33441ffb156e3
+      internalID: 1556052380
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_91
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 36c87c50e379e8f41bf665debca82e5e
+      internalID: -1317288049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_92
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 094930f9b9be36343ba5c7ab18a3fca7
+      internalID: -241704243
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_93
+      rect:
+        serializedVersion: 2
+        x: 765
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a87f59065c04d8b40afba9e2b9a769a5
+      internalID: -1880007708
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_94
+      rect:
+        serializedVersion: 2
+        x: 850
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 90c15ea9767023441b27afca0d8c97e5
+      internalID: -711815857
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GrandCanyon_Hard_95
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 0
+        width: 85.333336
+        height: 192
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a162b93aaa27ef04c91b44af65494f57
+      internalID: 1399452514
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      GrandCanyon_Hard_0: 1420021036
+      GrandCanyon_Hard_1: -1114720923
+      GrandCanyon_Hard_10: 245305098
+      GrandCanyon_Hard_11: 571518061
+      GrandCanyon_Hard_12: 1678439435
+      GrandCanyon_Hard_13: -863207704
+      GrandCanyon_Hard_14: 336084145
+      GrandCanyon_Hard_15: -889759802
+      GrandCanyon_Hard_16: -135263035
+      GrandCanyon_Hard_17: 683659062
+      GrandCanyon_Hard_18: -204561857
+      GrandCanyon_Hard_19: -865202330
+      GrandCanyon_Hard_2: 831869085
+      GrandCanyon_Hard_20: 599468447
+      GrandCanyon_Hard_21: -1099913207
+      GrandCanyon_Hard_22: 367717454
+      GrandCanyon_Hard_23: 958374869
+      GrandCanyon_Hard_24: -374203654
+      GrandCanyon_Hard_25: 831504221
+      GrandCanyon_Hard_26: -701937422
+      GrandCanyon_Hard_27: -1505578411
+      GrandCanyon_Hard_28: 1492925586
+      GrandCanyon_Hard_29: -683564508
+      GrandCanyon_Hard_3: 410319265
+      GrandCanyon_Hard_30: -1126667474
+      GrandCanyon_Hard_31: -1704987016
+      GrandCanyon_Hard_32: -1065676262
+      GrandCanyon_Hard_33: 1658315830
+      GrandCanyon_Hard_34: -675848996
+      GrandCanyon_Hard_35: 1161633703
+      GrandCanyon_Hard_36: -1705138488
+      GrandCanyon_Hard_37: 1697778716
+      GrandCanyon_Hard_38: -1011311606
+      GrandCanyon_Hard_39: -1660074674
+      GrandCanyon_Hard_4: 1412550734
+      GrandCanyon_Hard_40: -1132569220
+      GrandCanyon_Hard_41: 1902472557
+      GrandCanyon_Hard_42: -925456088
+      GrandCanyon_Hard_43: -2012396480
+      GrandCanyon_Hard_44: -845426602
+      GrandCanyon_Hard_45: 2047017691
+      GrandCanyon_Hard_46: 1169817571
+      GrandCanyon_Hard_47: 1056656730
+      GrandCanyon_Hard_48: -128923275
+      GrandCanyon_Hard_49: 1435502324
+      GrandCanyon_Hard_5: 301215248
+      GrandCanyon_Hard_50: 108460916
+      GrandCanyon_Hard_51: -1342622051
+      GrandCanyon_Hard_52: -500098906
+      GrandCanyon_Hard_53: -1434040027
+      GrandCanyon_Hard_54: 1170200135
+      GrandCanyon_Hard_55: -1354667060
+      GrandCanyon_Hard_56: -1546397443
+      GrandCanyon_Hard_57: 828716308
+      GrandCanyon_Hard_58: -1562086466
+      GrandCanyon_Hard_59: -1588823489
+      GrandCanyon_Hard_6: 1160901272
+      GrandCanyon_Hard_60: -1451751351
+      GrandCanyon_Hard_61: 1732881654
+      GrandCanyon_Hard_62: 892360673
+      GrandCanyon_Hard_63: 1761439146
+      GrandCanyon_Hard_64: -349939822
+      GrandCanyon_Hard_65: 1872997442
+      GrandCanyon_Hard_66: -1952596307
+      GrandCanyon_Hard_67: 1394801755
+      GrandCanyon_Hard_68: 1267233374
+      GrandCanyon_Hard_69: 402526894
+      GrandCanyon_Hard_7: 2066689780
+      GrandCanyon_Hard_70: -1624611115
+      GrandCanyon_Hard_71: -741165311
+      GrandCanyon_Hard_72: 2141937818
+      GrandCanyon_Hard_73: -1711031727
+      GrandCanyon_Hard_74: -1515134167
+      GrandCanyon_Hard_75: -626033122
+      GrandCanyon_Hard_76: -259183524
+      GrandCanyon_Hard_77: 2100223927
+      GrandCanyon_Hard_78: -1616438548
+      GrandCanyon_Hard_79: 154930027
+      GrandCanyon_Hard_8: -91007188
+      GrandCanyon_Hard_80: 1010039708
+      GrandCanyon_Hard_81: -823157707
+      GrandCanyon_Hard_82: -120762744
+      GrandCanyon_Hard_83: 1532276978
+      GrandCanyon_Hard_84: -259986260
+      GrandCanyon_Hard_85: -2085936875
+      GrandCanyon_Hard_86: -779295186
+      GrandCanyon_Hard_87: -388456370
+      GrandCanyon_Hard_88: -50223516
+      GrandCanyon_Hard_89: 500251532
+      GrandCanyon_Hard_9: 784277095
+      GrandCanyon_Hard_90: 1556052380
+      GrandCanyon_Hard_91: -1317288049
+      GrandCanyon_Hard_92: -241704243
+      GrandCanyon_Hard_93: -1880007708
+      GrandCanyon_Hard_94: -711815857
+      GrandCanyon_Hard_95: 1399452514
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
