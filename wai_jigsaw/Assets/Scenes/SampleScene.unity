@@ -151,8 +151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d75acd1478c3440a9337b2fdcf247d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentPuzzleData: {fileID: 11400000, guid: 6344d0c3762e70b41aad77c36adf258b, type: 2}
-  difficulty: 0
+  levelDatabase: {fileID: 11400000, guid: 7ffbee9123e9e71429b9533ddf2fe80b, type: 2}
   padding: 1
 --- !u!4 &475670902
 Transform:

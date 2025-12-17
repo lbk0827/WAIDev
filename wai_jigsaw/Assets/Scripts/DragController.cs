@@ -3,6 +3,11 @@ using UnityEngine;
 // 이 스크립트는 '카드' 오브젝트에 붙을 것입니다.
 public class DragController : MonoBehaviour
 {
+    // ====== 스냅 기능 관련 변수 ======
+    [HideInInspector] public PuzzleBoardSetup board;  // 퍼즐 보드판 참조
+    [HideInInspector] public Vector3 correctPosition; // 이 조각의 정답 위치
+    [HideInInspector] public bool isPlaced = false;   // 현재 정답 위치에 놓였는지 여부
+
     // ====== Unity 인스펙터에 노출될 변수 선언부 ======
     
     // (1) 드래그 시작 시 오브젝트와 마우스 포인터 간의 위치 차이(Offset)를 저장합니다.
@@ -24,6 +29,9 @@ public class DragController : MonoBehaviour
     // 마우스 버튼을 누르는 순간 딱 한 번 실행되는 함수입니다. (터치 시에도 동일)
     private void OnMouseDown()
     {
+        // 이미 제자리에 놓인 조각은 움직이지 않습니다.
+        if (isPlaced) return;
+
         // 1. 현재 오브젝트의 위치(transform.position)를 Screen Point(화면 좌표)로 변환합니다.
         Vector3 screenPoint = Camera.main.WorldToScreenPoint(transform.position);
 
@@ -44,6 +52,9 @@ public class DragController : MonoBehaviour
     // 마우스 버튼을 누른 상태에서 움직이는 동안 매 프레임 실행되는 함수입니다.
     private void OnMouseDrag()
     {
+        // 이미 제자리에 놓인 조각은 움직이지 않습니다.
+        if (isPlaced) return;
+
         // 1. 현재 마우스 위치에 오프셋을 더하여 새로운 월드 좌표를 계산합니다.
         // 이렇게 하면 마우스가 오브젝트의 어느 부분을 잡았든, 오프셋만큼 떨어진 채로 따라옵니다.
         transform.position = GetMouseWorldPos() + _dragOffset;
@@ -52,11 +63,30 @@ public class DragController : MonoBehaviour
     // 마우스 버튼에서 손을 떼는 순간 딱 한 번 실행되는 함수입니다.
     private void OnMouseUp()
     {
-        // 1. 드래그가 끝나면 다시 원래 깊이(Z=0)로 돌려놓습니다.
-        // 다음 드래그를 위해 준비하고, 다른 카드와 같은 평면상에 있도록 합니다.
-        transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
-        
-        // **(주): 나중에 여기에 '스냅(Snap)' 로직을 추가하게 됩니다.**
+        // 이미 자리에 있다면 함수를 종료합니다.
+        if (isPlaced) return;
+
+        // 정답 위치와 현재 조각 위치 사이의 거리를 확인합니다.
+        if (Vector3.Distance(transform.position, correctPosition) < 1.0f) // 1.0f는 스냅되는 거리(임계값)
+        {
+            // 거리가 충분히 가까우면 정답 위치로 이동시키고, '놓임' 상태로 변경합니다.
+            transform.position = correctPosition;
+            isPlaced = true;
+            
+            // (선택) 조각이 맞춰졌을 때 색을 살짝 어둡게 만드는 시각적 피드백
+            GetComponent<SpriteRenderer>().color = new Color(0.8f, 0.8f, 0.8f);
+
+            // 보드에게 조각이 맞춰졌음을 알리고, 전체 퍼즐이 완성되었는지 체크하도록 요청합니다.
+            if (board != null)
+            {
+                board.CheckCompletion();
+            }
+        }
+        else
+        {
+            // 정답 위치가 아니면, 드래그 시작 시 올렸던 Z축 위치를 다시 0으로 되돌려 놓습니다.
+            transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
+        }
     }
 
 
