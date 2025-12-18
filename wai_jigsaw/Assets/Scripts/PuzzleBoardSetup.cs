@@ -9,20 +9,14 @@ public class PuzzleBoardSetup : MonoBehaviour
     // 내부 변수
     private List<GameObject> _pieces = new List<GameObject>();
 
-    void Start()
-    {
-        SetupCurrentLevel();
-    }
-
-    public void SetupCurrentLevel()
+    public void SetupCurrentLevel(int levelNumber)
     {
         // 1. 레벨 정보 가져오기
-        int currentLevelNum = PlayerPrefs.GetInt("CurrentLevel", 1);
-        LevelConfig config = levelDatabase.GetLevelInfo(currentLevelNum);
+        LevelConfig config = levelDatabase.GetLevelInfo(levelNumber);
 
         if (config.puzzleData == null || config.puzzleData.sourceImage == null)
         {
-            Debug.LogError($"레벨 {currentLevelNum}에 이미지가 없습니다!");
+            Debug.LogError($"레벨 {levelNumber}에 이미지가 없습니다!");
             return;
         }
 
@@ -163,12 +157,19 @@ public class PuzzleBoardSetup : MonoBehaviour
         mainCam.orthographicSize = Mathf.Max(sizeH, sizeW);
     }
     
-    // 테스트용 치트키
     public void LevelComplete()
     {
-        int current = PlayerPrefs.GetInt("CurrentLevel", 1);
-        PlayerPrefs.SetInt("CurrentLevel", current + 1);
-        PlayerPrefs.Save();
-        SetupCurrentLevel();
+        // GameManager에게 레벨이 완료되었음을 알립니다.
+        GameManager.Instance.OnLevelComplete();
+    }
+
+    public void ClearBoard()
+    {
+        // 혹시 실행 중인 Invoke가 있다면 취소합니다.
+        CancelInvoke(nameof(LevelComplete));
+
+        // 모든 조각을 파괴하고 리스트를 비웁니다.
+        foreach (Transform child in transform) Destroy(child.gameObject);
+        _pieces.Clear();
     }
 }
