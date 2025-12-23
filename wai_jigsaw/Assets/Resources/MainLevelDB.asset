@@ -21,3 +21,15 @@ MonoBehaviour:
     puzzleData: {fileID: 11400000, guid: 6344d0c3762e70b41aad77c36adf258b, type: 2}
     rows: 4
     cols: 4
+  - levelNumber: 3
+    puzzleData: {fileID: 11400000, guid: d12c04268635f584c9cacdafa156e9bf, type: 2}
+    rows: 4
+    cols: 4
+  - levelNumber: 4
+    puzzleData: {fileID: 11400000, guid: d12c04268635f584c9cacdafa156e9bf, type: 2}
+    rows: 4
+    cols: 4
+  - levelNumber: 5
+    puzzleData: {fileID: 11400000, guid: d12c04268635f584c9cacdafa156e9bf, type: 2}
+    rows: 4
+    cols: 4

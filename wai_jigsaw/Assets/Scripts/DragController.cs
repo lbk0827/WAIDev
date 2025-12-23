@@ -5,95 +5,76 @@ public class DragController : MonoBehaviour
 {
     // ====== 스냅 기능 관련 변수 ======
     [HideInInspector] public PuzzleBoardSetup board;  // 퍼즐 보드판 참조
-    [HideInInspector] public Vector3 correctPosition; // 이 조각의 정답 위치
-    [HideInInspector] public bool isPlaced = false;   // 현재 정답 위치에 놓였는지 여부
+    [HideInInspector] public int correctSlotIndex;    // 정답 슬롯 인덱스
+    [HideInInspector] public int currentSlotIndex;    // 현재 위치한 슬롯 인덱스
+    [HideInInspector] public bool isPlaced = false;   // 정답 위치에 고정되었는지 여부
 
     // ====== Unity 인스펙터에 노출될 변수 선언부 ======
     
-    // (1) 드래그 시작 시 오브젝트와 마우스 포인터 간의 위치 차이(Offset)를 저장합니다.
-    // 마우스가 오브젝트의 정중앙이 아닌 곳을 잡아도 자연스럽게 따라오도록 해줍니다.
     private Vector3 _dragOffset;
-    
-    // (2) 카메라의 Z축 위치를 저장합니다.
-    // 터치/마우스 위치는 2D 화면 좌표지만, 오브젝트는 3D 공간에 있기 때문에
-    // 화면 좌표를 3D 공간 좌표로 변환할 때 필요합니다.
     private float _cameraZDepth;
-
     private SpriteRenderer _spriteRenderer;
+    private int _originalSortingOrder;
 
-    // Start()는 오브젝트가 생성될 때 딱 한 번 실행됩니다.
     void Start()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
-        // 메인 카메라의 Z축 위치를 미리 저장해둡니다. (이 게임은 2D이므로 깊이(Z)는 고정됩니다.)
         _cameraZDepth = Camera.main.transform.position.z;
     }
 
-    // 마우스 버튼을 누르는 순간 딱 한 번 실행되는 함수입니다. (터치 시에도 동일)
     private void OnMouseDown()
     {
-        // 이미 제자리에 놓인 조각은 움직이지 않습니다.
+        // 이미 고정된 조각은 움직이지 않음
         if (isPlaced) return;
 
-        // 1. 현재 오브젝트의 위치(transform.position)를 Screen Point(화면 좌표)로 변환합니다.
         Vector3 screenPoint = Camera.main.WorldToScreenPoint(transform.position);
-
-        // 2. 마우스의 현재 Z 위치(깊이)를 우리가 저장해 둔 카메라 Z 깊이로 설정합니다.
         _cameraZDepth = screenPoint.z;
-
-        // 3. 드래그 오프셋 계산
         _dragOffset = transform.position - GetMouseWorldPos();
 
-        // 4. 드래그 시작 시 조각을 가장 앞으로 가져옵니다.
-        _spriteRenderer.sortingOrder = 10;
+        // 드래그 중엔 맨 앞으로 표시
+        _originalSortingOrder = _spriteRenderer.sortingOrder;
+        _spriteRenderer.sortingOrder = 100;
     }
 
-    // 마우스 버튼을 누른 상태에서 움직이는 동안 매 프레임 실행되는 함수입니다.
     private void OnMouseDrag()
     {
         if (isPlaced) return;
         transform.position = GetMouseWorldPos() + _dragOffset;
     }
 
-    // 마우스 버튼에서 손을 떼는 순간 딱 한 번 실행되는 함수입니다.
     private void OnMouseUp()
     {
         if (isPlaced) return;
 
-        if (Vector3.Distance(transform.position, correctPosition) < 1.0f)
+        // 드래그 종료 시, 보드에게 "나 여기서 손 놓았어"라고 알림
+        // 보드가 위치 계산, 교체(Swap), 정답 확인 등을 처리함
+        if (board != null)
         {
-            transform.position = correctPosition;
-            isPlaced = true;
-            
-            // 정답 위치에 놓이면 레이어를 낮추고 색상을 변경합니다.
-            _spriteRenderer.sortingOrder = 0;
-            _spriteRenderer.color = new Color(0.9f, 0.9f, 0.9f);
+            board.OnPieceDropped(this);
+        }
 
-            if (board != null)
-            {
-                board.CheckCompletion();
-            }
-        }
-        else
-        {
-            // 제자리를 찾지 못하면 기본 레이어(1)로 되돌립니다.
-            _spriteRenderer.sortingOrder = 1;
-        }
+        // 레이어 복구는 board에서 처리하거나, 위치 확정 후 재설정
+        _spriteRenderer.sortingOrder = _originalSortingOrder;
+    }
+    
+    // 외부에서 강제로 위치를 옮길 때 사용 (Swap 애니메이션 등)
+    public void UpdatePosition(Vector3 newPos)
+    {
+        transform.position = newPos;
     }
 
+    public void LockPiece()
+    {
+        isPlaced = true;
+        _spriteRenderer.color = new Color(0.9f, 0.9f, 0.9f); // 약간 어둡게 처리하여 고정됨을 표시
+        _spriteRenderer.sortingOrder = 0; // 뒤로 보냄
+    }
 
     // ====== 도우미 함수 (Helper Method) ======
-
-    // 화면 좌표(마우스/터치 위치)를 3D 월드 공간 좌표로 변환해주는 함수
     private Vector3 GetMouseWorldPos()
     {
-        // 1. 현재 마우스의 화면 좌표(픽셀 위치)를 가져옵니다.
         Vector3 mouseScreenPos = Input.mousePosition;
-        
-        // 2. 화면 좌표의 Z 깊이를 이전에 저장한 _cameraZDepth로 설정합니다.
         mouseScreenPos.z = _cameraZDepth;
-        
-        // 3. Unity 카메라를 사용하여 이 화면 좌표를 3D 월드 좌표로 변환하여 반환합니다.
         return Camera.main.ScreenToWorldPoint(mouseScreenPos);
     }
 }

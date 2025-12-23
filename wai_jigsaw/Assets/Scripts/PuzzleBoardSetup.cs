@@ -6,12 +6,14 @@ public class PuzzleBoardSetup : MonoBehaviour
     public LevelDatabase levelDatabase;
     [Range(0.1f, 2.0f)] public float padding = 0.5f;
 
-    // 내부 변수
-    private List<GameObject> _pieces = new List<GameObject>();
+    // 슬롯의 정답 위치(World Position)를 저장하는 리스트
+    private List<Vector3> _slotPositions = new List<Vector3>();
+    
+    // 현재 보드 상태: index는 슬롯 번호, value는 그 슬롯에 있는 조각
+    private List<DragController> _piecesOnBoard = new List<DragController>();
 
     public void SetupCurrentLevel(int levelNumber)
     {
-        // 1. 레벨 정보 가져오기
         LevelConfig config = levelDatabase.GetLevelInfo(levelNumber);
 
         if (config.puzzleData == null || config.puzzleData.sourceImage == null)
@@ -20,151 +22,198 @@ public class PuzzleBoardSetup : MonoBehaviour
             return;
         }
 
-        // 2. 이미지 자동 자르기 및 생성
         CreateJigsawPieces(config);
-
-        // 3. 카메라 조정 (섞기 전에 카메라 크기를 먼저 맞춰야 영역이 정확합니다)
         FitCameraToPuzzle(config.rows, config.cols);
-
-        // 4. 조각 섞기
         ShufflePieces();
     }
 
-    // ★ 핵심 기능: 이미지를 코드로 잘라서 조각 생성
     void CreateJigsawPieces(LevelConfig config)
     {
-        // 기존 조각 청소
+        // 초기화
         foreach (Transform child in transform) Destroy(child.gameObject);
-        _pieces.Clear();
+        _slotPositions.Clear();
+        _piecesOnBoard.Clear();
 
         Texture2D texture = config.puzzleData.sourceImage;
         int rows = config.rows;
         int cols = config.cols;
 
-        // 조각 하나의 크기 계산 (전체 이미지 크기 / 개수)
         float pieceWidth = texture.width / (float)cols;
         float pieceHeight = texture.height / (float)rows;
 
-        // 배치 시작 위치 계산 (중앙 정렬용)
-        // Unity Unit 단위로 변환 (Pixels Per Unit 기본값 100 가정)
         float unitWidth = pieceWidth / 100f; 
         float unitHeight = pieceHeight / 100f;
         
         float startX = -((cols * unitWidth) / 2) + (unitWidth / 2);
         float startY = ((rows * unitHeight) / 2) - (unitHeight / 2);
 
+        int index = 0;
         for (int row = 0; row < rows; row++)
         {
             for (int col = 0; col < cols; col++)
             {
-                // 1. 텍스처에서 잘라낼 영역(Rect) 계산
-                // 텍스처 좌표계는 (0,0)이 왼쪽 아래입니다. 위에서부터 자르려면 Y 계산 주의.
+                // 1. Sprite 생성
                 float x = col * pieceWidth;
-                float y = (rows - 1 - row) * pieceHeight; // 위에서 아래로 순서 맞춤
-
+                float y = (rows - 1 - row) * pieceHeight;
                 Rect rect = new Rect(x, y, pieceWidth, pieceHeight);
-
-                // 2. Sprite 생성 (자르기)
                 Sprite newSprite = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
 
-                // 3. 게임 오브젝트 생성
-                GameObject newPiece = new GameObject($"Piece_{row}_{col}");
+                // 2. GameObject 생성
+                GameObject newPiece = new GameObject($"Piece_{index}");
                 newPiece.transform.parent = transform;
 
-                // 4. 컴포넌트 부착
                 SpriteRenderer sr = newPiece.AddComponent<SpriteRenderer>();
                 sr.sprite = newSprite;
                 
                 newPiece.AddComponent<BoxCollider2D>();
                 DragController dragController = newPiece.AddComponent<DragController>();
 
-                // 5. 정답 위치 계산 및 할당
+                // 3. 위치 계산 및 데이터 설정
                 float posX = startX + (col * unitWidth);
                 float posY = startY - (row * unitHeight);
+                Vector3 correctPos = new Vector3(posX, posY, 0);
 
-                // DragController에 정답 위치와 보드(자기 자신) 참조를 알려줍니다.
-                dragController.correctPosition = new Vector3(posX, posY, 0);
+                // 리스트에 등록
+                _slotPositions.Add(correctPos);
+                _piecesOnBoard.Add(dragController);
+
+                // DragController 설정
                 dragController.board = this;
+                dragController.correctSlotIndex = index;
+                dragController.currentSlotIndex = index; // 처음엔 정답 위치에 생성
 
-                // (임시) 생성 시에는 정답 위치에 먼저 배치합니다.
-                // 이 위치는 잠시 후 ShufflePieces()에 의해 랜덤 위치로 변경됩니다.
-                newPiece.transform.position = new Vector3(posX, posY, 0);
-                
-                _pieces.Add(newPiece);
+                // 위치 배치
+                newPiece.transform.position = correctPos;
+
+                index++;
             }
         }
     }
 
-    // ★ 개선된 기능: 조각들을 격자(Grid) 형태로 정렬하여 배치합니다.
+    // 조각들을 슬롯 위에서 랜덤하게 섞습니다.
     void ShufflePieces()
     {
-        // 1. 조각 순서 섞기 (List 사용)
-        List<GameObject> shuffledList = new List<GameObject>(_pieces);
-        for (int i = 0; i < shuffledList.Count; i++)
+        // 논리적 리스트 섞기 (Fisher-Yates Shuffle)
+        int n = _piecesOnBoard.Count;
+        while (n > 1)
         {
-            GameObject temp = shuffledList[i];
-            int randomIndex = Random.Range(i, shuffledList.Count);
-            shuffledList[i] = shuffledList[randomIndex];
-            shuffledList[randomIndex] = temp;
+            n--;
+            int k = Random.Range(0, n + 1);
+            DragController temp = _piecesOnBoard[k];
+            _piecesOnBoard[k] = _piecesOnBoard[n];
+            _piecesOnBoard[n] = temp;
         }
 
-        // 2. 격자 배치 설정
-        Camera mainCam = Camera.main;
-        float camHeight = mainCam.orthographicSize * 2;
-        float camWidth = camHeight * mainCam.aspect;
-
-        // 조각 크기 확인 (첫 번째 조각 기준)
-        SpriteRenderer sr = _pieces[0].GetComponent<SpriteRenderer>();
-        float pieceW = sr.bounds.size.x;
-        float pieceH = sr.bounds.size.y;
-
-        // 격자 열 개수 결정 (화면 너비에 맞춰 적절히 배치)
-        int gridCols = Mathf.Max(3, Mathf.FloorToInt(camWidth / (pieceW * 1.1f)));
-        float spacing = 0.1f; // 조각 사이 간격
-
-        // 시작 위치 계산 (화면 왼쪽 하단 부근)
-        float startX = -(gridCols - 1) * (pieceW + spacing) / 2f;
-        float startY = -(camHeight / 2f) + (pieceH / 2f) + padding;
-
-        // 3. 조각 배치
-        for (int i = 0; i < shuffledList.Count; i++)
+        // 섞인 논리적 순서대로 물리적 위치와 인덱스 업데이트
+        for (int i = 0; i < _piecesOnBoard.Count; i++)
         {
-            int row = i / gridCols;
-            int col = i % gridCols;
+            DragController piece = _piecesOnBoard[i];
+            
+            // 현재 슬롯 위치로 이동
+            piece.transform.position = _slotPositions[i];
+            piece.currentSlotIndex = i;
 
-            float posX = startX + col * (pieceW + spacing);
-            float posY = startY + row * (pieceH + spacing);
-
-            shuffledList[i].transform.position = new Vector3(posX, posY, 0);
+            // 섞인 직후 운 좋게 제자리에 갔다면 바로 고정? 
+            // 게임의 재미를 위해 섞을 때는 고정 처리를 하지 않거나, 
+            // CheckCompletion을 호출하지 않습니다.
+            // 여기서는 단순히 위치만 잡습니다.
         }
     }
-    
-    // ★ 추가된 기능: 모든 조각이 맞춰졌는지 검사합니다.
-    public void CheckCompletion()
+
+    // DragController가 드롭되었을 때 호출됩니다.
+    public void OnPieceDropped(DragController droppedPiece)
     {
-        foreach (var piece in _pieces)
+        // 1. 드롭된 위치에서 가장 가까운 슬롯 찾기
+        int targetIndex = GetClosestSlotIndex(droppedPiece.transform.position);
+
+        // 2. 예외 처리: 제자리이거나, 교체 대상이 이미 고정(Locked)된 조각인 경우
+        DragController targetPiece = _piecesOnBoard[targetIndex];
+        if (targetIndex == droppedPiece.currentSlotIndex || targetPiece.isPlaced)
         {
-            // 단 하나의 조각이라도 제자리에 놓여있지 않다면, 함수를 즉시 종료합니다.
-            if (!piece.GetComponent<DragController>().isPlaced)
-            {
-                return;
-            }
+            // 원래 위치로 되돌아감
+            droppedPiece.UpdatePosition(_slotPositions[droppedPiece.currentSlotIndex]);
+            return;
         }
 
-        // 모든 조각이 제자리에 놓였다면, 이 코드가 실행됩니다.
-        Debug.Log("🎉 레벨 클리어! 🎉");
+        // 3. 교체 로직 (Swap)
+        SwapPieces(droppedPiece.currentSlotIndex, targetIndex);
+
+        // 4. 고정 및 정답 확인
+        CheckPieceLock(targetIndex); // 드롭된 녀석이 간 곳
+        CheckPieceLock(droppedPiece.currentSlotIndex); // 원래 있던 녀석이 간 곳
         
-        // 다음 레벨로 넘어가는 기존 로직을 호출합니다.
-        // 약간의 딜레이를 주어 완성된 그림을 볼 시간을 줍니다.
-        Invoke(nameof(LevelComplete), 1.5f);
+        CheckCompletion();
+    }
+
+    // 두 슬롯의 조각을 서로 바꿉니다.
+    void SwapPieces(int indexA, int indexB)
+    {
+        DragController pieceA = _piecesOnBoard[indexA];
+        DragController pieceB = _piecesOnBoard[indexB];
+
+        // 리스트 내 교체
+        _piecesOnBoard[indexA] = pieceB;
+        _piecesOnBoard[indexB] = pieceA;
+
+        // 인덱스 정보 업데이트
+        pieceA.currentSlotIndex = indexB;
+        pieceB.currentSlotIndex = indexA;
+
+        // 물리적 위치 이동 (애니메이션 없이 즉시 이동)
+        pieceA.UpdatePosition(_slotPositions[indexB]);
+        pieceB.UpdatePosition(_slotPositions[indexA]);
+    }
+
+    int GetClosestSlotIndex(Vector3 pos)
+    {
+        float minDst = float.MaxValue;
+        int closestIndex = 0;
+
+        for (int i = 0; i < _slotPositions.Count; i++)
+        {
+            float dst = Vector3.Distance(pos, _slotPositions[i]);
+            if (dst < minDst)
+            {
+                minDst = dst;
+                closestIndex = i;
+            }
+        }
+        return closestIndex;
+    }
+
+    void CheckPieceLock(int slotIndex)
+    {
+        DragController piece = _piecesOnBoard[slotIndex];
+        
+        // 현재 슬롯이 정답 슬롯과 같다면 고정
+        if (piece.correctSlotIndex == piece.currentSlotIndex)
+        {
+            if (!piece.isPlaced)
+            {
+                piece.LockPiece();
+                // 효과음 재생 등을 여기서 할 수 있음
+                // Debug.Log($"Piece {piece.correctSlotIndex} Fixed!");
+            }
+        }
+    }
+
+    public void CheckCompletion()
+    {
+        foreach (var piece in _piecesOnBoard)
+        {
+            // 아직 제자리가 아닌 조각이 있다면 종료
+            if (piece.currentSlotIndex != piece.correctSlotIndex) return;
+        }
+
+        Debug.Log("🎉 레벨 클리어! 🎉");
+        Invoke(nameof(LevelComplete), 1.0f);
     }
 
     void FitCameraToPuzzle(int rows, int cols)
     {
-        if (_pieces.Count == 0) return;
+        if (_piecesOnBoard.Count == 0) return;
 
-        // 첫 번째 조각의 크기로 전체 크기 유추
-        SpriteRenderer sr = _pieces[0].GetComponent<SpriteRenderer>();
+        SpriteRenderer sr = _piecesOnBoard[0].GetComponent<SpriteRenderer>();
         float pieceW = sr.bounds.size.x;
         float pieceH = sr.bounds.size.y;
 
@@ -181,17 +230,14 @@ public class PuzzleBoardSetup : MonoBehaviour
     
     public void LevelComplete()
     {
-        // GameManager에게 레벨이 완료되었음을 알립니다.
         GameManager.Instance.OnLevelComplete();
     }
 
     public void ClearBoard()
     {
-        // 혹시 실행 중인 Invoke가 있다면 취소합니다.
         CancelInvoke(nameof(LevelComplete));
-
-        // 모든 조각을 파괴하고 리스트를 비웁니다.
         foreach (Transform child in transform) Destroy(child.gameObject);
-        _pieces.Clear();
+        _piecesOnBoard.Clear();
+        _slotPositions.Clear();
     }
 }
