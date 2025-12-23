@@ -23,11 +23,11 @@ public class PuzzleBoardSetup : MonoBehaviour
         // 2. 이미지 자동 자르기 및 생성
         CreateJigsawPieces(config);
 
-        // 3. 조각 섞기 (추가)
-        ShufflePieces();
-
-        // 4. 카메라 조정
+        // 3. 카메라 조정 (섞기 전에 카메라 크기를 먼저 맞춰야 영역이 정확합니다)
         FitCameraToPuzzle(config.rows, config.cols);
+
+        // 4. 조각 섞기
+        ShufflePieces();
     }
 
     // ★ 핵심 기능: 이미지를 코드로 잘라서 조각 생성
@@ -95,25 +95,47 @@ public class PuzzleBoardSetup : MonoBehaviour
         }
     }
 
-    // ★ 추가된 기능: 조각들을 화면 내 랜덤한 위치로 흩뿌립니다.
+    // ★ 개선된 기능: 조각들을 격자(Grid) 형태로 정렬하여 배치합니다.
     void ShufflePieces()
     {
+        // 1. 조각 순서 섞기 (List 사용)
+        List<GameObject> shuffledList = new List<GameObject>(_pieces);
+        for (int i = 0; i < shuffledList.Count; i++)
+        {
+            GameObject temp = shuffledList[i];
+            int randomIndex = Random.Range(i, shuffledList.Count);
+            shuffledList[i] = shuffledList[randomIndex];
+            shuffledList[randomIndex] = temp;
+        }
+
+        // 2. 격자 배치 설정
         Camera mainCam = Camera.main;
         float camHeight = mainCam.orthographicSize * 2;
         float camWidth = camHeight * mainCam.aspect;
 
-        // 화면 가장자리에서 약간의 여백(padding)을 둡니다.
-        float spawnPadding = 1.0f; 
-        float minX = -camWidth / 2 + spawnPadding;
-        float maxX = camWidth / 2 - spawnPadding;
-        float minY = -camHeight / 2 + spawnPadding;
-        float maxY = camHeight / 2 - spawnPadding;
+        // 조각 크기 확인 (첫 번째 조각 기준)
+        SpriteRenderer sr = _pieces[0].GetComponent<SpriteRenderer>();
+        float pieceW = sr.bounds.size.x;
+        float pieceH = sr.bounds.size.y;
 
-        foreach (var piece in _pieces)
+        // 격자 열 개수 결정 (화면 너비에 맞춰 적절히 배치)
+        int gridCols = Mathf.Max(3, Mathf.FloorToInt(camWidth / (pieceW * 1.1f)));
+        float spacing = 0.1f; // 조각 사이 간격
+
+        // 시작 위치 계산 (화면 왼쪽 하단 부근)
+        float startX = -(gridCols - 1) * (pieceW + spacing) / 2f;
+        float startY = -(camHeight / 2f) + (pieceH / 2f) + padding;
+
+        // 3. 조각 배치
+        for (int i = 0; i < shuffledList.Count; i++)
         {
-            float randomX = Random.Range(minX, maxX);
-            float randomY = Random.Range(minY, maxY);
-            piece.transform.position = new Vector3(randomX, randomY, 0);
+            int row = i / gridCols;
+            int col = i % gridCols;
+
+            float posX = startX + col * (pieceW + spacing);
+            float posY = startY + row * (pieceH + spacing);
+
+            shuffledList[i].transform.position = new Vector3(posX, posY, 0);
         }
     }
     

@@ -50,15 +50,26 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowHome()
     {
-        homePanel.SetActive(true);
-        levelIntroPanel.SetActive(false);
-        puzzlePanel.SetActive(false);
-        resultPanel.SetActive(false);
+        if (homePanel != null) homePanel.SetActive(true);
+        else Debug.LogError("UIManager: Home Panel이 연결되지 않았습니다!");
+
+        if (levelIntroPanel != null) levelIntroPanel.SetActive(false);
+        else Debug.LogError("UIManager: Level Intro Panel이 연결되지 않았습니다!");
+
+        if (puzzlePanel != null) puzzlePanel.SetActive(false);
+        else Debug.LogError("UIManager: Puzzle Panel이 연결되지 않았습니다!");
+
+        if (resultPanel != null) resultPanel.SetActive(false);
+        else Debug.LogError("UIManager: Result Panel이 연결되지 않았습니다!");
 
         // 현재 레벨 텍스트를 업데이트합니다.
-        if (GameManager.Instance != null)
+        if (GameManager.Instance != null && homeLevelText != null)
         {
             homeLevelText.text = $"LEVEL {GameManager.Instance.CurrentLevel}";
+        }
+        else if (homeLevelText == null)
+        {
+            Debug.LogWarning("UIManager: Home Level Text가 연결되지 않았습니다.");
         }
     }
 
@@ -67,17 +78,20 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowLevelIntro(LevelConfig config)
     {
-        homePanel.SetActive(false);
-        levelIntroPanel.SetActive(true);
-        puzzlePanel.SetActive(false);
-        resultPanel.SetActive(false);
+        if (homePanel != null) homePanel.SetActive(false);
+        if (levelIntroPanel != null) levelIntroPanel.SetActive(true);
+        if (puzzlePanel != null) puzzlePanel.SetActive(false);
+        if (resultPanel != null) resultPanel.SetActive(false);
 
         // 레벨 정보를 UI에 표시합니다.
-        introLevelText.text = $"LEVEL {config.levelNumber}";
-        introImagePreview.sprite = Sprite.Create(config.puzzleData.sourceImage, 
-            new Rect(0, 0, config.puzzleData.sourceImage.width, config.puzzleData.sourceImage.height), 
-            new Vector2(0.5f, 0.5f));
-        introPiecesText.text = $"{config.rows * config.cols} Pieces";
+        if (introLevelText != null) introLevelText.text = $"LEVEL {config.levelNumber}";
+        if (introImagePreview != null)
+        {
+            introImagePreview.sprite = Sprite.Create(config.puzzleData.sourceImage, 
+                new Rect(0, 0, config.puzzleData.sourceImage.width, config.puzzleData.sourceImage.height), 
+                new Vector2(0.5f, 0.5f));
+        }
+        if (introPiecesText != null) introPiecesText.text = $"{config.rows * config.cols} Pieces";
     }
 
     /// <summary>
@@ -85,10 +99,10 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowPuzzle()
     {
-        homePanel.SetActive(false);
-        levelIntroPanel.SetActive(false);
-        puzzlePanel.SetActive(true);
-        resultPanel.SetActive(false);
+        if (homePanel != null) homePanel.SetActive(false);
+        if (levelIntroPanel != null) levelIntroPanel.SetActive(false);
+        if (puzzlePanel != null) puzzlePanel.SetActive(true);
+        if (resultPanel != null) resultPanel.SetActive(false);
     }
     
     /// <summary>
@@ -96,12 +110,15 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowResult()
     {
-        homePanel.SetActive(false);
-        levelIntroPanel.SetActive(false);
-        puzzlePanel.SetActive(false);
-        resultPanel.SetActive(true);
+        if (homePanel != null) homePanel.SetActive(false);
+        if (levelIntroPanel != null) levelIntroPanel.SetActive(false);
+        if (puzzlePanel != null) puzzlePanel.SetActive(false);
+        if (resultPanel != null) resultPanel.SetActive(true);
 
-        resultLevelText.text = $"LEVEL {GameManager.Instance.CurrentLevel - 1} COMPLETE";
+        if (resultLevelText != null)
+        {
+            resultLevelText.text = $"LEVEL {GameManager.Instance.CurrentLevel - 1} COMPLETE";
+        }
     }
 
     // --- 버튼 이벤트 핸들러 ---
