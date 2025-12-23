@@ -199,11 +199,19 @@ public class PuzzleBoardSetup : MonoBehaviour
 
         // 4. [상태 업데이트] 모든 교환 정보 적용
         
+        HashSet<PieceGroup> groupsToRepair = new HashSet<PieceGroup>();
+
         // 4-1. 장애물 그룹 이탈 처리
         foreach (var info in transactionList)
         {
             if (!movingGroup.Contains(info.Piece))
             {
+                // BreakFromGroup 하기 전에 기존 그룹을 기록해둡니다.
+                // 이 그룹은 멤버를 잃었으므로(fragmented), 연결성 검사가 필요합니다.
+                if (info.Piece.group != null)
+                {
+                    groupsToRepair.Add(info.Piece.group);
+                }
                 info.Piece.BreakFromGroup();
             }
         }
@@ -225,6 +233,13 @@ public class PuzzleBoardSetup : MonoBehaviour
             _piecesOnBoard[kvp.Key] = kvp.Value;
         }
 
+        // [중요] 멤버를 잃은 그룹들에 대해 연결성 재확인 (Disband & Regroup)
+        // 보드 데이터가 갱신된 후(4-2 이후)에 실행해야 올바른 이웃 검사가 가능합니다.
+        foreach (var group in groupsToRepair)
+        {
+            DisbandAndRegroup(group);
+        }
+
         // 4-3. 물리적 위치 이동
         foreach (var info in transactionList)
         {
@@ -241,6 +256,36 @@ public class PuzzleBoardSetup : MonoBehaviour
         foreach(var piece in group.pieces)
         {
             piece.UpdatePosition(_slotPositions[piece.currentSlotIndex]);
+        }
+    }
+
+    void DisbandAndRegroup(PieceGroup group)
+    {
+        if (group.pieces.Count == 0) return;
+
+        List<DragController> allPieces = new List<DragController>(group.pieces);
+        group.pieces.Clear();
+
+        // 1. Reset everyone to individual groups
+        foreach (var p in allPieces)
+        {
+            p.group = new PieceGroup();
+            p.group.AddPiece(p);
+            p.UpdateVisuals();
+        }
+
+        // 2. Try to reconnect them
+        HashSet<DragController> processed = new HashSet<DragController>();
+        foreach (var p in allPieces)
+        {
+            if (processed.Contains(p)) continue;
+
+            CheckConnections(p.group);
+
+            foreach (var member in p.group.pieces)
+            {
+                processed.Add(member);
+            }
         }
     }
 
