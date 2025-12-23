@@ -29,9 +29,20 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         // 모든 버튼에 대한 이벤트 리스너를 설정합니다.
-        homeStartButton.onClick.AddListener(OnHomeStartClicked);
-        introPlayButton.onClick.AddListener(OnIntroPlayClicked);
-        resultNextButton.onClick.AddListener(OnResultNextClicked);
+        if (homeStartButton != null)
+            homeStartButton.onClick.AddListener(OnHomeStartClicked);
+        else
+            Debug.LogError("UIManager: Home Start Button is not assigned in the Inspector!");
+
+        if (introPlayButton != null)
+            introPlayButton.onClick.AddListener(OnIntroPlayClicked);
+        else
+            Debug.LogError("UIManager: Intro Play Button is not assigned in the Inspector!");
+
+        if (resultNextButton != null)
+            resultNextButton.onClick.AddListener(OnResultNextClicked);
+        else
+            Debug.LogError("UIManager: Result Next Button is not assigned in the Inspector!");
     }
 
     /// <summary>
