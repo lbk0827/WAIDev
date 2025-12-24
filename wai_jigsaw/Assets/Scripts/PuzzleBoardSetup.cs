@@ -6,12 +6,20 @@ public class PuzzleBoardSetup : MonoBehaviour
     public LevelManager levelManager;
     [Range(0.1f, 2.0f)] public float padding = 0.5f;
 
+    [Header("Piece Spacing")]
+    [Tooltip("그룹화되지 않은 조각들 사이의 간격")]
+    [Range(0f, 0.2f)] public float pieceSpacing = 0.08f;
+
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
 
     // Grid dimensions
     private int _rows;
     private int _cols;
+
+    // 조각 크기 (spacing 계산용)
+    private float _unitWidth;
+    private float _unitHeight;
 
     public void SetupCurrentLevel(int levelNumber)
     {
@@ -36,12 +44,16 @@ public class PuzzleBoardSetup : MonoBehaviour
         float pieceHeight = texture.height / (float)_rows;
 
         // Sprite.Create 기본 PPU=100 기준 Unity Unit 크기
-        float unitWidth = pieceWidth / 100f;
-        float unitHeight = pieceHeight / 100f;
+        _unitWidth = pieceWidth / 100f;
+        _unitHeight = pieceHeight / 100f;
 
-        // 퍼즐 시작점 (좌상단 기준, 중앙 정렬)
-        float startX = -((_cols * unitWidth) / 2) + (unitWidth / 2);
-        float startY = ((_rows * unitHeight) / 2) - (unitHeight / 2);
+        // spacing 포함한 슬롯 간격
+        float slotWidth = _unitWidth + pieceSpacing;
+        float slotHeight = _unitHeight + pieceSpacing;
+
+        // 퍼즐 시작점 (좌상단 기준, 중앙 정렬) - spacing 포함
+        float startX = -((_cols * slotWidth) / 2) + (slotWidth / 2);
+        float startY = ((_rows * slotHeight) / 2) - (slotHeight / 2);
 
         int index = 0;
         for (int row = 0; row < _rows; row++)
@@ -65,12 +77,12 @@ public class PuzzleBoardSetup : MonoBehaviour
                 newPiece.AddComponent<BoxCollider2D>();
                 DragController dragController = newPiece.AddComponent<DragController>();
 
-                // 위치 설정
-                float posX = startX + (col * unitWidth);
-                float posY = startY - (row * unitHeight);
-                Vector3 correctPos = new Vector3(posX, posY, 0);
+                // 위치 설정 (spacing 포함)
+                float posX = startX + (col * slotWidth);
+                float posY = startY - (row * slotHeight);
+                Vector3 slotPos = new Vector3(posX, posY, 0);
 
-                _slotPositions.Add(correctPos);
+                _slotPositions.Add(slotPos);
                 _piecesOnBoard.Add(dragController);
 
                 dragController.board = this;
@@ -78,7 +90,11 @@ public class PuzzleBoardSetup : MonoBehaviour
                 dragController.originalGridX = col;
                 dragController.originalGridY = row;
 
-                newPiece.transform.position = correctPos;
+                // 조각 크기 정보 전달 (그룹화 시 위치 조정용)
+                dragController.pieceWidth = _unitWidth;
+                dragController.pieceHeight = _unitHeight;
+
+                newPiece.transform.position = slotPos;
                 index++;
             }
         }
@@ -397,11 +413,11 @@ public class PuzzleBoardSetup : MonoBehaviour
             neighbor.originalGridY == piece.originalGridY + rowOffset)
         {
             // They are correct neighbors!
-            
-            // 3. Merge Groups
+
+            // 3. Merge Groups (스냅하여 spacing 제거)
             if (piece.group != neighbor.group)
             {
-                piece.group.MergeGroup(neighbor.group);
+                piece.group.MergeGroupWithSnap(neighbor.group, piece, neighbor);
                 // Play sound?
             }
 
@@ -493,12 +509,20 @@ public class PuzzleBoardSetup : MonoBehaviour
 
         Debug.Log("🔧 디버그: 퍼즐 자동 완성 시작...");
 
-        // 모든 조각을 원래 위치로 이동
+        // 완성된 퍼즐의 시작점 계산 (spacing 없이)
+        float startX = -((_cols * _unitWidth) / 2) + (_unitWidth / 2);
+        float startY = ((_rows * _unitHeight) / 2) - (_unitHeight / 2);
+
+        // 모든 조각을 원래 위치로 이동 (spacing 없이 밀착)
         foreach (var piece in _piecesOnBoard)
         {
             int correctIndex = piece.originalGridY * _cols + piece.originalGridX;
             piece.currentSlotIndex = correctIndex;
-            piece.UpdatePosition(_slotPositions[correctIndex]);
+
+            // spacing 없는 정확한 위치 계산
+            float posX = startX + (piece.originalGridX * _unitWidth);
+            float posY = startY - (piece.originalGridY * _unitHeight);
+            piece.UpdatePosition(new Vector3(posX, posY, 0));
         }
 
         // 보드 상태 재정렬
