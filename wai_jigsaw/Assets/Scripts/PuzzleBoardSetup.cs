@@ -150,15 +150,15 @@ public class PuzzleBoardSetup : MonoBehaviour
     /// </summary>
     void CheckInitialConnections()
     {
-        // 모든 조각에 대해 연결 체크
+        // 모든 조각에 대해 연결 체크 (연쇄 병합 적용)
         HashSet<DragController> processed = new HashSet<DragController>();
 
         foreach (var piece in _piecesOnBoard)
         {
             if (processed.Contains(piece)) continue;
 
-            // 이 조각의 그룹에 대해 연결 체크
-            CheckConnections(piece.group);
+            // 이 조각의 그룹에 대해 연결 체크 (연쇄 병합)
+            CheckConnectionsRecursive(piece.group);
 
             // 처리된 조각들 기록
             foreach (var member in piece.group.pieces)
@@ -324,22 +324,44 @@ public class PuzzleBoardSetup : MonoBehaviour
             DisbandAndRegroup(group);
         }
 
-        // 4-3. 물리적 위치 이동
+        // 4-3. 물리적 위치 이동 (그룹 내 상대적 위치 유지)
+        MoveGroupWithRelativePositions(rootPiece.group, rootPiece, _slotPositions[rootPiece.currentSlotIndex]);
+
+        // 장애물(스왑된 조각들)은 개별 slot 위치로 이동
         foreach (var info in transactionList)
         {
-            info.Piece.UpdatePosition(_slotPositions[info.TargetSlotIndex]);
+            if (!movingGroup.Contains(info.Piece))
+            {
+                info.Piece.UpdatePosition(_slotPositions[info.TargetSlotIndex]);
+            }
         }
 
-        // 5. 결합 및 완료 체크
-        CheckConnections(rootPiece.group);
+        // 5. 결합 및 완료 체크 (연쇄 병합 포함)
+        CheckConnectionsRecursive(rootPiece.group);
         CheckCompletion();
     }
 
     void ReturnGroupToCurrentSlots(PieceGroup group)
     {
-        foreach(var piece in group.pieces)
+        if (group.pieces.Count == 0) return;
+
+        // 그룹의 첫 번째 조각을 기준으로 상대적 위치 유지하며 이동
+        DragController anchorPiece = group.pieces[0];
+        MoveGroupWithRelativePositions(group, anchorPiece, _slotPositions[anchorPiece.currentSlotIndex]);
+    }
+
+    /// <summary>
+    /// 그룹을 이동할 때 내부 조각들의 상대적 위치(스냅된 상태)를 유지합니다.
+    /// </summary>
+    void MoveGroupWithRelativePositions(PieceGroup group, DragController anchorPiece, Vector3 anchorTargetPos)
+    {
+        // anchor 조각의 현재 위치와 목표 위치의 차이 계산
+        Vector3 offset = anchorTargetPos - anchorPiece.transform.position;
+
+        // 그룹 내 모든 조각을 동일한 offset만큼 이동
+        foreach (var piece in group.pieces)
         {
-            piece.UpdatePosition(_slotPositions[piece.currentSlotIndex]);
+            piece.UpdatePosition(piece.transform.position + offset);
         }
     }
 
@@ -358,13 +380,13 @@ public class PuzzleBoardSetup : MonoBehaviour
             p.UpdateVisuals();
         }
 
-        // 2. Try to reconnect them
+        // 2. Try to reconnect them (연쇄 병합 적용)
         HashSet<DragController> processed = new HashSet<DragController>();
         foreach (var p in allPieces)
         {
             if (processed.Contains(p)) continue;
 
-            CheckConnections(p.group);
+            CheckConnectionsRecursive(p.group);
 
             foreach (var member in p.group.pieces)
             {
@@ -388,6 +410,50 @@ public class PuzzleBoardSetup : MonoBehaviour
             CheckNeighbor(piece, 0, 1);  // Bottom (Row +1)
             CheckNeighbor(piece, -1, 0); // Left (Col -1)
             CheckNeighbor(piece, 1, 0);  // Right (Col +1)
+        }
+    }
+
+    /// <summary>
+    /// 연쇄 병합을 처리합니다. 그룹이 커질 때마다 새로 추가된 조각들도 이웃 체크를 합니다.
+    /// </summary>
+    void CheckConnectionsRecursive(PieceGroup group)
+    {
+        HashSet<DragController> checkedPieces = new HashSet<DragController>();
+        Queue<DragController> toCheck = new Queue<DragController>();
+
+        // 초기 그룹의 모든 조각을 큐에 추가
+        foreach (var piece in group.pieces)
+        {
+            toCheck.Enqueue(piece);
+        }
+
+        while (toCheck.Count > 0)
+        {
+            DragController piece = toCheck.Dequeue();
+
+            // 이미 체크한 조각은 스킵
+            if (checkedPieces.Contains(piece)) continue;
+            checkedPieces.Add(piece);
+
+            int prevGroupSize = group.pieces.Count;
+
+            // 4방향 이웃 체크
+            CheckNeighbor(piece, 0, -1); // Top
+            CheckNeighbor(piece, 0, 1);  // Bottom
+            CheckNeighbor(piece, -1, 0); // Left
+            CheckNeighbor(piece, 1, 0);  // Right
+
+            // 그룹에 새 조각이 추가되었으면, 아직 체크하지 않은 조각들을 큐에 추가
+            if (group.pieces.Count > prevGroupSize)
+            {
+                foreach (var newPiece in group.pieces)
+                {
+                    if (!checkedPieces.Contains(newPiece) && !toCheck.Contains(newPiece))
+                    {
+                        toCheck.Enqueue(newPiece);
+                    }
+                }
+            }
         }
     }
 
