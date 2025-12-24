@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
     [Header("Component References")]
     public UIManager uiManager;
     public PuzzleBoardSetup puzzleBoard;
-    public LevelDatabase levelDatabase;
+    public LevelManager levelManager;
 
     public int CurrentLevel { get; private set; } = 1;
 
@@ -78,9 +78,9 @@ public class GameManager : MonoBehaviour
 
     public void ShowLevelIntro()
     {
-        if (uiManager != null && levelDatabase != null)
+        if (uiManager != null && levelManager != null)
         {
-            LevelConfig config = levelDatabase.GetLevelInfo(CurrentLevel);
+            LevelConfig config = levelManager.GetLevelInfo(CurrentLevel);
             uiManager.ShowLevelIntro(config);
         }
     }

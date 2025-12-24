@@ -1,0 +1,16 @@
+{
+  "levels": [
+    {
+      "levelID": 1,
+      "imageName": "Pepe",
+      "rows": 3,
+      "cols": 3
+    },
+    {
+      "levelID": 2,
+      "imageName": "GrandCanyon",
+      "rows": 4,
+      "cols": 4
+    }
+  ]
+}

@@ -3,22 +3,23 @@ using System.Collections.Generic;
 
 public class PuzzleBoardSetup : MonoBehaviour
 {
-    public LevelDatabase levelDatabase;
+    public LevelManager levelManager;
     [Range(0.1f, 2.0f)] public float padding = 0.5f;
 
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
-    
+
     // Grid dimensions
     private int _rows;
     private int _cols;
 
     public void SetupCurrentLevel(int levelNumber)
     {
-        LevelConfig config = levelDatabase.GetLevelInfo(levelNumber);
+        LevelConfig config = levelManager.GetLevelInfo(levelNumber);
         if (config.puzzleData == null || config.puzzleData.sourceImage == null) return;
 
         CreateJigsawPieces(config);
+        FitCameraToPuzzle(config.rows, config.cols);
         ShufflePieces();
     }
 
@@ -30,110 +31,44 @@ public class PuzzleBoardSetup : MonoBehaviour
         _rows = config.rows;
         _cols = config.cols;
 
-        // 1. BoardContainer의 크기 정보 가져오기
-        RectTransform boardRect = GetComponent<RectTransform>();
-        if (boardRect == null)
-        {
-            Debug.LogError("PuzzleBoardSetup: RectTransform이 없습니다! BoardContainer에 붙여주세요.");
-            return;
-        }
-
-        float containerWidth = boardRect.rect.width;
-        float containerHeight = boardRect.rect.height;
-
-        // 2. 원본 이미지 비율과 컨테이너 비율 비교하여 스케일 계산
         Texture2D texture = config.puzzleData.sourceImage;
-        float imageAspect = (float)texture.width / texture.height;
-        float containerAspect = containerWidth / containerHeight;
+        float pieceWidth = texture.width / (float)_cols;
+        float pieceHeight = texture.height / (float)_rows;
 
-        float scaleFactor;
-        float puzzleWidth, puzzleHeight;
+        // Sprite.Create 기본 PPU=100 기준 Unity Unit 크기
+        float unitWidth = pieceWidth / 100f;
+        float unitHeight = pieceHeight / 100f;
 
-        // 컨테이너보다 이미지가 더 납작하면 -> 가로(Width)를 기준으로 맞춤
-        if (imageAspect > containerAspect)
-        {
-            puzzleWidth = containerWidth * 0.9f; // 여백 10%
-            scaleFactor = puzzleWidth / texture.width;
-            puzzleHeight = texture.height * scaleFactor;
-        }
-        // 컨테이너보다 이미지가 더 길쭉하면 -> 세로(Height)를 기준으로 맞춤
-        else
-        {
-            puzzleHeight = containerHeight * 0.9f; // 여백 10%
-            scaleFactor = puzzleHeight / texture.height;
-            puzzleWidth = texture.width * scaleFactor;
-        }
-
-        // 3. 조각 하나당 실제 크기(Unity Unit 기준이 아닌 픽셀 사이즈 -> 스케일 적용) 계산
-        float pieceW_pixel = texture.width / (float)_cols;
-        float pieceH_pixel = texture.height / (float)_rows;
-        
-        // Sprite.Create의 기본 PixelsPerUnit은 100입니다.
-        float ppu = 100f; 
-        
-        // 조각 하나의 유니티 상의 크기 (스케일 적용 전)
-        float unitW = pieceW_pixel / ppu;
-        float unitH = pieceH_pixel / ppu;
-
-        // 스케일 적용: 우리가 원하는 크기(puzzleWidth)가 되려면 얼마나 확대/축소해야 하는가?
-        // 현재 전체 유니티 크기 = (unitW * cols)
-        // 목표 전체 유니티 크기 = (puzzleWidth / ppu) ... 가 아니라
-        // UI가 아닌 World Space(Scene)상의 오브젝트로 배치할 것이므로, 
-        // BoardContainer의 픽셀 크기를 그대로 월드 좌표계 크기로 환산할 필요는 없습니다.
-        // 다만, RectTransform 안에서 로컬 좌표로 배치할 것입니다.
-        
-        // 핵심: 조각들의 localScale을 조절하여 전체 크기를 맞춥니다.
-        // (원본 텍스처 너비 / PPU) * localScale = (목표 너비)
-        // localScale = (목표 너비 * PPU) / 원본 텍스처 너비
-        // 목표 너비는 puzzleWidth(픽셀 단위 아님, Unity UI 단위)입니다.
-        // Canvas 모드에 따라 1 픽셀 = 1 유닛일 수도 아닐 수도 있습니다.
-        // 하지만 여기선 간단히 '비율'만 맞추면 됩니다.
-        
-        float finalScale = scaleFactor * 100f; // PPU 보정 (Sprite 기본값 100)
-        // 위 계산이 복잡하므로 단순화:
-        // 조각 하나가 차지해야 할 목표 너비/높이
-        float targetPieceW = puzzleWidth / _cols;
-        float targetPieceH = puzzleHeight / _rows;
-
-        // 시작점 계산 (컨테이너의 정중앙이 (0,0)이라고 가정 - Anchor가 Center일 때)
-        float startX = -(puzzleWidth / 2) + (targetPieceW / 2);
-        float startY = (puzzleHeight / 2) - (targetPieceH / 2);
+        // 퍼즐 시작점 (좌상단 기준, 중앙 정렬)
+        float startX = -((_cols * unitWidth) / 2) + (unitWidth / 2);
+        float startY = ((_rows * unitHeight) / 2) - (unitHeight / 2);
 
         int index = 0;
         for (int row = 0; row < _rows; row++)
         {
             for (int col = 0; col < _cols; col++)
             {
-                // 4. 스프라이트 잘라내기
-                float x = col * pieceW_pixel;
-                float y = (_rows - 1 - row) * pieceH_pixel;
-                Rect rect = new Rect(x, y, pieceW_pixel, pieceH_pixel);
+                // 스프라이트 잘라내기
+                float x = col * pieceWidth;
+                float y = (_rows - 1 - row) * pieceHeight;
+                Rect rect = new Rect(x, y, pieceWidth, pieceHeight);
                 Sprite newSprite = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
 
-                // 5. 오브젝트 생성 및 컴포넌트 설정
+                // 오브젝트 생성
                 GameObject newPiece = new GameObject($"Piece_{row}_{col}");
-                newPiece.transform.SetParent(transform, false); // false: 로컬 좌표 유지
+                newPiece.transform.parent = transform;
 
                 SpriteRenderer sr = newPiece.AddComponent<SpriteRenderer>();
                 sr.sprite = newSprite;
-                
-                // 레이어 순서 설정 (UI 위에 그려지게 하거나, Sorting Layer 조정 필요)
-                sr.sortingOrder = 10; 
+                sr.sortingOrder = 1;
 
                 newPiece.AddComponent<BoxCollider2D>();
                 DragController dragController = newPiece.AddComponent<DragController>();
 
-                // 6. 위치 및 스케일 설정
-                float posX = startX + (col * targetPieceW);
-                float posY = startY - (row * targetPieceH);
+                // 위치 설정
+                float posX = startX + (col * unitWidth);
+                float posY = startY - (row * unitHeight);
                 Vector3 correctPos = new Vector3(posX, posY, 0);
-
-                // 스케일 설정 (이미지 크기에 맞춰 조절)
-                // 현재 스프라이트의 Unit 크기 = pieceW_pixel / 100
-                // 목표 크기 = targetPieceW
-                // 배율 = targetPieceW / (pieceW_pixel / 100)
-                float scaleVal = targetPieceW / (pieceW_pixel / 100f);
-                newPiece.transform.localScale = new Vector3(scaleVal, scaleVal, 1f);
 
                 _slotPositions.Add(correctPos);
                 _piecesOnBoard.Add(dragController);
@@ -141,12 +76,33 @@ public class PuzzleBoardSetup : MonoBehaviour
                 dragController.board = this;
                 dragController.currentSlotIndex = index;
                 dragController.originalGridX = col;
-                dragController.originalGridY = row; 
+                dragController.originalGridY = row;
 
-                newPiece.transform.localPosition = correctPos;
+                newPiece.transform.position = correctPos;
                 index++;
             }
         }
+    }
+
+    void FitCameraToPuzzle(int rows, int cols)
+    {
+        if (_piecesOnBoard.Count == 0) return;
+
+        SpriteRenderer sr = _piecesOnBoard[0].GetComponent<SpriteRenderer>();
+        float pieceW = sr.bounds.size.x;
+        float pieceH = sr.bounds.size.y;
+
+        float totalW = cols * pieceW;
+        float totalH = rows * pieceH;
+
+        Camera mainCam = Camera.main;
+        float screenAspect = mainCam.aspect;
+
+        // 퍼즐이 화면에 맞도록 카메라 orthographicSize 계산
+        float sizeH = (totalH / 2) + padding;
+        float sizeW = ((totalW / screenAspect) / 2) + padding;
+
+        mainCam.orthographicSize = Mathf.Max(sizeH, sizeW);
     }
 
     void ShufflePieces()
