@@ -6,9 +6,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Unity 2D jigsaw puzzle game (wai_jigsaw). Players solve puzzles by dragging and connecting puzzle pieces. Written primarily in Korean.
 
-## Build & Run
+## Tech Stack
 
-Open the project in Unity Editor (2022.3 LTS or compatible). The main scene is `Assets/Scenes/SampleScene.unity`.
+- **Engine**: Unity 2022.3 LTS (2D Template)
+- **Language**: C# (.NET Standard 2.1)
+- **Rendering**: Unity 2D with SpriteRenderer, Orthographic Camera
+- **UI**: Unity UI (uGUI) with legacy Text/Image/Button components
+- **Physics**: 2D Colliders (BoxCollider2D) for mouse input detection
+- **Data Storage**: PlayerPrefs (level progress), ScriptableObject (level/puzzle configs)
+- **Input**: Legacy Input System (Input.mousePosition, OnMouseDown/Drag/Up)
+
+## Project Structure
+
+```
+Assets/
+├── Scenes/
+│   └── SampleScene.unity      # Main game scene
+├── Scripts/
+│   ├── GameManager.cs         # Singleton, game state & flow
+│   ├── UIManager.cs           # UI panel management
+│   ├── PuzzleBoardSetup.cs    # Puzzle creation & logic
+│   ├── DragController.cs      # Piece drag & group system
+│   ├── LevelDatabase.cs       # ScriptableObject for levels
+│   └── PuzzleData.cs          # ScriptableObject for puzzle images
+├── Resources/
+│   ├── MainLevelDB.asset      # LevelDatabase instance
+│   ├── Data_GrandCanyon.asset # PuzzleData instances
+│   └── Data_Pepe.asset
+├── Sprites/                   # Source images for puzzles
+└── UIManager.prefab           # UI prefab
+```
+
+## Coding Conventions
+
+### Naming
+- **Private fields**: underscore prefix (`_slotPositions`, `_piecesOnBoard`)
+- **Public properties/methods**: PascalCase (`CurrentLevel`, `OnPieceDropped`)
+- **Local variables**: camelCase (`targetRow`, `pieceWidth`)
+
+### Unity Patterns
+- **Singleton**: `Instance` property with `DontDestroyOnLoad` (GameManager)
+- **Inspector organization**: `[Header("Section")]` attributes for grouping
+- **Hidden fields**: `[HideInInspector]` for script-only public fields
+- **ScriptableObject**: `[CreateAssetMenu]` for data assets
+
+### Comments
+- Primary language: Korean (한국어)
+- Use `///` XML summary for public APIs
+- Section dividers: `// ====== Section Name ======`
+
+### Code Style
+```csharp
+// Private field with underscore
+private List<DragController> _piecesOnBoard;
+
+// Public property
+public int CurrentLevel { get; private set; }
+
+// Header for Inspector grouping
+[Header("Component References")]
+public UIManager uiManager;
+```
 
 ## Architecture
 
@@ -41,11 +99,11 @@ Open the project in Unity Editor (2022.3 LTS or compatible). The main scene is `
 
 ### Data Layer
 
-**LevelDatabase** (ScriptableObject at `Assets/Scripts/LevelDatabase.cs`)
+**LevelDatabase** (ScriptableObject)
 - Contains list of `LevelConfig` structs
 - Each config: levelNumber, PuzzleData reference, rows, cols
 
-**PuzzleData** (ScriptableObject at `Assets/Scripts/PuzzleData.cs`)
+**PuzzleData** (ScriptableObject)
 - imageId (string identifier)
 - sourceImage (Texture2D used to generate puzzle pieces)
 
@@ -77,3 +135,5 @@ Open the project in Unity Editor (2022.3 LTS or compatible). The main scene is `
 - 레벨 (level) = level
 - 퍼즐 (puzzle) = puzzle
 - 그룹 (group) = group of connected pieces
+- 슬롯 (slot) = grid position
+- 보드 (board) = puzzle board
