@@ -2,15 +2,21 @@
   "levels": [
     {
       "levelID": 1,
-      "imageName": "Pepe",
+      "imageName": "Level1",
       "rows": 3,
       "cols": 3
     },
     {
       "levelID": 2,
-      "imageName": "GrandCanyon",
+      "imageName": "Level2",
       "rows": 4,
       "cols": 4
+    },
+    {
+      "levelID": 3,
+      "imageName": "Level3",
+      "rows": 5,
+      "cols": 5
     }
   ]
 }
