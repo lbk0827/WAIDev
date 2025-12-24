@@ -64,6 +64,18 @@ public class GameManager : MonoBehaviour
         Debug.Log($"레벨 저장: {CurrentLevel}");
     }
 
+    /// <summary>
+    /// 현재 레벨의 게임을 시작합니다. (로비 -> 인게임)
+    /// </summary>
+    public void StartCurrentLevel()
+    {
+        if (uiManager != null && puzzleBoard != null)
+        {
+            uiManager.ShowPuzzle();
+            puzzleBoard.SetupCurrentLevel(CurrentLevel);
+        }
+    }
+
     public void ShowLevelIntro()
     {
         if (uiManager != null && levelDatabase != null)
@@ -91,11 +103,7 @@ public class GameManager : MonoBehaviour
     
     public void GoToNextLevel()
     {
-        // Result 화면에서 다음 레벨로 넘어갈 때
-        if (uiManager != null && puzzleBoard != null)
-        {
-            uiManager.ShowPuzzle();
-            puzzleBoard.SetupCurrentLevel(CurrentLevel);
-        }
+        // Result 화면에서 다음 레벨로 넘어갈 때도 동일하게 StartCurrentLevel 사용
+        StartCurrentLevel();
     }
 }

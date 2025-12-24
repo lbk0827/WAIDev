@@ -1,5 +1,6 @@
 using UnityEngine;
-using UnityEngine.UI; // UI 컴포넌트(Text, Button 등)를 사용하기 위해 필요
+using UnityEngine.UI;
+using TMPro; // TextMeshPro 네임스페이스 추가
 
 /// <summary>
 /// 게임의 전체 UI 패널(화면)들을 관리하고, 상태에 따라 적절한 UI를 보여줍니다.
@@ -8,41 +9,42 @@ public class UIManager : MonoBehaviour
 {
     [Header("Game Panels")]
     public GameObject homePanel;
-    public GameObject levelIntroPanel;
-    public GameObject puzzlePanel; // 퍼즐 조각들이 놓일 컨테이너
+    public GameObject levelIntroPanel; // (사용 안 할 수도 있지만 일단 유지)
+    public GameObject puzzlePanel;
     public GameObject resultPanel;
 
     [Header("Home Panel UI")]
-    public Text homeLevelText;
-    public Button homeStartButton;
+    public TMP_Text homeTitleText;      // 타이틀 텍스트
+    public Button homeSettingsButton;   // 설정 버튼
+    public Button homePlayButton;       // 플레이 버튼
+    public TMP_Text homePlayButtonText; // 플레이 버튼 내부 텍스트 (레벨 표시용)
 
     [Header("Level Intro Panel UI")]
-    public Text introLevelText;
+    public TMP_Text introLevelText;
     public Image introImagePreview;
-    public Text introPiecesText;
+    public TMP_Text introPiecesText;
     public Button introPlayButton;
 
     [Header("Result Panel UI")]
-    public Text resultLevelText;
+    public TMP_Text resultLevelText;
     public Button resultNextButton;
 
     private void Start()
     {
-        // 모든 버튼에 대한 이벤트 리스너를 설정합니다.
-        if (homeStartButton != null)
-            homeStartButton.onClick.AddListener(OnHomeStartClicked);
-        else
-            Debug.LogError("UIManager: Home Start Button is not assigned in the Inspector!");
+        // --- Home Panel Events ---
+        if (homePlayButton != null)
+            homePlayButton.onClick.AddListener(OnHomePlayClicked);
+        
+        if (homeSettingsButton != null)
+            homeSettingsButton.onClick.AddListener(OnHomeSettingsClicked);
 
+        // --- Intro Panel Events ---
         if (introPlayButton != null)
             introPlayButton.onClick.AddListener(OnIntroPlayClicked);
-        else
-            Debug.LogError("UIManager: Intro Play Button is not assigned in the Inspector!");
 
+        // --- Result Panel Events ---
         if (resultNextButton != null)
             resultNextButton.onClick.AddListener(OnResultNextClicked);
-        else
-            Debug.LogError("UIManager: Result Next Button is not assigned in the Inspector!");
     }
 
     /// <summary>
@@ -50,48 +52,13 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowHome()
     {
-        if (homePanel != null) homePanel.SetActive(true);
-        else Debug.LogError("UIManager: Home Panel이 연결되지 않았습니다!");
+        ActivatePanel(homePanel);
 
-        if (levelIntroPanel != null) levelIntroPanel.SetActive(false);
-        else Debug.LogError("UIManager: Level Intro Panel이 연결되지 않았습니다!");
-
-        if (puzzlePanel != null) puzzlePanel.SetActive(false);
-        else Debug.LogError("UIManager: Puzzle Panel이 연결되지 않았습니다!");
-
-        if (resultPanel != null) resultPanel.SetActive(false);
-        else Debug.LogError("UIManager: Result Panel이 연결되지 않았습니다!");
-
-        // 현재 레벨 텍스트를 업데이트합니다.
-        if (GameManager.Instance != null && homeLevelText != null)
+        // 플레이 버튼에 현재 레벨 표시 (예: "플레이\n레벨 2")
+        if (GameManager.Instance != null && homePlayButtonText != null)
         {
-            homeLevelText.text = $"LEVEL {GameManager.Instance.CurrentLevel}";
+            homePlayButtonText.text = $"플레이\n<size=60%>레벨 {GameManager.Instance.CurrentLevel}</size>";
         }
-        else if (homeLevelText == null)
-        {
-            Debug.LogWarning("UIManager: Home Level Text가 연결되지 않았습니다.");
-        }
-    }
-
-    /// <summary>
-    /// 레벨 인트로 화면을 보여줍니다.
-    /// </summary>
-    public void ShowLevelIntro(LevelConfig config)
-    {
-        if (homePanel != null) homePanel.SetActive(false);
-        if (levelIntroPanel != null) levelIntroPanel.SetActive(true);
-        if (puzzlePanel != null) puzzlePanel.SetActive(false);
-        if (resultPanel != null) resultPanel.SetActive(false);
-
-        // 레벨 정보를 UI에 표시합니다.
-        if (introLevelText != null) introLevelText.text = $"LEVEL {config.levelNumber}";
-        if (introImagePreview != null)
-        {
-            introImagePreview.sprite = Sprite.Create(config.puzzleData.sourceImage, 
-                new Rect(0, 0, config.puzzleData.sourceImage.width, config.puzzleData.sourceImage.height), 
-                new Vector2(0.5f, 0.5f));
-        }
-        if (introPiecesText != null) introPiecesText.text = $"{config.rows * config.cols} Pieces";
     }
 
     /// <summary>
@@ -99,10 +66,7 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowPuzzle()
     {
-        if (homePanel != null) homePanel.SetActive(false);
-        if (levelIntroPanel != null) levelIntroPanel.SetActive(false);
-        if (puzzlePanel != null) puzzlePanel.SetActive(true);
-        if (resultPanel != null) resultPanel.SetActive(false);
+        ActivatePanel(puzzlePanel);
     }
     
     /// <summary>
@@ -110,10 +74,7 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowResult()
     {
-        if (homePanel != null) homePanel.SetActive(false);
-        if (levelIntroPanel != null) levelIntroPanel.SetActive(false);
-        if (puzzlePanel != null) puzzlePanel.SetActive(false);
-        if (resultPanel != null) resultPanel.SetActive(true);
+        ActivatePanel(resultPanel);
 
         if (resultLevelText != null)
         {
@@ -121,23 +82,46 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 특정 패널만 활성화하고 나머지는 끕니다.
+    /// </summary>
+    private void ActivatePanel(GameObject targetPanel)
+    {
+        if (homePanel != null) homePanel.SetActive(targetPanel == homePanel);
+        if (levelIntroPanel != null) levelIntroPanel.SetActive(targetPanel == levelIntroPanel);
+        if (puzzlePanel != null) puzzlePanel.SetActive(targetPanel == puzzlePanel);
+        if (resultPanel != null) resultPanel.SetActive(targetPanel == resultPanel);
+    }
+
+    // --- 레벨 인트로 관련 (필요 시 사용) ---
+    public void ShowLevelIntro(LevelConfig config)
+    {
+        ActivatePanel(levelIntroPanel);
+        if (introLevelText != null) introLevelText.text = $"LEVEL {config.levelNumber}";
+        // 이미지 프리뷰 로직...
+    }
+
     // --- 버튼 이벤트 핸들러 ---
 
-    private void OnHomeStartClicked()
+    private void OnHomePlayClicked()
     {
-        // GameManager를 통해 Level Intro 화면을 띄우도록 요청
-        GameManager.Instance.ShowLevelIntro();
+        // 기획 플로우: 로비 플레이 버튼 -> 바로 게임 시작
+        GameManager.Instance.StartCurrentLevel();
+    }
+
+    private void OnHomeSettingsClicked()
+    {
+        Debug.Log("설정 버튼 클릭됨 (구현 예정)");
+        // 여기에 설정 팝업을 띄우는 로직 추가 가능
     }
 
     private void OnIntroPlayClicked()
     {
-        // GameManager를 통해 퍼즐 플레이를 시작하도록 요청
-        GameManager.Instance.GoToNextLevel();
+        GameManager.Instance.StartCurrentLevel();
     }
 
     private void OnResultNextClicked()
     {
-        // GameManager를 통해 홈 화면으로 돌아가도록 요청
         GameManager.Instance.GoToHome();
     }
 }
