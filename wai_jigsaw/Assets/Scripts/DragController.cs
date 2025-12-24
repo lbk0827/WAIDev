@@ -35,7 +35,12 @@ public class DragController : MonoBehaviour
     void Start()
     {
         _cameraZDepth = Camera.main.transform.position.z;
-        CreateBorders(); // 테두리 생성
+
+        // 테두리가 아직 생성되지 않았으면 생성
+        if (_borders[0] == null)
+        {
+            CreateBorders();
+        }
     }
 
     private void OnMouseDown()
@@ -136,8 +141,20 @@ public class DragController : MonoBehaviour
     // 인접한 짝과 결합되었을 때 테두리 숨기기
     public void UpdateVisuals()
     {
+        // Start() 전에 호출될 수 있으므로 테두리가 없으면 먼저 생성
+        if (_borders[0] == null)
+        {
+            CreateBorders();
+        }
+
         // 기본적으로 다 켜고
-        for(int i=0; i<4; i++) _borders[i].SetActive(true);
+        for (int i = 0; i < 4; i++)
+        {
+            if (_borders[i] != null)
+            {
+                _borders[i].SetActive(true);
+            }
+        }
 
         // 그룹 내의 다른 조각들과 관계를 확인하여 겹치는 부분 끄기
         // 로직은 PieceGroup이나 Board에서 호출하여 처리
@@ -146,8 +163,16 @@ public class DragController : MonoBehaviour
     public void HideBorder(int direction)
     {
         // 0:Top, 1:Bottom, 2:Left, 3:Right
-        if(direction >= 0 && direction < 4)
+        // Start() 전에 호출될 수 있으므로 테두리가 없으면 먼저 생성
+        if (_borders[0] == null)
+        {
+            CreateBorders();
+        }
+
+        if (direction >= 0 && direction < 4 && _borders[direction] != null)
+        {
             _borders[direction].SetActive(false);
+        }
     }
     
     // 그룹에서 강제로 탈퇴 (스왑 당할 때 등)

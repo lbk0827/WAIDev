@@ -124,6 +124,47 @@ public class PuzzleBoardSetup : MonoBehaviour
             _piecesOnBoard[i].currentSlotIndex = i;
             _piecesOnBoard[i].UpdatePosition(_slotPositions[i]);
         }
+
+        // [중요] 셔플 후 이미 인접한 정답 조각들을 그룹화
+        CheckInitialConnections();
+    }
+
+    /// <summary>
+    /// 셔플 후 초기 상태에서 이미 맞춰진 조각들을 그룹화합니다.
+    /// </summary>
+    void CheckInitialConnections()
+    {
+        // 모든 조각에 대해 연결 체크
+        HashSet<DragController> processed = new HashSet<DragController>();
+
+        foreach (var piece in _piecesOnBoard)
+        {
+            if (processed.Contains(piece)) continue;
+
+            // 이 조각의 그룹에 대해 연결 체크
+            CheckConnections(piece.group);
+
+            // 처리된 조각들 기록
+            foreach (var member in piece.group.pieces)
+            {
+                processed.Add(member);
+            }
+        }
+
+        Debug.Log($"초기 연결 체크 완료. 그룹 수: {CountGroups()}");
+    }
+
+    /// <summary>
+    /// 현재 보드의 그룹 수를 반환합니다. (디버그용)
+    /// </summary>
+    int CountGroups()
+    {
+        HashSet<PieceGroup> groups = new HashSet<PieceGroup>();
+        foreach (var piece in _piecesOnBoard)
+        {
+            groups.Add(piece.group);
+        }
+        return groups.Count;
     }
     
     public void OnPieceDragStart(DragController piece)
