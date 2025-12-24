@@ -11,7 +11,11 @@ public class DragController : MonoBehaviour
     [HideInInspector] public int currentSlotIndex;    // 현재 위치한 슬롯 인덱스 (0 ~ N)
     [HideInInspector] public int originalGridX;       // 정답 그리드 좌표 X
     [HideInInspector] public int originalGridY;       // 정답 그리드 좌표 Y
-    
+
+    // ====== 조각 크기 정보 (그룹화 시 위치 조정용) ======
+    [HideInInspector] public float pieceWidth;
+    [HideInInspector] public float pieceHeight;
+
     // ====== 그룹 시스템 ======
     public PieceGroup group; // 내가 속한 그룹
 
@@ -213,6 +217,39 @@ public class PieceGroup
             pieces.Add(piece);
             piece.group = this;
         }
+    }
+
+    /// <summary>
+    /// 두 그룹을 병합하고, 병합되는 그룹의 조각들을 스냅하여 위치를 조정합니다.
+    /// anchorPiece: 현재 그룹에서 기준이 되는 조각
+    /// connectingPiece: 병합 대상 그룹에서 anchorPiece와 인접한 조각
+    /// </summary>
+    public void MergeGroupWithSnap(PieceGroup otherGroup, DragController anchorPiece, DragController connectingPiece)
+    {
+        if (otherGroup == this) return;
+
+        // anchor 조각을 기준으로 connecting 조각이 있어야 할 위치 계산
+        int gridDeltaX = connectingPiece.originalGridX - anchorPiece.originalGridX;
+        int gridDeltaY = connectingPiece.originalGridY - anchorPiece.originalGridY;
+
+        // spacing 없이 조각이 붙어야 하는 위치
+        Vector3 expectedConnectingPos = anchorPiece.transform.position + new Vector3(
+            gridDeltaX * anchorPiece.pieceWidth,
+            -gridDeltaY * anchorPiece.pieceHeight, // Y는 그리드 좌표와 반대 방향
+            0
+        );
+
+        // 현재 connecting 조각의 위치와의 차이 (이동해야 할 양)
+        Vector3 positionOffset = expectedConnectingPos - connectingPiece.transform.position;
+
+        // 병합 대상 그룹의 모든 조각을 이동시키고 현재 그룹에 추가
+        foreach (var piece in otherGroup.pieces)
+        {
+            piece.transform.position += positionOffset;
+            piece.group = this;
+            pieces.Add(piece);
+        }
+        otherGroup.pieces.Clear();
     }
 
     public void MergeGroup(PieceGroup otherGroup)
