@@ -434,4 +434,79 @@ public class PuzzleBoardSetup : MonoBehaviour
         _piecesOnBoard.Clear();
         _slotPositions.Clear();
     }
+
+    // ====== 디버그 기능 ======
+
+    /// <summary>
+    /// [디버그] 퍼즐을 자동으로 완성합니다.
+    /// Unity 에디터에서 Inspector 우클릭 메뉴 또는 키보드로 호출
+    /// </summary>
+    [ContextMenu("Debug: Auto Complete Puzzle")]
+    public void DebugAutoComplete()
+    {
+        if (_piecesOnBoard.Count == 0)
+        {
+            Debug.LogWarning("퍼즐이 생성되지 않았습니다.");
+            return;
+        }
+
+        Debug.Log("🔧 디버그: 퍼즐 자동 완성 시작...");
+
+        // 모든 조각을 원래 위치로 이동
+        foreach (var piece in _piecesOnBoard)
+        {
+            int correctIndex = piece.originalGridY * _cols + piece.originalGridX;
+            piece.currentSlotIndex = correctIndex;
+            piece.UpdatePosition(_slotPositions[correctIndex]);
+        }
+
+        // 보드 상태 재정렬
+        List<DragController> sortedPieces = new List<DragController>(_piecesOnBoard);
+        sortedPieces.Sort((a, b) =>
+        {
+            int indexA = a.originalGridY * _cols + a.originalGridX;
+            int indexB = b.originalGridY * _cols + b.originalGridX;
+            return indexA.CompareTo(indexB);
+        });
+
+        for (int i = 0; i < sortedPieces.Count; i++)
+        {
+            _piecesOnBoard[i] = sortedPieces[i];
+        }
+
+        // 모든 조각을 하나의 그룹으로 합치기
+        PieceGroup mainGroup = _piecesOnBoard[0].group;
+        for (int i = 1; i < _piecesOnBoard.Count; i++)
+        {
+            if (_piecesOnBoard[i].group != mainGroup)
+            {
+                mainGroup.MergeGroup(_piecesOnBoard[i].group);
+            }
+        }
+
+        // 테두리 업데이트 (인접한 조각 간 테두리 숨기기)
+        foreach (var piece in _piecesOnBoard)
+        {
+            CheckNeighbor(piece, 0, -1);
+            CheckNeighbor(piece, 0, 1);
+            CheckNeighbor(piece, -1, 0);
+            CheckNeighbor(piece, 1, 0);
+        }
+
+        Debug.Log("🔧 디버그: 퍼즐 자동 완성됨. 완료 체크 실행...");
+
+        // 완료 체크
+        CheckCompletion();
+    }
+
+    private void Update()
+    {
+        // 디버그 단축키: Shift + C = 자동 완성
+        #if UNITY_EDITOR
+        if (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.C))
+        {
+            DebugAutoComplete();
+        }
+        #endif
+    }
 }

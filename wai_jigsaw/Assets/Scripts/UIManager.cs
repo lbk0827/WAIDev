@@ -16,8 +16,11 @@ public class UIManager : MonoBehaviour
     [Header("Home Panel UI")]
     public TMP_Text homeTitleText;      // 타이틀 텍스트
     public Button homeSettingsButton;   // 설정 버튼
-    public Button homePlayButton;       // 플레이 버튼
-    public TMP_Text homePlayButtonText; // 플레이 버튼 내부 텍스트 (레벨 표시용)
+    public Button homePlayButton;       // 플레이 버튼 (기존 방식용, 없어도 됨)
+    public TMP_Text homePlayButtonText; // 플레이 버튼 내부 텍스트
+
+    [Header("Lobby Grid")]
+    public LobbyGridManager lobbyGridManager; // 5x5 레벨 그리드
 
     [Header("Level Intro Panel UI")]
     public TMP_Text introLevelText;
@@ -54,7 +57,13 @@ public class UIManager : MonoBehaviour
     {
         ActivatePanel(homePanel);
 
-        // 플레이 버튼에 현재 레벨 표시 (예: "플레이\n레벨 2")
+        // 로비 그리드 설정 (5x5 레벨 카드)
+        if (lobbyGridManager != null && GameManager.Instance != null)
+        {
+            lobbyGridManager.SetupGrid(GameManager.Instance.CurrentLevel);
+        }
+
+        // 플레이 버튼 텍스트 업데이트 (기존 방식 호환용)
         if (GameManager.Instance != null && homePlayButtonText != null)
         {
             homePlayButtonText.text = $"플레이\n<size=60%>레벨 {GameManager.Instance.CurrentLevel}</size>";
