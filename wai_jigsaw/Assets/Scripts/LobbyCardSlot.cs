@@ -89,7 +89,8 @@ public class LobbyCardSlot : MonoBehaviour
         if (_isCleared)
         {
             // 클리어 상태: 앞면 표시 (조각 이미지)
-            if (animate && !_isFlipping)
+            // 비활성화 상태면 코루틴 실행 불가 → 즉시 전환
+            if (animate && !_isFlipping && gameObject.activeInHierarchy)
             {
                 StartCoroutine(FlipToFront());
             }
