@@ -1,23 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
-
-// ====== JSON 파싱용 데이터 클래스 ======
-
-[System.Serializable]
-public class LevelGroupItem
-{
-    public int groupId;        // 그룹 ID (1, 2, 3...)
-    public int startLevel;     // 시작 레벨 (1, 26, 51...)
-    public int endLevel;       // 끝 레벨 (25, 50, 75...)
-    public string rewardImage; // 보상 이미지 경로 (Resources 폴더 기준)
-}
-
-[System.Serializable]
-public class LevelGroupDataWrapper
-{
-    public List<LevelGroupItem> groups;
-}
+using WaiJigsaw.Data;
 
 /// <summary>
 /// 레벨 그룹 데이터를 관리합니다.
@@ -25,52 +8,22 @@ public class LevelGroupDataWrapper
 /// </summary>
 public class LevelGroupManager : MonoBehaviour
 {
-    // JSON 파일 이름 (Resources 폴더 내)
-    private const string JSON_FILE_NAME = "LevelGroupData";
     private const int GRID_SIZE = 5; // 5x5 그리드
 
-    private LevelGroupDataWrapper _loadedData;
     private Dictionary<int, Sprite[]> _slicedSpritesCache = new Dictionary<int, Sprite[]>();
 
     private void Awake()
     {
-        LoadGroupData();
-    }
-
-    /// <summary>
-    /// JSON에서 그룹 데이터를 로드합니다.
-    /// </summary>
-    private void LoadGroupData()
-    {
-        TextAsset jsonFile = Resources.Load<TextAsset>(JSON_FILE_NAME);
-        if (jsonFile == null)
-        {
-            Debug.LogError($"LevelGroupManager: '{JSON_FILE_NAME}.json' 파일을 찾을 수 없습니다!");
-            return;
-        }
-
-        _loadedData = JsonUtility.FromJson<LevelGroupDataWrapper>(jsonFile.text);
-        Debug.Log($"LevelGroupManager: {_loadedData.groups.Count}개의 그룹 데이터를 로드했습니다.");
+        // LevelGroupTable 초기화
+        LevelGroupTable.Load();
     }
 
     /// <summary>
     /// 특정 레벨이 속한 그룹 정보를 반환합니다.
     /// </summary>
-    public LevelGroupItem GetGroupForLevel(int levelNumber)
+    public LevelGroupTableRecord GetGroupForLevel(int levelNumber)
     {
-        if (_loadedData == null) LoadGroupData();
-
-        foreach (var group in _loadedData.groups)
-        {
-            if (levelNumber >= group.startLevel && levelNumber <= group.endLevel)
-            {
-                return group;
-            }
-        }
-
-        // 해당 그룹이 없으면 첫 번째 그룹 반환
-        Debug.LogWarning($"레벨 {levelNumber}에 해당하는 그룹이 없습니다. 그룹 1을 반환합니다.");
-        return _loadedData.groups[0];
+        return LevelGroupTable.GetGroupForLevel(levelNumber);
     }
 
     /// <summary>
@@ -78,19 +31,19 @@ public class LevelGroupManager : MonoBehaviour
     /// </summary>
     /// <param name="group">분할할 그룹 정보</param>
     /// <returns>25개의 스프라이트 배열 (좌상단부터 우하단 순서)</returns>
-    public Sprite[] GetSlicedSprites(LevelGroupItem group)
+    public Sprite[] GetSlicedSprites(LevelGroupTableRecord group)
     {
         // 이미 캐싱되어 있다면 캐시 반환
-        if (_slicedSpritesCache.ContainsKey(group.groupId))
+        if (_slicedSpritesCache.ContainsKey(group.GroupID))
         {
-            return _slicedSpritesCache[group.groupId];
+            return _slicedSpritesCache[group.GroupID];
         }
 
         // 텍스처 로드
-        Texture2D texture = LoadRewardTexture(group.rewardImage);
+        Texture2D texture = LoadRewardTexture(group.ImageName);
         if (texture == null)
         {
-            Debug.LogError($"보상 이미지를 로드할 수 없습니다: {group.rewardImage}");
+            Debug.LogError($"보상 이미지를 로드할 수 없습니다: {group.ImageName}");
             return null;
         }
 
@@ -98,7 +51,7 @@ public class LevelGroupManager : MonoBehaviour
         Sprite[] sprites = SliceTexture(texture, GRID_SIZE, GRID_SIZE);
 
         // 캐시에 저장
-        _slicedSpritesCache[group.groupId] = sprites;
+        _slicedSpritesCache[group.GroupID] = sprites;
 
         return sprites;
     }
@@ -162,17 +115,16 @@ public class LevelGroupManager : MonoBehaviour
     /// <summary>
     /// 그룹 내에서 특정 레벨의 인덱스를 반환합니다. (0 ~ 24)
     /// </summary>
-    public int GetLevelIndexInGroup(int levelNumber, LevelGroupItem group)
+    public int GetLevelIndexInGroup(int levelNumber, LevelGroupTableRecord group)
     {
-        return levelNumber - group.startLevel;
+        return levelNumber - group.StartLevel;
     }
 
     /// <summary>
     /// 모든 그룹 데이터를 반환합니다.
     /// </summary>
-    public List<LevelGroupItem> GetAllGroups()
+    public List<LevelGroupTableRecord> GetAllGroups()
     {
-        if (_loadedData == null) LoadGroupData();
-        return _loadedData.groups;
+        return LevelGroupTable.GetAll();
     }
 }

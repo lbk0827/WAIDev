@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using WaiJigsaw.Data;
 
 /// <summary>
 /// 로비의 5x5 레벨 그리드를 생성하고 관리합니다.
@@ -19,7 +20,7 @@ public class LobbyGridManager : MonoBehaviour
     [SerializeField] private bool _showDebugInfo = true;
 
     private List<LobbyCardSlot> _cardSlots = new List<LobbyCardSlot>();
-    private LevelGroupItem _currentGroup;
+    private LevelGroupTableRecord _currentGroup;
     private int _currentLevel;
 
     private const int GRID_SIZE = 5;
@@ -37,8 +38,8 @@ public class LobbyGridManager : MonoBehaviour
 
         if (_showDebugInfo)
         {
-            Debug.Log($"LobbyGridManager: 그룹 {_currentGroup.groupId} 로드 " +
-                      $"(레벨 {_currentGroup.startLevel}~{_currentGroup.endLevel})");
+            Debug.Log($"LobbyGridManager: 그룹 {_currentGroup.GroupID} 로드 " +
+                      $"(레벨 {_currentGroup.StartLevel}~{_currentGroup.EndLevel})");
         }
 
         // 2. 기존 카드 슬롯 정리
@@ -56,7 +57,7 @@ public class LobbyGridManager : MonoBehaviour
         // 4. 25개의 카드 슬롯 생성
         for (int i = 0; i < CARDS_PER_GROUP; i++)
         {
-            int levelNumber = _currentGroup.startLevel + i;
+            int levelNumber = _currentGroup.StartLevel + i;
             CreateCardSlot(levelNumber, pieceSprites[i]);
         }
 
@@ -197,7 +198,7 @@ public class LobbyGridManager : MonoBehaviour
         // 현재 표시 중인 그룹에 해당하는 레벨인지 확인
         if (_currentGroup == null) return;
 
-        int index = levelNumber - _currentGroup.startLevel;
+        int index = levelNumber - _currentGroup.StartLevel;
         if (index >= 0 && index < _cardSlots.Count)
         {
             _cardSlots[index].SetCleared();
