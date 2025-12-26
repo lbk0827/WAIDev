@@ -334,6 +334,9 @@ public class PuzzleBoardSetup : MonoBehaviour
             }
         }
 
+        // 모서리 업데이트
+        UpdateAllPieceCorners();
+
         Debug.Log($"초기 연결 체크 완료. 그룹 수: {CountGroups()}");
     }
 
@@ -505,7 +508,22 @@ public class PuzzleBoardSetup : MonoBehaviour
 
         // 5. 결합 및 완료 체크 (연쇄 병합 포함)
         CheckConnectionsRecursive(rootPiece.group);
+
+        // 6. 모든 조각의 모서리 업데이트
+        UpdateAllPieceCorners();
+
         CheckCompletion();
+    }
+
+    /// <summary>
+    /// 모든 조각의 둥근 모서리 가시성을 업데이트합니다.
+    /// </summary>
+    void UpdateAllPieceCorners()
+    {
+        foreach (var piece in _piecesOnBoard)
+        {
+            piece.UpdateCornersBasedOnGroup();
+        }
     }
 
     void ReturnGroupToCurrentSlots(PieceGroup group)

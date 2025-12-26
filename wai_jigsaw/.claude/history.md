@@ -32,6 +32,29 @@
 - `Assets/Resources/Sprites/Card_Back_Basic.png` - 카드 뒷면 이미지 필요
   - CardTable.json에서 경로 지정: "Sprites/Card_Back_Basic"
 
+### 둥근 모서리 시스템 구현
+
+#### DragController 수정
+- `_cornerObjects[4]`, `_cornerRenderers[4]` - 4개 모서리 오브젝트
+- `InitializeRoundedCorners()` - 모서리 스프라이트 초기화
+- `CreateCornerSprite()` - 프로그래매틱 모서리 스프라이트 생성
+- `UpdateCornersBasedOnGroup()` - 그룹 내 위치 기반 모서리 가시성 업데이트
+- `SetCornerVisible()` - 개별 모서리 표시/숨김
+
+#### 모서리 가시성 로직
+- 개별 조각: 4개 모서리 모두 표시
+- 그룹화 시: 인접 조각 방향의 모서리 숨김
+  - 오른쪽 인접 → TopRight, BottomRight 숨김
+  - 왼쪽 인접 → TopLeft, BottomLeft 숨김
+  - 위 인접 → TopLeft, TopRight 숨김
+  - 아래 인접 → BottomLeft, BottomRight 숨김
+  - 대각선 인접 → 해당 모서리 숨김
+
+#### PuzzleBoardSetup 수정
+- `UpdateAllPieceCorners()` - 모든 조각의 모서리 업데이트
+- `CheckInitialConnections()` 후 모서리 업데이트 호출
+- `OnPieceDropped()` 후 모서리 업데이트 호출
+
 ---
 
 ## 2024-12-26

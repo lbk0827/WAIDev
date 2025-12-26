@@ -28,6 +28,12 @@ public class DragController : MonoBehaviour
     private bool _isFlipped = false;            // true = 앞면(퍼즐), false = 뒷면
     private bool _canDrag = false;              // 드래그 가능 여부 (인트로 중에는 불가)
 
+    // ====== 둥근 모서리 시스템 ======
+    // 0: TopLeft, 1: TopRight, 2: BottomLeft, 3: BottomRight
+    private GameObject[] _cornerObjects = new GameObject[4];
+    private SpriteRenderer[] _cornerRenderers = new SpriteRenderer[4];
+    private float _cornerRadius = 0.1f; // 모서리 반지름
+
     private Vector3 _dragOffset;
     private float _cameraZDepth;
     private SpriteRenderer _spriteRenderer;
@@ -227,20 +233,27 @@ public class DragController : MonoBehaviour
         float width = _spriteRenderer.bounds.size.x;
         float height = _spriteRenderer.bounds.size.y;
 
+        // 프레임 크기 (퍼즐보다 약간 크게)
+        float frameWidth = width + (frameThickness * 2);
+        float frameHeight = height + (frameThickness * 2);
+
         // 1. 카드 프레임 생성 (퍼즐 이미지 뒤에 깔리는 배경)
         GameObject frameObj = new GameObject("CardFrame");
         frameObj.transform.SetParent(transform, false);
         frameObj.transform.localPosition = Vector3.zero;
 
         _cardFrameRenderer = frameObj.AddComponent<SpriteRenderer>();
-        _cardFrameRenderer.sprite = CreatePixelSprite();
+        Sprite frameSprite = CreatePixelSprite();
+        _cardFrameRenderer.sprite = frameSprite;
         _cardFrameRenderer.color = new Color(0.95f, 0.92f, 0.85f); // 크림색 카드 배경
         _cardFrameRenderer.sortingOrder = 0; // 퍼즐 이미지보다 아래
 
-        // 프레임 크기 (퍼즐보다 약간 크게)
-        float frameWidth = width + (frameThickness * 2);
-        float frameHeight = height + (frameThickness * 2);
-        frameObj.transform.localScale = new Vector3(frameWidth, frameHeight, 1);
+        // 스프라이트 원본 크기 기준으로 스케일 계산
+        float frameSpriteWidth = frameSprite.bounds.size.x;
+        float frameSpriteHeight = frameSprite.bounds.size.y;
+        float frameScaleX = frameWidth / frameSpriteWidth;
+        float frameScaleY = frameHeight / frameSpriteHeight;
+        frameObj.transform.localScale = new Vector3(frameScaleX, frameScaleY, 1);
 
         // 2. 카드 뒷면 생성 (프레임 위, 퍼즐 이미지 위에 덮음)
         GameObject backObj = new GameObject("CardBack");
@@ -248,19 +261,26 @@ public class DragController : MonoBehaviour
         backObj.transform.localPosition = Vector3.zero;
 
         _cardBackRenderer = backObj.AddComponent<SpriteRenderer>();
+        Sprite backSprite;
         if (cardBackSprite != null)
         {
-            _cardBackRenderer.sprite = cardBackSprite;
+            backSprite = cardBackSprite;
+            _cardBackRenderer.sprite = backSprite;
         }
         else
         {
-            _cardBackRenderer.sprite = CreatePixelSprite();
+            backSprite = CreatePixelSprite();
+            _cardBackRenderer.sprite = backSprite;
             _cardBackRenderer.color = new Color(0.2f, 0.3f, 0.5f); // 기본 파란색
         }
         _cardBackRenderer.sortingOrder = 3; // 퍼즐 이미지와 테두리 위에
 
-        // 뒷면 크기를 프레임과 동일하게
-        backObj.transform.localScale = new Vector3(frameWidth, frameHeight, 1);
+        // 스프라이트 원본 크기 기준으로 스케일 계산 (프레임과 동일한 크기로)
+        float backSpriteWidth = backSprite.bounds.size.x;
+        float backSpriteHeight = backSprite.bounds.size.y;
+        float backScaleX = frameWidth / backSpriteWidth;
+        float backScaleY = frameHeight / backSpriteHeight;
+        backObj.transform.localScale = new Vector3(backScaleX, backScaleY, 1);
 
         // 초기 상태: 뒷면이 보이는 상태
         _isFlipped = false;
@@ -272,6 +292,9 @@ public class DragController : MonoBehaviour
             if (_borders[i] != null)
                 _borders[i].SetActive(false);
         }
+
+        // 둥근 모서리 초기화
+        InitializeRoundedCorners(frameThickness * 0.8f);
     }
 
     /// <summary>
@@ -393,6 +416,193 @@ public class DragController : MonoBehaviour
     /// 카드 프레임 렌더러를 반환합니다.
     /// </summary>
     public SpriteRenderer CardFrameRenderer => _cardFrameRenderer;
+
+    // ====== 둥근 모서리 메서드 ======
+
+    /// <summary>
+    /// 둥근 모서리를 초기화합니다.
+    /// </summary>
+    public void InitializeRoundedCorners(float cornerRadius)
+    {
+        _cornerRadius = cornerRadius;
+
+        if (_spriteRenderer == null)
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+
+        float width = _spriteRenderer.bounds.size.x;
+        float height = _spriteRenderer.bounds.size.y;
+
+        // 모서리 위치 계산
+        Vector3[] cornerPositions = new Vector3[]
+        {
+            new Vector3(-width / 2, height / 2, 0),   // TopLeft
+            new Vector3(width / 2, height / 2, 0),    // TopRight
+            new Vector3(-width / 2, -height / 2, 0),  // BottomLeft
+            new Vector3(width / 2, -height / 2, 0)    // BottomRight
+        };
+
+        // 모서리 회전 (각 모서리가 올바른 방향을 향하도록)
+        float[] cornerRotations = new float[] { 0f, 90f, -90f, 180f };
+
+        Sprite cornerSprite = CreateCornerSprite(cornerRadius);
+
+        for (int i = 0; i < 4; i++)
+        {
+            GameObject cornerObj = new GameObject($"Corner_{i}");
+            cornerObj.transform.SetParent(transform, false);
+            cornerObj.transform.localPosition = cornerPositions[i];
+            cornerObj.transform.localRotation = Quaternion.Euler(0, 0, cornerRotations[i]);
+
+            SpriteRenderer sr = cornerObj.AddComponent<SpriteRenderer>();
+            sr.sprite = cornerSprite;
+            sr.color = _cardFrameRenderer != null ? _cardFrameRenderer.color : new Color(0.95f, 0.92f, 0.85f);
+            sr.sortingOrder = 4; // 가장 위에
+
+            _cornerObjects[i] = cornerObj;
+            _cornerRenderers[i] = sr;
+        }
+    }
+
+    /// <summary>
+    /// 둥근 모서리 스프라이트를 생성합니다.
+    /// </summary>
+    private Sprite CreateCornerSprite(float radius)
+    {
+        int pixelRadius = Mathf.Max(8, Mathf.RoundToInt(radius * 100)); // PPU=100 기준
+        Texture2D texture = new Texture2D(pixelRadius, pixelRadius);
+        texture.filterMode = FilterMode.Bilinear;
+
+        Color transparent = new Color(1, 1, 1, 0);
+        Color solid = Color.white;
+
+        // 모든 픽셀을 투명으로 초기화
+        for (int x = 0; x < pixelRadius; x++)
+        {
+            for (int y = 0; y < pixelRadius; y++)
+            {
+                texture.SetPixel(x, y, transparent);
+            }
+        }
+
+        // 원의 1/4 부분만 채우기 (좌상단 모서리 기준)
+        for (int x = 0; x < pixelRadius; x++)
+        {
+            for (int y = 0; y < pixelRadius; y++)
+            {
+                // 원의 중심에서의 거리 계산
+                float dx = pixelRadius - x;
+                float dy = pixelRadius - y;
+                float distance = Mathf.Sqrt(dx * dx + dy * dy);
+
+                // 원 바깥쪽이면 채우기 (모서리 곡선 부분)
+                if (distance > pixelRadius)
+                {
+                    texture.SetPixel(x, y, solid);
+                }
+            }
+        }
+
+        texture.Apply();
+
+        // 피봇을 중앙으로 설정
+        return Sprite.Create(texture, new Rect(0, 0, pixelRadius, pixelRadius), new Vector2(0.5f, 0.5f), 100f);
+    }
+
+    /// <summary>
+    /// 특정 모서리의 가시성을 설정합니다.
+    /// </summary>
+    /// <param name="cornerIndex">0: TopLeft, 1: TopRight, 2: BottomLeft, 3: BottomRight</param>
+    /// <param name="visible">표시 여부</param>
+    public void SetCornerVisible(int cornerIndex, bool visible)
+    {
+        if (cornerIndex >= 0 && cornerIndex < 4 && _cornerObjects[cornerIndex] != null)
+        {
+            _cornerObjects[cornerIndex].SetActive(visible);
+        }
+    }
+
+    /// <summary>
+    /// 모든 모서리를 표시합니다.
+    /// </summary>
+    public void ShowAllCorners()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            SetCornerVisible(i, true);
+        }
+    }
+
+    /// <summary>
+    /// 그룹 내 위치에 따라 모서리 가시성을 업데이트합니다.
+    /// </summary>
+    public void UpdateCornersBasedOnGroup()
+    {
+        if (group == null) return;
+
+        // 기본적으로 모든 모서리 표시
+        ShowAllCorners();
+
+        // 그룹 내 다른 조각들과의 관계 확인
+        foreach (var otherPiece in group.pieces)
+        {
+            if (otherPiece == this) continue;
+
+            int dx = otherPiece.originalGridX - originalGridX;
+            int dy = otherPiece.originalGridY - originalGridY;
+
+            // 인접한 조각이면 해당 방향의 모서리 숨김
+            // 오른쪽에 조각이 있으면 (dx=1, dy=0) -> TopRight, BottomRight 숨김
+            // 왼쪽에 조각이 있으면 (dx=-1, dy=0) -> TopLeft, BottomLeft 숨김
+            // 위에 조각이 있으면 (dx=0, dy=-1) -> TopLeft, TopRight 숨김
+            // 아래에 조각이 있으면 (dx=0, dy=1) -> BottomLeft, BottomRight 숨김
+
+            if (dx == 1 && dy == 0) // 오른쪽
+            {
+                SetCornerVisible(1, false); // TopRight
+                SetCornerVisible(3, false); // BottomRight
+            }
+            else if (dx == -1 && dy == 0) // 왼쪽
+            {
+                SetCornerVisible(0, false); // TopLeft
+                SetCornerVisible(2, false); // BottomLeft
+            }
+            else if (dx == 0 && dy == -1) // 위
+            {
+                SetCornerVisible(0, false); // TopLeft
+                SetCornerVisible(1, false); // TopRight
+            }
+            else if (dx == 0 && dy == 1) // 아래
+            {
+                SetCornerVisible(2, false); // BottomLeft
+                SetCornerVisible(3, false); // BottomRight
+            }
+
+            // 대각선 조각 처리 (L자 모양 등)
+            if (dx == 1 && dy == -1) SetCornerVisible(1, false);  // 우상단
+            if (dx == -1 && dy == -1) SetCornerVisible(0, false); // 좌상단
+            if (dx == 1 && dy == 1) SetCornerVisible(3, false);   // 우하단
+            if (dx == -1 && dy == 1) SetCornerVisible(2, false);  // 좌하단
+        }
+    }
+
+    /// <summary>
+    /// 모서리 색상을 업데이트합니다.
+    /// </summary>
+    public void UpdateCornerColors(Color color)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (_cornerRenderers[i] != null)
+            {
+                _cornerRenderers[i].color = color;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 모서리 렌더러 배열을 반환합니다.
+    /// </summary>
+    public SpriteRenderer[] CornerRenderers => _cornerRenderers;
 }
 
 // ====== 그룹 클래스 ======
@@ -490,14 +700,56 @@ public class PieceGroup
     {
         foreach (var piece in pieces)
         {
+            // 메인 퍼즐 이미지
             piece.GetComponent<SpriteRenderer>().sortingOrder = order;
-            // 테두리는 더 위에
-             var borders = piece.GetComponentsInChildren<SpriteRenderer>();
-             foreach(var b in borders)
-             {
-                 if(b.gameObject != piece.gameObject) // 자기 자신 제외
-                    b.sortingOrder = order + 1;
-             }
+
+            // 카드 프레임 (퍼즐 이미지 뒤)
+            if (piece.CardFrameRenderer != null)
+            {
+                piece.CardFrameRenderer.sortingOrder = order - 1;
+            }
+
+            // 카드 뒷면 (맨 위에서 2번째)
+            if (piece.CardBackRenderer != null)
+            {
+                piece.CardBackRenderer.sortingOrder = order + 3;
+            }
+
+            // 둥근 모서리 (맨 위)
+            var cornerRenderers = piece.CornerRenderers;
+            if (cornerRenderers != null)
+            {
+                foreach (var cr in cornerRenderers)
+                {
+                    if (cr != null)
+                    {
+                        cr.sortingOrder = order + 4;
+                    }
+                }
+            }
+
+            // 테두리 (퍼즐 이미지 위)
+            var allRenderers = piece.GetComponentsInChildren<SpriteRenderer>();
+            foreach (var sr in allRenderers)
+            {
+                // 자기 자신, 카드 프레임, 카드 뒷면, 모서리 제외
+                if (sr.gameObject == piece.gameObject) continue;
+                if (piece.CardFrameRenderer != null && sr == piece.CardFrameRenderer) continue;
+                if (piece.CardBackRenderer != null && sr == piece.CardBackRenderer) continue;
+
+                bool isCorner = false;
+                if (cornerRenderers != null)
+                {
+                    foreach (var cr in cornerRenderers)
+                    {
+                        if (cr == sr) { isCorner = true; break; }
+                    }
+                }
+                if (isCorner) continue;
+
+                // 나머지는 테두리
+                sr.sortingOrder = order + 1;
+            }
         }
     }
 }
