@@ -169,27 +169,13 @@ public class LobbyCardSlot : MonoBehaviour
 
     /// <summary>
     /// 카드 클릭 시 호출됩니다.
+    /// 현재는 레벨 진입 비활성화 (플레이 버튼으로 진입)
     /// </summary>
     private void OnCardClicked()
     {
-        // 현재 레벨이거나 클리어한 레벨만 클릭 가능
-        // (기획에 따라 클리어한 레벨 재도전 허용 여부 결정)
-        if (_isCurrent)
-        {
-            Debug.Log($"레벨 {_levelNumber} 시작!");
-            GameManager.Instance.StartLevel(_levelNumber);
-        }
-        else if (_isCleared)
-        {
-            Debug.Log($"레벨 {_levelNumber} 재도전!");
-            GameManager.Instance.StartLevel(_levelNumber);
-        }
-        else
-        {
-            Debug.Log($"레벨 {_levelNumber}은(는) 아직 잠겨있습니다.");
-            // 잠긴 레벨 클릭 시 흔들림 효과 등 추가 가능
-            StartCoroutine(ShakeEffect());
-        }
+        // 레벨 진입은 플레이 버튼으로 진행
+        // 추후 카드 선택/미리보기 등 다른 기능 추가 가능
+        Debug.Log($"카드 클릭: 레벨 {_levelNumber} (클리어: {_isCleared}, 현재: {_isCurrent})");
     }
 
     /// <summary>
