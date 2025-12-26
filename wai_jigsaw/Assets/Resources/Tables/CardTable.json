@@ -2,6 +2,16 @@
 	{
 		"CardID": 1,
 		"CardName": "Basic Card",
-		"CardBackSprite": "Sprites/Card_Back_Basic"
+		"CardBackSprite": "Sprites/Card_Back_Dog"
+	},
+	{
+		"CardID": 2,
+		"CardName": "Dog Card",
+		"CardBackSprite": "Sprites/Card_Back_Dog"
+	},
+	{
+		"CardID": 3,
+		"CardName": "Diamond Card",
+		"CardBackSprite": "Sprites/Card_Back_Diamond"
 	}
 ]
