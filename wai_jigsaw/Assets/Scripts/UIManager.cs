@@ -66,7 +66,7 @@ public class UIManager : MonoBehaviour
         // 플레이 버튼 텍스트 업데이트 (기존 방식 호환용)
         if (GameManager.Instance != null && homePlayButtonText != null)
         {
-            homePlayButtonText.text = $"플레이\n<size=60%>레벨 {GameManager.Instance.CurrentLevel}</size>";
+            homePlayButtonText.text = $"PLAY\n<size=60%>Level {GameManager.Instance.CurrentLevel}</size>";
         }
     }
 
