@@ -1,0 +1,14 @@
+[
+	{
+		"GroupID": 1,
+		"StartLevel": 1,
+		"EndLevel": 25,
+		"ImageName": "Sprites/Reward_Group01"
+	},
+	{
+		"GroupID": 2,
+		"StartLevel": 26,
+		"EndLevel": 50,
+		"ImageName": "Sprites/Reward_Group02"
+	}
+]
