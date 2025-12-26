@@ -22,6 +22,10 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Tooltip("카드 뒤집기 시간 (초)")]
     [Range(0.1f, 0.5f)] public float cardFlipDuration = 0.25f;
 
+    [Header("Swap Animation")]
+    [Tooltip("스왑 시 카드 이동 시간 (초)")]
+    [Range(0.05f, 0.5f)] public float swapAnimationDuration = 0.15f;
+
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
 
@@ -314,6 +318,72 @@ public class PuzzleBoardSetup : MonoBehaviour
         piece.FlipCard(cardFlipDuration, onComplete);
     }
 
+    // ====== 스왑 애니메이션 ======
+
+    /// <summary>
+    /// 조각을 목표 위치로 부드럽게 이동시킵니다 (스왑용).
+    /// </summary>
+    private IEnumerator SmoothMovePiece(DragController piece, Vector3 targetPos, float duration)
+    {
+        Vector3 startPos = piece.transform.position;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            // Ease out 효과 (끝에서 느려짐)
+            float easedT = 1f - Mathf.Pow(1f - t, 2f);
+
+            piece.transform.position = Vector3.Lerp(startPos, targetPos, easedT);
+            yield return null;
+        }
+
+        piece.transform.position = targetPos;
+    }
+
+    /// <summary>
+    /// 그룹 전체를 부드럽게 이동시킵니다.
+    /// </summary>
+    private IEnumerator SmoothMoveGroup(PieceGroup group, DragController anchorPiece, Vector3 anchorTargetPos, float duration)
+    {
+        // 각 조각의 시작 위치와 목표 위치 계산
+        Vector3 offset = anchorTargetPos - anchorPiece.transform.position;
+        Dictionary<DragController, Vector3> targetPositions = new Dictionary<DragController, Vector3>();
+
+        foreach (var piece in group.pieces)
+        {
+            targetPositions[piece] = piece.transform.position + offset;
+        }
+
+        float elapsed = 0f;
+        Dictionary<DragController, Vector3> startPositions = new Dictionary<DragController, Vector3>();
+        foreach (var piece in group.pieces)
+        {
+            startPositions[piece] = piece.transform.position;
+        }
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float easedT = 1f - Mathf.Pow(1f - t, 2f);
+
+            foreach (var piece in group.pieces)
+            {
+                piece.transform.position = Vector3.Lerp(startPositions[piece], targetPositions[piece], easedT);
+            }
+            yield return null;
+        }
+
+        // 최종 위치 보정
+        foreach (var piece in group.pieces)
+        {
+            piece.transform.position = targetPositions[piece];
+        }
+    }
+
     void ShufflePieces()
     {
         // Simple shuffle of contents
@@ -520,24 +590,37 @@ public class PuzzleBoardSetup : MonoBehaviour
             DisbandAndRegroup(group);
         }
 
-        // 4-3. 물리적 위치 이동 (그룹 내 상대적 위치 유지)
-        MoveGroupWithRelativePositions(rootPiece.group, rootPiece, _slotPositions[rootPiece.currentSlotIndex]);
+        // 4-3. 물리적 위치 이동 (애니메이션 적용)
+        // 드래그 중인 그룹은 부드럽게 목표 위치로 이동
+        StartCoroutine(SmoothMoveGroup(rootPiece.group, rootPiece, _slotPositions[rootPiece.currentSlotIndex], swapAnimationDuration));
 
-        // 장애물(스왑된 조각들)은 개별 slot 위치로 이동
+        // 장애물(스왑된 조각들)은 부드럽게 개별 slot 위치로 이동
         foreach (var info in transactionList)
         {
             if (!movingGroup.Contains(info.Piece))
             {
-                info.Piece.UpdatePosition(_slotPositions[info.TargetSlotIndex]);
+                StartCoroutine(SmoothMovePiece(info.Piece, _slotPositions[info.TargetSlotIndex], swapAnimationDuration));
             }
         }
 
-        // 5. 결합 및 완료 체크 (연쇄 병합 포함)
-        CheckConnectionsRecursive(rootPiece.group);
+        // 5. 결합 및 완료 체크 (연쇄 병합 포함) - 약간의 딜레이 후 실행
+        StartCoroutine(DelayedConnectionCheck(rootPiece.group, swapAnimationDuration));
+    }
 
-        // 6. 모든 조각의 모서리 업데이트
+    /// <summary>
+    /// 스왑 애니메이션 후 연결 체크를 수행합니다.
+    /// </summary>
+    private IEnumerator DelayedConnectionCheck(PieceGroup group, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // 결합 체크 (연쇄 병합 포함)
+        CheckConnectionsRecursive(group);
+
+        // 모든 조각의 모서리 업데이트
         UpdateAllPieceCorners();
 
+        // 완료 체크
         CheckCompletion();
     }
 
