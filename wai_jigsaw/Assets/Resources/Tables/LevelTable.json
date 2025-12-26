@@ -3,7 +3,7 @@
 		"levelID": 1,
 		"ImageName": "Level1",
 		"Rows": 3,
-		"Cols": 3
+		"Cols": 2
 	},
 	{
 		"levelID": 2,
@@ -37,27 +37,27 @@
 	},
 	{
 		"levelID": 7,
-		"ImageName": "Level1",
-		"Rows": 3,
-		"Cols": 3
+		"ImageName": "Level7",
+		"Rows": 4,
+		"Cols": 4
 	},
 	{
 		"levelID": 8,
-		"ImageName": "Level1",
+		"ImageName": "Level8",
 		"Rows": 3,
 		"Cols": 3
 	},
 	{
 		"levelID": 9,
-		"ImageName": "Level1",
-		"Rows": 3,
-		"Cols": 3
+		"ImageName": "Level9",
+		"Rows": 4,
+		"Cols": 4
 	},
 	{
 		"levelID": 10,
-		"ImageName": "Level1",
-		"Rows": 3,
-		"Cols": 3
+		"ImageName": "Level10",
+		"Rows": 5,
+		"Cols": 5
 	},
 	{
 		"levelID": 11,
