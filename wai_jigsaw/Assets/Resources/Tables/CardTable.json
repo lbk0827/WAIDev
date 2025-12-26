@@ -1,0 +1,7 @@
+[
+	{
+		"CardID": 1,
+		"CardName": "Basic Card",
+		"CardBackSprite": "Sprites/Card_Back_Basic"
+	}
+]

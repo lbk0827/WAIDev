@@ -1,5 +1,7 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using WaiJigsaw.Data;
 
 public class PuzzleBoardSetup : MonoBehaviour
 {
@@ -9,6 +11,16 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Header("Piece Spacing")]
     [Tooltip("그룹화되지 않은 조각들 사이의 간격")]
     [Range(0f, 0.2f)] public float pieceSpacing = 0.08f;
+
+    [Header("Card Intro Animation")]
+    [Tooltip("카드가 날아가는 속도 (초)")]
+    [Range(0.1f, 1.0f)] public float cardFlyDuration = 0.3f;
+    [Tooltip("카드 사이의 딜레이 (초)")]
+    [Range(0.01f, 0.2f)] public float cardFlyDelay = 0.05f;
+    [Tooltip("카드 뒤집기 딜레이 (초)")]
+    [Range(0.01f, 0.1f)] public float cardFlipDelay = 0.03f;
+    [Tooltip("카드 뒤집기 시간 (초)")]
+    [Range(0.1f, 0.5f)] public float cardFlipDuration = 0.25f;
 
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
@@ -21,14 +33,34 @@ public class PuzzleBoardSetup : MonoBehaviour
     private float _unitWidth;
     private float _unitHeight;
 
+    // 카드 뒷면 스프라이트
+    private Sprite _cardBackSprite;
+
+    // 인트로 애니메이션 상태
+    private bool _isPlayingIntro = false;
+
     public void SetupCurrentLevel(int levelNumber)
     {
         LevelConfig config = levelManager.GetLevelInfo(levelNumber);
         if (config.puzzleData == null || config.puzzleData.sourceImage == null) return;
 
+        // 카드 뒷면 스프라이트 로드
+        LoadCardBackSprite();
+
         CreateJigsawPieces(config);
         FitCameraToPuzzle(config.rows, config.cols);
-        ShufflePieces();
+
+        // 인트로 애니메이션 시작
+        StartCoroutine(PlayIntroAnimation());
+    }
+
+    /// <summary>
+    /// CardTable에서 카드 뒷면 스프라이트를 로드합니다.
+    /// </summary>
+    private void LoadCardBackSprite()
+    {
+        CardTable.Load();
+        _cardBackSprite = CardTable.LoadCardBackSprite(1); // 기본 카드 사용
     }
 
     void CreateJigsawPieces(LevelConfig config)
@@ -55,6 +87,11 @@ public class PuzzleBoardSetup : MonoBehaviour
         float startX = -((_cols * slotWidth) / 2) + (slotWidth / 2);
         float startY = ((_rows * slotHeight) / 2) - (slotHeight / 2);
 
+        // 카드 뭉치 위치 (마지막 슬롯 = 오른쪽 하단)
+        float deckPosX = startX + ((_cols - 1) * slotWidth);
+        float deckPosY = startY - ((_rows - 1) * slotHeight);
+        Vector3 deckPosition = new Vector3(deckPosX, deckPosY, 0);
+
         int index = 0;
         for (int row = 0; row < _rows; row++)
         {
@@ -77,7 +114,7 @@ public class PuzzleBoardSetup : MonoBehaviour
                 newPiece.AddComponent<BoxCollider2D>();
                 DragController dragController = newPiece.AddComponent<DragController>();
 
-                // 위치 설정 (spacing 포함)
+                // 슬롯 위치 계산 (spacing 포함)
                 float posX = startX + (col * slotWidth);
                 float posY = startY - (row * slotHeight);
                 Vector3 slotPos = new Vector3(posX, posY, 0);
@@ -94,7 +131,17 @@ public class PuzzleBoardSetup : MonoBehaviour
                 dragController.pieceWidth = _unitWidth;
                 dragController.pieceHeight = _unitHeight;
 
-                newPiece.transform.position = slotPos;
+                // 카드 비주얼 초기화 (뒷면 상태로 시작)
+                dragController.InitializeCardVisuals(_cardBackSprite);
+
+                // 초기 위치: 카드 뭉치 (오른쪽 하단)
+                // 카드가 겹쳐 보이도록 약간의 오프셋 적용
+                float stackOffset = index * 0.02f;
+                newPiece.transform.position = deckPosition + new Vector3(stackOffset, stackOffset, -index * 0.001f);
+
+                // 인트로 중에는 드래그 불가
+                dragController.SetDraggable(false);
+
                 index++;
             }
         }
@@ -119,6 +166,126 @@ public class PuzzleBoardSetup : MonoBehaviour
         float sizeW = ((totalW / screenAspect) / 2) + padding;
 
         mainCam.orthographicSize = Mathf.Max(sizeH, sizeW);
+    }
+
+    // ====== 인트로 애니메이션 ======
+
+    /// <summary>
+    /// 레벨 시작 인트로 애니메이션을 재생합니다.
+    /// 1. 카드 뭉치에서 각 슬롯으로 카드가 날아감
+    /// 2. 모든 카드가 도착하면 동시에 뒤집힘
+    /// 3. 셔플 후 게임 시작
+    /// </summary>
+    private IEnumerator PlayIntroAnimation()
+    {
+        _isPlayingIntro = true;
+
+        // 1단계: 카드가 좌상단부터 순서대로 날아감
+        int totalCards = _piecesOnBoard.Count;
+        int flyingCount = 0;
+
+        for (int i = 0; i < totalCards; i++)
+        {
+            DragController piece = _piecesOnBoard[i];
+            Vector3 targetPos = _slotPositions[i];
+
+            // 카드 날아가는 애니메이션 시작
+            StartCoroutine(FlyCardToPosition(piece, targetPos, cardFlyDuration, () =>
+            {
+                flyingCount++;
+            }));
+
+            // 다음 카드 발사 대기
+            yield return new WaitForSeconds(cardFlyDelay);
+        }
+
+        // 모든 카드가 도착할 때까지 대기
+        while (flyingCount < totalCards)
+        {
+            yield return null;
+        }
+
+        // 약간의 대기 후 뒤집기
+        yield return new WaitForSeconds(0.2f);
+
+        // 2단계: 모든 카드를 동시에 뒤집기
+        int flippedCount = 0;
+
+        for (int i = 0; i < totalCards; i++)
+        {
+            DragController piece = _piecesOnBoard[i];
+
+            // 약간의 딜레이를 두고 연속으로 뒤집기 (웨이브 효과)
+            StartCoroutine(DelayedFlip(piece, i * cardFlipDelay, () =>
+            {
+                flippedCount++;
+            }));
+        }
+
+        // 모든 카드가 뒤집힐 때까지 대기
+        while (flippedCount < totalCards)
+        {
+            yield return null;
+        }
+
+        // 약간의 대기
+        yield return new WaitForSeconds(0.3f);
+
+        // 3단계: 셔플 후 게임 시작
+        ShufflePieces();
+
+        // 드래그 활성화
+        foreach (var piece in _piecesOnBoard)
+        {
+            piece.SetDraggable(true);
+        }
+
+        _isPlayingIntro = false;
+        Debug.Log("인트로 애니메이션 완료. 게임 시작!");
+    }
+
+    /// <summary>
+    /// 카드를 목표 위치로 부드럽게 이동시킵니다.
+    /// </summary>
+    private IEnumerator FlyCardToPosition(DragController piece, Vector3 targetPos, float duration, System.Action onComplete)
+    {
+        Vector3 startPos = piece.transform.position;
+        float elapsed = 0f;
+
+        // 살짝 위로 올라갔다가 내려오는 곡선 효과
+        float arcHeight = 0.5f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            // Ease out 효과 (끝에서 느려짐)
+            float easedT = 1f - Mathf.Pow(1f - t, 3f);
+
+            // 직선 이동
+            Vector3 linearPos = Vector3.Lerp(startPos, targetPos, easedT);
+
+            // 아크 효과 (포물선)
+            float arc = arcHeight * Mathf.Sin(t * Mathf.PI);
+            linearPos.y += arc;
+
+            piece.transform.position = linearPos;
+
+            yield return null;
+        }
+
+        piece.transform.position = targetPos;
+        onComplete?.Invoke();
+    }
+
+    /// <summary>
+    /// 딜레이 후 카드를 뒤집습니다.
+    /// </summary>
+    private IEnumerator DelayedFlip(DragController piece, float delay, System.Action onComplete)
+    {
+        yield return new WaitForSeconds(delay);
+        piece.FlipCard(cardFlipDuration, onComplete);
     }
 
     void ShufflePieces()

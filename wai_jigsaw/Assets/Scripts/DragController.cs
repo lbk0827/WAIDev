@@ -1,8 +1,7 @@
 using UnityEngine;
-
-// 이 스크립트는 '카드' 오브젝트에 붙을 것입니다.
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using WaiJigsaw.Data;
 
 public class DragController : MonoBehaviour
 {
@@ -21,7 +20,13 @@ public class DragController : MonoBehaviour
 
     // ====== 시각 효과 (테두리) ======
     // 0:Top, 1:Bottom, 2:Left, 3:Right
-    private GameObject[] _borders = new GameObject[4]; 
+    private GameObject[] _borders = new GameObject[4];
+
+    // ====== 카드 시스템 ======
+    private SpriteRenderer _cardBackRenderer;   // 카드 뒷면
+    private SpriteRenderer _cardFrameRenderer;  // 카드 프레임
+    private bool _isFlipped = false;            // true = 앞면(퍼즐), false = 뒷면
+    private bool _canDrag = false;              // 드래그 가능 여부 (인트로 중에는 불가)
 
     private Vector3 _dragOffset;
     private float _cameraZDepth;
@@ -49,21 +54,26 @@ public class DragController : MonoBehaviour
 
     private void OnMouseDown()
     {
+        // 인트로 중에는 드래그 불가
+        if (!_canDrag) return;
+
         Vector3 screenPoint = Camera.main.WorldToScreenPoint(transform.position);
         _cameraZDepth = screenPoint.z;
-        
+
         // 드래그 시작점 저장 (누적 오차 방지용)
         Vector3 mouseStartPos = GetMouseWorldPos();
-        
+
         // 그룹 전체에게 드래그 시작 알림
         group.OnDragStart(mouseStartPos);
         group.SetSortingOrder(100);
-        
+
         board.OnPieceDragStart(this);
     }
 
     private void OnMouseDrag()
     {
+        if (!_canDrag) return;
+
         // 마우스의 총 이동량 계산
         Vector3 currentMousePos = GetMouseWorldPos();
         group.OnDragUpdate(currentMousePos);
@@ -71,6 +81,8 @@ public class DragController : MonoBehaviour
 
     private void OnMouseUp()
     {
+        if (!_canDrag) return;
+
         group.SetSortingOrder(1);
 
         if (board != null)
@@ -201,6 +213,186 @@ public class DragController : MonoBehaviour
         mouseScreenPos.z = _cameraZDepth;
         return Camera.main.ScreenToWorldPoint(mouseScreenPos);
     }
+
+    // ====== 카드 시스템 메서드 ======
+
+    /// <summary>
+    /// 카드 컴포넌트를 초기화합니다 (뒷면, 프레임 생성).
+    /// </summary>
+    public void InitializeCardVisuals(Sprite cardBackSprite, float frameThickness = 0.08f)
+    {
+        if (_spriteRenderer == null)
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+
+        float width = _spriteRenderer.bounds.size.x;
+        float height = _spriteRenderer.bounds.size.y;
+
+        // 1. 카드 프레임 생성 (퍼즐 이미지 뒤에 깔리는 배경)
+        GameObject frameObj = new GameObject("CardFrame");
+        frameObj.transform.SetParent(transform, false);
+        frameObj.transform.localPosition = Vector3.zero;
+
+        _cardFrameRenderer = frameObj.AddComponent<SpriteRenderer>();
+        _cardFrameRenderer.sprite = CreatePixelSprite();
+        _cardFrameRenderer.color = new Color(0.95f, 0.92f, 0.85f); // 크림색 카드 배경
+        _cardFrameRenderer.sortingOrder = 0; // 퍼즐 이미지보다 아래
+
+        // 프레임 크기 (퍼즐보다 약간 크게)
+        float frameWidth = width + (frameThickness * 2);
+        float frameHeight = height + (frameThickness * 2);
+        frameObj.transform.localScale = new Vector3(frameWidth, frameHeight, 1);
+
+        // 2. 카드 뒷면 생성 (프레임 위, 퍼즐 이미지 위에 덮음)
+        GameObject backObj = new GameObject("CardBack");
+        backObj.transform.SetParent(transform, false);
+        backObj.transform.localPosition = Vector3.zero;
+
+        _cardBackRenderer = backObj.AddComponent<SpriteRenderer>();
+        if (cardBackSprite != null)
+        {
+            _cardBackRenderer.sprite = cardBackSprite;
+        }
+        else
+        {
+            _cardBackRenderer.sprite = CreatePixelSprite();
+            _cardBackRenderer.color = new Color(0.2f, 0.3f, 0.5f); // 기본 파란색
+        }
+        _cardBackRenderer.sortingOrder = 3; // 퍼즐 이미지와 테두리 위에
+
+        // 뒷면 크기를 프레임과 동일하게
+        backObj.transform.localScale = new Vector3(frameWidth, frameHeight, 1);
+
+        // 초기 상태: 뒷면이 보이는 상태
+        _isFlipped = false;
+        _spriteRenderer.enabled = false; // 퍼즐 이미지 숨김
+
+        // 기존 테두리 숨기기 (뒷면 상태에서는 보이지 않음)
+        for (int i = 0; i < 4; i++)
+        {
+            if (_borders[i] != null)
+                _borders[i].SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 카드를 뒤집습니다 (애니메이션).
+    /// </summary>
+    public void FlipCard(float duration = 0.3f, System.Action onComplete = null)
+    {
+        if (_isFlipped)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        StartCoroutine(FlipAnimation(duration, onComplete));
+    }
+
+    private IEnumerator FlipAnimation(float duration, System.Action onComplete)
+    {
+        float halfDuration = duration / 2f;
+
+        // 1단계: 카드가 옆으로 납작해짐 (뒷면이 사라지는 느낌)
+        Vector3 originalScale = transform.localScale;
+        float elapsed = 0f;
+
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float scaleX = Mathf.Lerp(1f, 0f, t);
+            transform.localScale = new Vector3(scaleX * originalScale.x, originalScale.y, originalScale.z);
+            yield return null;
+        }
+
+        // 중간: 뒷면 숨기고 앞면 보이기
+        _cardBackRenderer.gameObject.SetActive(false);
+        _spriteRenderer.enabled = true;
+
+        // 테두리 다시 활성화
+        for (int i = 0; i < 4; i++)
+        {
+            if (_borders[i] != null)
+                _borders[i].SetActive(true);
+        }
+
+        // 2단계: 카드가 다시 펼쳐짐 (앞면이 나타나는 느낌)
+        elapsed = 0f;
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float scaleX = Mathf.Lerp(0f, 1f, t);
+            transform.localScale = new Vector3(scaleX * originalScale.x, originalScale.y, originalScale.z);
+            yield return null;
+        }
+
+        transform.localScale = originalScale;
+        _isFlipped = true;
+
+        onComplete?.Invoke();
+    }
+
+    /// <summary>
+    /// 즉시 앞면으로 전환합니다 (애니메이션 없이).
+    /// </summary>
+    public void ShowFrontImmediate()
+    {
+        if (_cardBackRenderer != null)
+            _cardBackRenderer.gameObject.SetActive(false);
+
+        _spriteRenderer.enabled = true;
+        _isFlipped = true;
+
+        // 테두리 활성화
+        for (int i = 0; i < 4; i++)
+        {
+            if (_borders[i] != null)
+                _borders[i].SetActive(true);
+        }
+    }
+
+    /// <summary>
+    /// 즉시 뒷면으로 전환합니다 (애니메이션 없이).
+    /// </summary>
+    public void ShowBackImmediate()
+    {
+        if (_cardBackRenderer != null)
+            _cardBackRenderer.gameObject.SetActive(true);
+
+        _spriteRenderer.enabled = false;
+        _isFlipped = false;
+
+        // 테두리 숨김
+        for (int i = 0; i < 4; i++)
+        {
+            if (_borders[i] != null)
+                _borders[i].SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 드래그 가능 여부를 설정합니다.
+    /// </summary>
+    public void SetDraggable(bool canDrag)
+    {
+        _canDrag = canDrag;
+    }
+
+    /// <summary>
+    /// 카드가 뒤집혔는지 확인합니다.
+    /// </summary>
+    public bool IsFlipped => _isFlipped;
+
+    /// <summary>
+    /// 카드 뒷면 렌더러를 반환합니다.
+    /// </summary>
+    public SpriteRenderer CardBackRenderer => _cardBackRenderer;
+
+    /// <summary>
+    /// 카드 프레임 렌더러를 반환합니다.
+    /// </summary>
+    public SpriteRenderer CardFrameRenderer => _cardFrameRenderer;
 }
 
 // ====== 그룹 클래스 ======
