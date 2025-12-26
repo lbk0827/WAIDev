@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-#if UNITY_EDITOR
-using System.IO;
-#endif
 
 namespace WaiJigsaw.Data
 {
@@ -36,7 +33,6 @@ namespace WaiJigsaw.Data
         private static Dictionary<int, LevelTableRecord> _cache;
         private static List<LevelTableRecord> _records;
         private const string JSON_PATH = "Tables/LevelTable";
-        private const string JSON_FILENAME = "LevelTable.json";
 
         /// <summary>
         /// 테이블 데이터 로드
@@ -45,32 +41,15 @@ namespace WaiJigsaw.Data
         {
             if (_cache != null) return;
 
-            string jsonText = null;
-
-#if UNITY_EDITOR
-            // 에디터에서는 tmp 폴더 우선 확인
-            string tmpPath = Path.Combine(Application.dataPath, "..", "tmp", "Assets", "Resources", "Tables", JSON_FILENAME);
-            if (File.Exists(tmpPath))
+            TextAsset jsonFile = Resources.Load<TextAsset>(JSON_PATH);
+            if (jsonFile == null)
             {
-                jsonText = File.ReadAllText(tmpPath);
-                Debug.Log($"LevelTable: tmp 폴더에서 로드 ({tmpPath})");
-            }
-#endif
-
-            // tmp에서 못 찾았으면 Resources에서 로드
-            if (string.IsNullOrEmpty(jsonText))
-            {
-                TextAsset jsonFile = Resources.Load<TextAsset>(JSON_PATH);
-                if (jsonFile == null)
-                {
-                    Debug.LogError($"LevelTable: '{JSON_PATH}' 파일을 찾을 수 없습니다!");
-                    return;
-                }
-                jsonText = jsonFile.text;
+                Debug.LogError($"LevelTable: '{JSON_PATH}' 파일을 찾을 수 없습니다!");
+                return;
             }
 
             // JSON 배열을 래퍼로 감싸서 파싱
-            string wrappedJson = "{\"records\":" + jsonText + "}";
+            string wrappedJson = "{\"records\":" + jsonFile.text + "}";
             LevelTableWrapper wrapper = JsonUtility.FromJson<LevelTableWrapper>(wrappedJson);
 
             _records = wrapper.records;

@@ -101,6 +101,3 @@ InitTestScene*.unity*
 # Windows reserved names (prevent accidental creation)
 nul
 nul.*
-
-# TableExporter temp output
-/tmp/
