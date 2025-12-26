@@ -172,16 +172,20 @@ public class PuzzleBoardSetup : MonoBehaviour
 
     /// <summary>
     /// 레벨 시작 인트로 애니메이션을 재생합니다.
-    /// 1. 카드 뭉치에서 각 슬롯으로 카드가 날아감
-    /// 2. 모든 카드가 도착하면 동시에 뒤집힘
-    /// 3. 셔플 후 게임 시작
+    /// 1. 먼저 셔플 순서 결정
+    /// 2. 셔플된 순서로 카드가 날아감
+    /// 3. 모든 카드가 도착하면 동시에 뒤집힘 (셔플된 상태로 보임)
     /// </summary>
     private IEnumerator PlayIntroAnimation()
     {
         _isPlayingIntro = true;
 
-        // 1단계: 카드가 좌상단부터 순서대로 날아감
         int totalCards = _piecesOnBoard.Count;
+
+        // 0단계: 먼저 셔플 순서 결정 (실제 위치 이동 없이 데이터만 셔플)
+        ShufflePiecesData();
+
+        // 1단계: 카드가 좌상단부터 순서대로 날아감 (이미 셔플된 순서)
         int flyingCount = 0;
 
         for (int i = 0; i < totalCards; i++)
@@ -208,7 +212,7 @@ public class PuzzleBoardSetup : MonoBehaviour
         // 약간의 대기 후 뒤집기
         yield return new WaitForSeconds(0.2f);
 
-        // 2단계: 모든 카드를 동시에 뒤집기
+        // 2단계: 모든 카드를 동시에 뒤집기 (이미 셔플된 상태)
         int flippedCount = 0;
 
         for (int i = 0; i < totalCards; i++)
@@ -231,8 +235,8 @@ public class PuzzleBoardSetup : MonoBehaviour
         // 약간의 대기
         yield return new WaitForSeconds(0.3f);
 
-        // 3단계: 셔플 후 게임 시작
-        ShufflePieces();
+        // 3단계: 초기 연결 체크 및 게임 시작
+        CheckInitialConnections();
 
         // 드래그 활성화
         foreach (var piece in _piecesOnBoard)
@@ -242,6 +246,28 @@ public class PuzzleBoardSetup : MonoBehaviour
 
         _isPlayingIntro = false;
         Debug.Log("인트로 애니메이션 완료. 게임 시작!");
+    }
+
+    /// <summary>
+    /// 조각 데이터만 셔플합니다 (위치 이동 없이).
+    /// </summary>
+    void ShufflePiecesData()
+    {
+        int n = _piecesOnBoard.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = Random.Range(0, n + 1);
+            DragController temp = _piecesOnBoard[k];
+            _piecesOnBoard[k] = _piecesOnBoard[n];
+            _piecesOnBoard[n] = temp;
+        }
+
+        // 슬롯 인덱스만 업데이트 (위치는 나중에 fly 애니메이션에서 설정)
+        for (int i = 0; i < _piecesOnBoard.Count; i++)
+        {
+            _piecesOnBoard[i].currentSlotIndex = i;
+        }
     }
 
     /// <summary>
