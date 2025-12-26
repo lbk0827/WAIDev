@@ -148,7 +148,7 @@ public class LobbyGridManager : MonoBehaviour
         frontRect.offsetMax = Vector2.zero;
 
         Image frontImage = frontObj.AddComponent<Image>();
-        frontImage.preserveAspect = true;
+        frontImage.preserveAspect = false; // 카드 슬롯 크기에 맞게 채움
         frontObj.SetActive(false); // 기본은 숨김
 
         // 레벨 번호 텍스트
