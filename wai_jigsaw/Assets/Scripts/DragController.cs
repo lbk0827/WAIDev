@@ -353,24 +353,25 @@ public class DragController : MonoBehaviour
         // 각 방향별 위치와 크기
         // 0:Top, 1:Bottom, 2:Left, 3:Right
         // EdgeCover는 이미지 가장자리에 위치하여 spacing/2 만큼 덮음
-        // buffer: 렌더링 틈새 방지를 위한 약간의 여유
-        float buffer = 0.01f;
+        // buffer: 렌더링 틈새 방지를 위한 여유 (0.02f로 증가)
+        float buffer = 0.02f;
         float coverSizeWithBuffer = _coverSize + buffer;
 
+        // 위치 계산: 커버가 퍼즐 이미지 가장자리를 완전히 덮도록 조정
         Vector3[] positions = new Vector3[]
         {
-            new Vector3(0, (height - coverSizeWithBuffer) / 2 + buffer / 2, 0),   // Top: 상단 가장자리
-            new Vector3(0, -(height - coverSizeWithBuffer) / 2 - buffer / 2, 0),  // Bottom: 하단 가장자리
-            new Vector3(-(width - coverSizeWithBuffer) / 2 - buffer / 2, 0, 0),   // Left: 좌측 가장자리
-            new Vector3((width - coverSizeWithBuffer) / 2 + buffer / 2, 0, 0)     // Right: 우측 가장자리
+            new Vector3(0, (height / 2) - (coverSizeWithBuffer / 2) + buffer, 0),   // Top: 상단 가장자리
+            new Vector3(0, -(height / 2) + (coverSizeWithBuffer / 2) - buffer, 0),  // Bottom: 하단 가장자리
+            new Vector3(-(width / 2) + (coverSizeWithBuffer / 2) - buffer, 0, 0),   // Left: 좌측 가장자리
+            new Vector3((width / 2) - (coverSizeWithBuffer / 2) + buffer, 0, 0)     // Right: 우측 가장자리
         };
 
         Vector3[] scales = new Vector3[]
         {
-            new Vector3(width + buffer, coverSizeWithBuffer, 1),      // Top (가로로 긴 막대)
-            new Vector3(width + buffer, coverSizeWithBuffer, 1),      // Bottom
-            new Vector3(coverSizeWithBuffer, height + buffer, 1),     // Left (세로로 긴 막대)
-            new Vector3(coverSizeWithBuffer, height + buffer, 1)      // Right
+            new Vector3(width + buffer * 2, coverSizeWithBuffer, 1),      // Top (가로로 긴 막대)
+            new Vector3(width + buffer * 2, coverSizeWithBuffer, 1),      // Bottom
+            new Vector3(coverSizeWithBuffer, height + buffer * 2, 1),     // Left (세로로 긴 막대)
+            new Vector3(coverSizeWithBuffer, height + buffer * 2, 1)      // Right
         };
 
         string[] names = new string[] { "EdgeCover_Top", "EdgeCover_Bottom", "EdgeCover_Left", "EdgeCover_Right" };
