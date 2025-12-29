@@ -345,8 +345,10 @@ public class DragController : MonoBehaviour
         float width = pieceWidth;
         float height = pieceHeight;
 
-        // 커버 색상 (디버깅용 빨간색 - 나중에 배경색으로 변경)
-        Color coverColor = new Color(1f, 0f, 0f, 1f);  // 빨간색 (디버깅용)
+        // 커버 색상 (Main Camera 배경색과 자동 동기화)
+        Color coverColor = Camera.main.backgroundColor;
+        coverColor.a = 1f; // 알파값 강제 1 (배경색 알파가 0일 수 있음)
+        Debug.Log($"[EdgeCover] Camera backgroundColor: R={coverColor.r}, G={coverColor.g}, B={coverColor.b}, A={coverColor.a}");
 
         // 각 방향별 위치와 크기
         // 0:Top, 1:Bottom, 2:Left, 3:Right
