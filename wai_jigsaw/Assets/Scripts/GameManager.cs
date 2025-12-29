@@ -1,9 +1,11 @@
 using UnityEngine;
-using System.Collections.Generic;
+using WaiJigsaw.Data;
 
 /// <summary>
 /// 게임의 전반적인 상태와 흐름을 관리하는 중앙 관리자입니다.
 /// (싱글턴 패턴 사용)
+/// - 데이터 관리는 GameDataContainer에 위임
+/// - 게임 흐름 제어에 집중
 /// </summary>
 public class GameManager : MonoBehaviour
 {
@@ -16,11 +18,10 @@ public class GameManager : MonoBehaviour
     public LevelGroupManager levelGroupManager;
     public LobbyGridManager lobbyGridManager;
 
-    public int CurrentLevel { get; private set; } = 1;
-
-    // 클리어한 레벨들을 저장 (PlayerPrefs에 저장/로드)
-    private HashSet<int> _clearedLevels = new HashSet<int>();
-    private const string CLEARED_LEVELS_KEY = "ClearedLevels";
+    /// <summary>
+    /// 현재 레벨 (GameDataContainer에서 가져옴)
+    /// </summary>
+    public int CurrentLevel => GameDataContainer.Instance.CurrentLevel;
 
     private void Awake()
     {
@@ -36,7 +37,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        LoadGameData();
+        // GameDataContainer 초기화 및 데이터 로드
+        GameDataContainer.Instance.Load();
     }
 
     private void Start()
@@ -57,59 +59,20 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void LoadGameData()
-    {
-        // 현재 레벨 불러오기
-        CurrentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
-
-        // 클리어한 레벨 목록 불러오기
-        _clearedLevels.Clear();
-        string clearedData = PlayerPrefs.GetString(CLEARED_LEVELS_KEY, "");
-        if (!string.IsNullOrEmpty(clearedData))
-        {
-            string[] levels = clearedData.Split(',');
-            foreach (string levelStr in levels)
-            {
-                if (int.TryParse(levelStr, out int level))
-                {
-                    _clearedLevels.Add(level);
-                }
-            }
-        }
-
-        Debug.Log($"불러온 현재 레벨: {CurrentLevel}, 클리어한 레벨 수: {_clearedLevels.Count}");
-    }
-
+    /// <summary>
+    /// 게임 데이터 저장 (GameDataContainer에 위임)
+    /// </summary>
     public void SaveGameData()
     {
-        // 현재 레벨 저장
-        PlayerPrefs.SetInt("CurrentLevel", CurrentLevel);
-
-        // 클리어한 레벨 목록 저장
-        string clearedData = string.Join(",", _clearedLevels);
-        PlayerPrefs.SetString(CLEARED_LEVELS_KEY, clearedData);
-
-        PlayerPrefs.Save();
-        Debug.Log($"레벨 저장: {CurrentLevel}");
+        GameDataContainer.Instance.Save();
     }
 
     /// <summary>
-    /// 특정 레벨이 클리어되었는지 확인합니다.
+    /// 특정 레벨이 클리어되었는지 확인합니다. (GameDataContainer에 위임)
     /// </summary>
     public bool IsLevelCleared(int levelNumber)
     {
-        return _clearedLevels.Contains(levelNumber);
-    }
-
-    /// <summary>
-    /// 레벨을 클리어 처리합니다.
-    /// </summary>
-    private void MarkLevelCleared(int levelNumber)
-    {
-        if (!_clearedLevels.Contains(levelNumber))
-        {
-            _clearedLevels.Add(levelNumber);
-        }
+        return GameDataContainer.Instance.IsLevelCleared(levelNumber);
     }
 
     /// <summary>
@@ -144,11 +107,13 @@ public class GameManager : MonoBehaviour
 
     public void OnLevelComplete()
     {
-        // 현재 레벨을 클리어 처리
-        MarkLevelCleared(CurrentLevel);
+        int clearedLevel = CurrentLevel;
 
-        // 다음 레벨로 이동
-        CurrentLevel++;
+        // 현재 레벨을 클리어 처리 (GameDataContainer에 위임)
+        GameDataContainer.Instance.MarkLevelCleared(clearedLevel);
+
+        // 다음 레벨로 이동 (GameDataContainer에 위임)
+        GameDataContainer.Instance.AdvanceToNextLevel();
         SaveGameData();
 
         if (puzzleBoard != null)
@@ -159,7 +124,7 @@ public class GameManager : MonoBehaviour
         // 로비 그리드 업데이트 (클리어 애니메이션)
         if (lobbyGridManager != null)
         {
-            lobbyGridManager.OnLevelCleared(CurrentLevel - 1);
+            lobbyGridManager.OnLevelCleared(clearedLevel);
         }
 
         if (uiManager != null)
@@ -175,15 +140,10 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 디버그용: 모든 진행 데이터를 초기화합니다.
+    /// 디버그용: 모든 진행 데이터를 초기화합니다. (GameDataContainer에 위임)
     /// </summary>
     public void ResetAllProgress()
     {
-        CurrentLevel = 1;
-        _clearedLevels.Clear();
-        PlayerPrefs.DeleteKey("CurrentLevel");
-        PlayerPrefs.DeleteKey(CLEARED_LEVELS_KEY);
-        PlayerPrefs.Save();
-        Debug.Log("모든 진행 데이터가 초기화되었습니다.");
+        GameDataContainer.Instance.ResetAllProgress();
     }
 }
