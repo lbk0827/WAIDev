@@ -9,8 +9,8 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Range(0.1f, 2.0f)] public float padding = 0.5f;
 
     [Header("Piece Spacing")]
-    [Tooltip("그룹화되지 않은 조각들 사이의 간격")]
-    [Range(0f, 0.2f)] public float pieceSpacing = 0.08f;
+    [Tooltip("그룹화되지 않은 조각들 사이의 간격 (EdgeCover로 표현)")]
+    [Range(0f, 0.5f)] public float pieceSpacing = 0.15f;
 
     [Header("Card Intro Animation")]
     [Tooltip("카드가 날아가는 속도 (초)")]
@@ -83,11 +83,11 @@ public class PuzzleBoardSetup : MonoBehaviour
         _unitWidth = pieceWidth / 100f;
         _unitHeight = pieceHeight / 100f;
 
-        // spacing 포함한 슬롯 간격
-        float slotWidth = _unitWidth + pieceSpacing;
-        float slotHeight = _unitHeight + pieceSpacing;
+        // 슬롯 간격 = 조각 크기 (물리적 간격 없음, EdgeCover로 간격 표현)
+        float slotWidth = _unitWidth;
+        float slotHeight = _unitHeight;
 
-        // 퍼즐 시작점 (좌상단 기준, 중앙 정렬) - spacing 포함
+        // 퍼즐 시작점 (좌상단 기준, 중앙 정렬)
         float startX = -((_cols * slotWidth) / 2) + (slotWidth / 2);
         float startY = ((_rows * slotHeight) / 2) - (slotHeight / 2);
 
@@ -101,9 +101,10 @@ public class PuzzleBoardSetup : MonoBehaviour
         {
             for (int col = 0; col < _cols; col++)
             {
-                // 스프라이트 잘라내기
+                // 스프라이트 잘라내기 (오버랩 없이 원본 크기)
                 float x = col * pieceWidth;
                 float y = (_rows - 1 - row) * pieceHeight;
+
                 Rect rect = new Rect(x, y, pieceWidth, pieceHeight);
                 Sprite newSprite = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
 
@@ -131,9 +132,12 @@ public class PuzzleBoardSetup : MonoBehaviour
                 dragController.originalGridX = col;
                 dragController.originalGridY = row;
 
-                // 조각 크기 정보 전달 (그룹화 시 위치 조정용)
+                // 조각 크기 정보 전달
                 dragController.pieceWidth = _unitWidth;
                 dragController.pieceHeight = _unitHeight;
+
+                // EdgeCover 크기 설정 (spacing의 절반)
+                dragController.SetCoverSize(pieceSpacing / 2f);
 
                 // 카드 비주얼 초기화 (뒷면 상태로 시작)
                 dragController.InitializeCardVisuals(_cardBackSprite);
@@ -781,15 +785,22 @@ public class PuzzleBoardSetup : MonoBehaviour
                 // Play sound?
             }
 
-            // 4. Update Visuals (Hide Borders)
+            // 4. Update Visuals (EdgeCover 제거로 오버랩 이미지 노출)
             // 0:Top, 1:Bottom, 2:Left, 3:Right
             // rowOffset -1 = Top, 1 = Bottom
             // colOffset -1 = Left, 1 = Right
-            
-            if (rowOffset == -1) { piece.HideBorder(0); neighbor.HideBorder(1); } // My Top, Their Bottom
-            if (rowOffset == 1)  { piece.HideBorder(1); neighbor.HideBorder(0); } // My Bottom, Their Top
-            if (colOffset == -1) { piece.HideBorder(2); neighbor.HideBorder(3); } // My Left, Their Right
-            if (colOffset == 1)  { piece.HideBorder(3); neighbor.HideBorder(2); } // My Right, Their Left
+
+            // EdgeCover 제거 (숨겨진 이미지 노출)
+            if (rowOffset == -1) { piece.RemoveEdgeCover(0); neighbor.RemoveEdgeCover(1); } // My Top, Their Bottom
+            if (rowOffset == 1)  { piece.RemoveEdgeCover(1); neighbor.RemoveEdgeCover(0); } // My Bottom, Their Top
+            if (colOffset == -1) { piece.RemoveEdgeCover(2); neighbor.RemoveEdgeCover(3); } // My Left, Their Right
+            if (colOffset == 1)  { piece.RemoveEdgeCover(3); neighbor.RemoveEdgeCover(2); } // My Right, Their Left
+
+            // 테두리도 함께 숨기기
+            if (rowOffset == -1) { piece.HideBorder(0); neighbor.HideBorder(1); }
+            if (rowOffset == 1)  { piece.HideBorder(1); neighbor.HideBorder(0); }
+            if (colOffset == -1) { piece.HideBorder(2); neighbor.HideBorder(3); }
+            if (colOffset == 1)  { piece.HideBorder(3); neighbor.HideBorder(2); }
         }
     }
 

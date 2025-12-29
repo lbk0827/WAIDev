@@ -22,15 +22,15 @@ public class DragController : MonoBehaviour
     // 0:Top, 1:Bottom, 2:Left, 3:Right
     private GameObject[] _borders = new GameObject[4];
 
+    // ====== EdgeCover 시스템 (spacing 영역 가리기) ======
+    // 0:Top, 1:Bottom, 2:Left, 3:Right
+    private GameObject[] _edgeCovers = new GameObject[4];
+    private float _coverSize = 0f;  // spacing/2 크기
+
     // ====== 카드 시스템 ======
     private SpriteRenderer _cardBackRenderer;   // 카드 뒷면
-    private SpriteRenderer _cardFrameRenderer;  // 카드 프레임
     private bool _isFlipped = false;            // true = 앞면(퍼즐), false = 뒷면
     private bool _canDrag = false;              // 드래그 가능 여부 (인트로 중에는 불가)
-
-    // ====== 둥근 모서리 시스템 (SpriteMask 방식) ======
-    private SpriteMask _cardMask;
-    private float _cornerRadius = 0.1f; // 모서리 반지름
 
     private Vector3 _dragOffset;
     private float _cameraZDepth;
@@ -194,7 +194,7 @@ public class DragController : MonoBehaviour
             _borders[direction].SetActive(false);
         }
     }
-    
+
     // 그룹에서 강제로 탈퇴 (스왑 당할 때 등)
     public void BreakFromGroup()
     {
@@ -202,13 +202,54 @@ public class DragController : MonoBehaviour
         {
             group.RemovePiece(this);
         }
-        
+
         // 새로운 단독 그룹 생성
         group = new PieceGroup();
         group.AddPiece(this);
-        
+
         // 테두리 초기화 (다시 다 보여줌)
         UpdateVisuals();
+
+        // EdgeCover 복원 (다시 다 가리기)
+        RestoreAllEdgeCovers();
+    }
+
+    // ====== EdgeCover 제어 메서드 ======
+
+    /// <summary>
+    /// 특정 방향의 EdgeCover를 제거합니다 (병합 시 호출).
+    /// </summary>
+    public void RemoveEdgeCover(int direction)
+    {
+        if (direction >= 0 && direction < 4 && _edgeCovers[direction] != null)
+        {
+            _edgeCovers[direction].SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 특정 방향의 EdgeCover를 복원합니다 (그룹 분리 시 호출).
+    /// </summary>
+    public void RestoreEdgeCover(int direction)
+    {
+        if (direction >= 0 && direction < 4 && _edgeCovers[direction] != null)
+        {
+            _edgeCovers[direction].SetActive(true);
+        }
+    }
+
+    /// <summary>
+    /// 모든 EdgeCover를 복원합니다 (그룹 완전 분리 시 호출).
+    /// </summary>
+    public void RestoreAllEdgeCovers()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (_edgeCovers[i] != null)
+            {
+                _edgeCovers[i].SetActive(true);
+            }
+        }
     }
 
     private Vector3 GetMouseWorldPos()
@@ -221,7 +262,7 @@ public class DragController : MonoBehaviour
     // ====== 카드 시스템 메서드 ======
 
     /// <summary>
-    /// 카드 컴포넌트를 초기화합니다 (뒷면, 프레임 생성).
+    /// 카드 컴포넌트를 초기화합니다 (뒷면 생성).
     /// </summary>
     public void InitializeCardVisuals(Sprite cardBackSprite, float frameThickness = 0.08f)
     {
@@ -231,29 +272,7 @@ public class DragController : MonoBehaviour
         float width = _spriteRenderer.bounds.size.x;
         float height = _spriteRenderer.bounds.size.y;
 
-        // 프레임 크기 (퍼즐보다 약간 크게)
-        float frameWidth = width + (frameThickness * 2);
-        float frameHeight = height + (frameThickness * 2);
-
-        // 1. 카드 프레임 생성 (퍼즐 이미지 뒤에 깔리는 배경)
-        GameObject frameObj = new GameObject("CardFrame");
-        frameObj.transform.SetParent(transform, false);
-        frameObj.transform.localPosition = Vector3.zero;
-
-        _cardFrameRenderer = frameObj.AddComponent<SpriteRenderer>();
-        Sprite frameSprite = CreatePixelSprite();
-        _cardFrameRenderer.sprite = frameSprite;
-        _cardFrameRenderer.color = new Color(0.95f, 0.92f, 0.85f); // 크림색 카드 배경
-        _cardFrameRenderer.sortingOrder = 0; // 퍼즐 이미지보다 아래
-
-        // 스프라이트 원본 크기 기준으로 스케일 계산
-        float frameSpriteWidth = frameSprite.bounds.size.x;
-        float frameSpriteHeight = frameSprite.bounds.size.y;
-        float frameScaleX = frameWidth / frameSpriteWidth;
-        float frameScaleY = frameHeight / frameSpriteHeight;
-        frameObj.transform.localScale = new Vector3(frameScaleX, frameScaleY, 1);
-
-        // 2. 카드 뒷면 생성 (프레임 위, 퍼즐 이미지 위에 덮음)
+        // 카드 뒷면 생성 (퍼즐 이미지 위에 덮음)
         GameObject backObj = new GameObject("CardBack");
         backObj.transform.SetParent(transform, false);
         backObj.transform.localPosition = Vector3.zero;
@@ -273,11 +292,11 @@ public class DragController : MonoBehaviour
         }
         _cardBackRenderer.sortingOrder = 3; // 퍼즐 이미지와 테두리 위에
 
-        // 스프라이트 원본 크기 기준으로 스케일 계산 (프레임과 동일한 크기로)
+        // 스프라이트 원본 크기 기준으로 스케일 계산
         float backSpriteWidth = backSprite.bounds.size.x;
         float backSpriteHeight = backSprite.bounds.size.y;
-        float backScaleX = frameWidth / backSpriteWidth;
-        float backScaleY = frameHeight / backSpriteHeight;
+        float backScaleX = width / backSpriteWidth;
+        float backScaleY = height / backSpriteHeight;
         backObj.transform.localScale = new Vector3(backScaleX, backScaleY, 1);
 
         // 초기 상태: 뒷면이 보이는 상태
@@ -291,8 +310,95 @@ public class DragController : MonoBehaviour
                 _borders[i].SetActive(false);
         }
 
-        // 둥근 모서리 초기화
-        InitializeRoundedCorners(frameThickness * 0.8f);
+        // EdgeCover 생성 (spacing 영역 가리기)
+        CreateEdgeCovers();
+
+        // EdgeCover도 뒷면 상태에서는 숨김
+        for (int i = 0; i < 4; i++)
+        {
+            if (_edgeCovers[i] != null)
+                _edgeCovers[i].SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 커버 크기를 설정합니다 (spacing/2).
+    /// </summary>
+    public void SetCoverSize(float size)
+    {
+        _coverSize = size;
+    }
+
+    /// <summary>
+    /// EdgeCover를 생성합니다 (각 방향의 spacing 영역을 가리는 불투명 커버).
+    /// </summary>
+    void CreateEdgeCovers()
+    {
+        Debug.Log($"[EdgeCover] CreateEdgeCovers 호출됨. _coverSize={_coverSize}, pieceWidth={pieceWidth}, pieceHeight={pieceHeight}");
+
+        if (_coverSize <= 0)
+        {
+            Debug.LogWarning("[EdgeCover] _coverSize가 0 이하입니다. EdgeCover 생성 안됨.");
+            return;
+        }
+
+        float width = pieceWidth;
+        float height = pieceHeight;
+
+        // 커버 색상 (디버깅용 빨간색 - 나중에 배경색으로 변경)
+        Color coverColor = new Color(1f, 0f, 0f, 1f);  // 빨간색 (디버깅용)
+
+        // 각 방향별 위치와 크기
+        // 0:Top, 1:Bottom, 2:Left, 3:Right
+        // EdgeCover는 이미지 가장자리에 위치하여 spacing/2 만큼 덮음
+        Vector3[] positions = new Vector3[]
+        {
+            new Vector3(0, (height - _coverSize) / 2, 0),   // Top: 상단 가장자리
+            new Vector3(0, -(height - _coverSize) / 2, 0),  // Bottom: 하단 가장자리
+            new Vector3(-(width - _coverSize) / 2, 0, 0),   // Left: 좌측 가장자리
+            new Vector3((width - _coverSize) / 2, 0, 0)     // Right: 우측 가장자리
+        };
+
+        Vector3[] scales = new Vector3[]
+        {
+            new Vector3(width, _coverSize, 1),      // Top (가로로 긴 막대)
+            new Vector3(width, _coverSize, 1),      // Bottom
+            new Vector3(_coverSize, height, 1),     // Left (세로로 긴 막대)
+            new Vector3(_coverSize, height, 1)      // Right
+        };
+
+        string[] names = new string[] { "EdgeCover_Top", "EdgeCover_Bottom", "EdgeCover_Left", "EdgeCover_Right" };
+
+        for (int i = 0; i < 4; i++)
+        {
+            GameObject cover = new GameObject(names[i]);
+            cover.transform.SetParent(transform, false);
+            cover.transform.localPosition = positions[i];
+
+            SpriteRenderer sr = cover.AddComponent<SpriteRenderer>();
+            // PPU=1인 스프라이트 생성 (스케일이 Unity 단위와 1:1 매칭되도록)
+            sr.sprite = CreateUnitSprite();
+            sr.color = coverColor;
+            sr.sortingOrder = 2; // 퍼즐 이미지(1) 위, 카드뒷면(3) 아래
+
+            // 스케일 적용 (PPU=1이므로 스케일 = 실제 Unity 크기)
+            cover.transform.localScale = scales[i];
+
+            _edgeCovers[i] = cover;
+
+            Debug.Log($"[EdgeCover] {names[i]} 생성됨. 위치={positions[i]}, 크기={scales[i]}");
+        }
+    }
+
+    /// <summary>
+    /// PPU=1인 1x1 픽셀 스프라이트를 생성합니다 (EdgeCover용).
+    /// </summary>
+    Sprite CreateUnitSprite()
+    {
+        Texture2D texture = new Texture2D(1, 1);
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f); // PPU = 1
     }
 
     /// <summary>
@@ -337,6 +443,13 @@ public class DragController : MonoBehaviour
                 _borders[i].SetActive(true);
         }
 
+        // EdgeCover 활성화 (spacing 영역 가리기)
+        for (int i = 0; i < 4; i++)
+        {
+            if (_edgeCovers[i] != null)
+                _edgeCovers[i].SetActive(true);
+        }
+
         // 2단계: 카드가 다시 펼쳐짐 (앞면이 나타나는 느낌)
         elapsed = 0f;
         while (elapsed < halfDuration)
@@ -371,6 +484,13 @@ public class DragController : MonoBehaviour
             if (_borders[i] != null)
                 _borders[i].SetActive(true);
         }
+
+        // EdgeCover 활성화
+        for (int i = 0; i < 4; i++)
+        {
+            if (_edgeCovers[i] != null)
+                _edgeCovers[i].SetActive(true);
+        }
     }
 
     /// <summary>
@@ -389,6 +509,13 @@ public class DragController : MonoBehaviour
         {
             if (_borders[i] != null)
                 _borders[i].SetActive(false);
+        }
+
+        // EdgeCover 숨김
+        for (int i = 0; i < 4; i++)
+        {
+            if (_edgeCovers[i] != null)
+                _edgeCovers[i].SetActive(false);
         }
     }
 
@@ -411,149 +538,11 @@ public class DragController : MonoBehaviour
     public SpriteRenderer CardBackRenderer => _cardBackRenderer;
 
     /// <summary>
-    /// 카드 프레임 렌더러를 반환합니다.
-    /// </summary>
-    public SpriteRenderer CardFrameRenderer => _cardFrameRenderer;
-
-    // ====== 둥근 모서리 메서드 (SpriteMask 방식) ======
-
-    /// <summary>
-    /// 둥근 모서리 마스크를 초기화합니다.
-    /// </summary>
-    public void InitializeRoundedCorners(float cornerRadius)
-    {
-        _cornerRadius = cornerRadius;
-
-        if (_spriteRenderer == null)
-            _spriteRenderer = GetComponent<SpriteRenderer>();
-
-        float width = _spriteRenderer.bounds.size.x;
-        float height = _spriteRenderer.bounds.size.y;
-
-        // 프레임 크기 (약간 더 큼)
-        float frameWidth = width + (cornerRadius * 2);
-        float frameHeight = height + (cornerRadius * 2);
-
-        // 둥근 사각형 마스크 스프라이트 생성
-        Sprite maskSprite = CreateRoundedRectSprite(frameWidth, frameHeight, cornerRadius);
-
-        // 마스크 오브젝트 생성
-        GameObject maskObj = new GameObject("CardMask");
-        maskObj.transform.SetParent(transform, false);
-        maskObj.transform.localPosition = Vector3.zero;
-
-        _cardMask = maskObj.AddComponent<SpriteMask>();
-        _cardMask.sprite = maskSprite;
-
-        // 마스크 크기 조정
-        float maskScaleX = frameWidth / maskSprite.bounds.size.x;
-        float maskScaleY = frameHeight / maskSprite.bounds.size.y;
-        maskObj.transform.localScale = new Vector3(maskScaleX, maskScaleY, 1);
-
-        // 카드 프레임과 뒷면에 마스크 적용
-        if (_cardFrameRenderer != null)
-        {
-            _cardFrameRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
-        }
-        if (_cardBackRenderer != null)
-        {
-            _cardBackRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
-        }
-    }
-
-    /// <summary>
-    /// 둥근 사각형 스프라이트를 생성합니다.
-    /// </summary>
-    private Sprite CreateRoundedRectSprite(float width, float height, float cornerRadius)
-    {
-        int pixelWidth = Mathf.Max(32, Mathf.RoundToInt(width * 100));
-        int pixelHeight = Mathf.Max(32, Mathf.RoundToInt(height * 100));
-        int pixelRadius = Mathf.Max(4, Mathf.RoundToInt(cornerRadius * 100));
-
-        Texture2D texture = new Texture2D(pixelWidth, pixelHeight);
-        texture.filterMode = FilterMode.Bilinear;
-
-        Color transparent = new Color(1, 1, 1, 0);
-        Color solid = Color.white;
-
-        // 모든 픽셀을 투명으로 초기화
-        Color[] clearPixels = new Color[pixelWidth * pixelHeight];
-        for (int i = 0; i < clearPixels.Length; i++)
-        {
-            clearPixels[i] = transparent;
-        }
-        texture.SetPixels(clearPixels);
-
-        // 둥근 사각형 채우기
-        for (int x = 0; x < pixelWidth; x++)
-        {
-            for (int y = 0; y < pixelHeight; y++)
-            {
-                bool inside = false;
-
-                // 중앙 영역 (모서리 제외)
-                if (x >= pixelRadius && x < pixelWidth - pixelRadius)
-                {
-                    inside = true;
-                }
-                else if (y >= pixelRadius && y < pixelHeight - pixelRadius)
-                {
-                    inside = true;
-                }
-                else
-                {
-                    // 모서리 영역 - 원 거리 체크
-                    float cx, cy;
-
-                    if (x < pixelRadius && y < pixelRadius)
-                    {
-                        // 좌하단 모서리
-                        cx = pixelRadius;
-                        cy = pixelRadius;
-                    }
-                    else if (x >= pixelWidth - pixelRadius && y < pixelRadius)
-                    {
-                        // 우하단 모서리
-                        cx = pixelWidth - pixelRadius;
-                        cy = pixelRadius;
-                    }
-                    else if (x < pixelRadius && y >= pixelHeight - pixelRadius)
-                    {
-                        // 좌상단 모서리
-                        cx = pixelRadius;
-                        cy = pixelHeight - pixelRadius;
-                    }
-                    else
-                    {
-                        // 우상단 모서리
-                        cx = pixelWidth - pixelRadius;
-                        cy = pixelHeight - pixelRadius;
-                    }
-
-                    float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                    inside = dist <= pixelRadius;
-                }
-
-                if (inside)
-                {
-                    texture.SetPixel(x, y, solid);
-                }
-            }
-        }
-
-        texture.Apply();
-
-        return Sprite.Create(texture, new Rect(0, 0, pixelWidth, pixelHeight), new Vector2(0.5f, 0.5f), 100f);
-    }
-
-    /// <summary>
-    /// 그룹 내 위치에 따라 모서리 가시성을 업데이트합니다.
-    /// (SpriteMask 방식에서는 현재 미구현 - 추후 개별 모서리 마스크로 확장 가능)
+    /// 그룹 내 위치에 따라 모서리 가시성을 업데이트합니다 (현재 미사용).
     /// </summary>
     public void UpdateCornersBasedOnGroup()
     {
-        // SpriteMask 방식에서는 전체 마스크를 사용하므로
-        // 개별 모서리 제어가 필요하면 추가 구현 필요
+        // 현재 미사용
     }
 }
 
@@ -574,32 +563,17 @@ public class PieceGroup
     }
 
     /// <summary>
-    /// 두 그룹을 병합하고, 병합되는 그룹의 조각들을 스냅하여 위치를 조정합니다.
-    /// anchorPiece: 현재 그룹에서 기준이 되는 조각
-    /// connectingPiece: 병합 대상 그룹에서 anchorPiece와 인접한 조각
+    /// 두 그룹을 병합합니다 (카드 이동 없음 - EdgeCover 제거로 이미지 연결).
+    /// 카드들은 슬롯 위치에 그대로 유지되고, EdgeCover만 제거되어 이미지가 연결됩니다.
     /// </summary>
     public void MergeGroupWithSnap(PieceGroup otherGroup, DragController anchorPiece, DragController connectingPiece)
     {
         if (otherGroup == this) return;
 
-        // anchor 조각을 기준으로 connecting 조각이 있어야 할 위치 계산
-        int gridDeltaX = connectingPiece.originalGridX - anchorPiece.originalGridX;
-        int gridDeltaY = connectingPiece.originalGridY - anchorPiece.originalGridY;
-
-        // spacing 없이 조각이 붙어야 하는 위치
-        Vector3 expectedConnectingPos = anchorPiece.transform.position + new Vector3(
-            gridDeltaX * anchorPiece.pieceWidth,
-            -gridDeltaY * anchorPiece.pieceHeight, // Y는 그리드 좌표와 반대 방향
-            0
-        );
-
-        // 현재 connecting 조각의 위치와의 차이 (이동해야 할 양)
-        Vector3 positionOffset = expectedConnectingPos - connectingPiece.transform.position;
-
-        // 병합 대상 그룹의 모든 조각을 이동시키고 현재 그룹에 추가
+        // 카드 위치 이동 없이 그룹만 병합
+        // EdgeCover 제거는 CheckNeighbor에서 처리됨
         foreach (var piece in otherGroup.pieces)
         {
-            piece.transform.position += positionOffset;
             piece.group = this;
             pieces.Add(piece);
         }
@@ -655,12 +629,6 @@ public class PieceGroup
             // 메인 퍼즐 이미지
             piece.GetComponent<SpriteRenderer>().sortingOrder = order;
 
-            // 카드 프레임 (퍼즐 이미지 뒤)
-            if (piece.CardFrameRenderer != null)
-            {
-                piece.CardFrameRenderer.sortingOrder = order - 1;
-            }
-
             // 카드 뒷면 (맨 위)
             if (piece.CardBackRenderer != null)
             {
@@ -671,9 +639,8 @@ public class PieceGroup
             var allRenderers = piece.GetComponentsInChildren<SpriteRenderer>();
             foreach (var sr in allRenderers)
             {
-                // 자기 자신, 카드 프레임, 카드 뒷면 제외
+                // 자기 자신, 카드 뒷면 제외
                 if (sr.gameObject == piece.gameObject) continue;
-                if (piece.CardFrameRenderer != null && sr == piece.CardFrameRenderer) continue;
                 if (piece.CardBackRenderer != null && sr == piece.CardBackRenderer) continue;
 
                 // 나머지는 테두리

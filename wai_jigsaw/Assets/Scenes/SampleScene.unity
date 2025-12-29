@@ -298,7 +298,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelManager: {fileID: 0}
   padding: 1
-  pieceSpacing: 0.08
+  pieceSpacing: 0.15
+  cardFlyDuration: 0.3
+  cardFlyDelay: 0.05
+  cardFlipDelay: 0.03
+  cardFlipDuration: 0.25
+  swapAnimationDuration: 0.15
 --- !u!4 &475670902
 Transform:
   m_ObjectHideFlags: 0
@@ -473,7 +478,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelManager: {fileID: 1453930745}
   padding: 0.5
-  pieceSpacing: 0.08
+  pieceSpacing: 0.2
+  cardFlyDuration: 0.3
+  cardFlyDelay: 0.05
+  cardFlipDelay: 0.03
+  cardFlipDuration: 0.25
+  swapAnimationDuration: 0.15
 --- !u!1 &948934011
 GameObject:
   m_ObjectHideFlags: 0
