@@ -2,12 +2,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using WaiJigsaw.Data;
+using WaiJigsaw.Core;
 
 /// <summary>
 /// 로비의 5x5 레벨 그리드를 생성하고 관리합니다.
-/// - Observer 패턴으로 GameDataContainer의 이벤트를 구독
+/// - MonoObject 상속으로 표준화된 생명주기 관리
+/// - Observer 자동 해제
 /// </summary>
-public class LobbyGridManager : MonoBehaviour
+public class LobbyGridManager : MonoObject
 {
     [Header("References")]
     [SerializeField] private LevelGroupManager _levelGroupManager;
@@ -27,24 +29,20 @@ public class LobbyGridManager : MonoBehaviour
     private const int GRID_SIZE = 5;
     private const int CARDS_PER_GROUP = 25;
 
-    // Observer 참조 (해제용)
-    private ActionObserver<LevelClearedEvent> _levelClearedObserver;
+    #region MonoObject Lifecycle
 
-    private void OnEnable()
+    protected override void OnEnabled()
     {
-        // LevelClearedEvent 구독
-        _levelClearedObserver = GameDataContainer.Instance.AddLevelClearedObserver(OnLevelClearedEvent);
+        // LevelClearedEvent 구독 (MonoObject가 자동 해제 관리)
+        RegisterLevelClearedObserver(OnLevelClearedEvent);
     }
 
-    private void OnDisable()
+    protected override void OnCleanup()
     {
-        // 구독 해제
-        if (_levelClearedObserver != null)
-        {
-            GameDataContainer.Instance.RemoveLevelClearedObserver(_levelClearedObserver);
-            _levelClearedObserver = null;
-        }
+        ClearGrid();
     }
+
+    #endregion
 
     /// <summary>
     /// 현재 레벨에 맞는 그리드를 생성합니다.

@@ -1,43 +1,36 @@
 using UnityEngine;
+using WaiJigsaw.Core;
 using WaiJigsaw.Data;
 
 namespace WaiJigsaw.UI
 {
     /// <summary>
     /// UI Mediator - 비즈니스 로직 담당
+    /// - MonoObject 상속으로 표준화된 생명주기 관리
     /// - 버튼 클릭 핸들러
-    /// - Observer 구독/해제
+    /// - Observer 자동 해제
     /// - GameManager 호출
     /// - View를 통해 UI 업데이트
     /// </summary>
-    public class UIMediator : MonoBehaviour
+    public class UIMediator : MonoObject
     {
         [Header("References")]
         [SerializeField] private UIView _view;
 
-        // Observer 참조 (해제용)
-        private ActionObserver<LevelChangedEvent> _levelChangedObserver;
+        #region MonoObject Lifecycle
 
-        private void OnEnable()
+        protected override void OnEnabled()
         {
-            // Observer 구독
-            _levelChangedObserver = GameDataContainer.Instance.AddLevelChangedObserver(OnLevelChanged);
+            // LevelChangedEvent 구독 (MonoObject가 자동 해제 관리)
+            RegisterLevelChangedObserver(OnLevelChanged);
         }
 
-        private void OnDisable()
-        {
-            // Observer 해제
-            if (_levelChangedObserver != null)
-            {
-                GameDataContainer.Instance.RemoveLevelChangedObserver(_levelChangedObserver);
-                _levelChangedObserver = null;
-            }
-        }
-
-        private void Start()
+        protected override void OnInitialize()
         {
             RegisterButtonEvents();
         }
+
+        #endregion
 
         #region Button Event Registration
 
