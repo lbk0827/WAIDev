@@ -1,10 +1,22 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // TextMeshPro 네임스페이스 추가
+using TMPro;
+using WaiJigsaw.Data;
+using System;
 
 /// <summary>
-/// 게임의 전체 UI 패널(화면)들을 관리하고, 상태에 따라 적절한 UI를 보여줍니다.
+/// [DEPRECATED] 이 클래스는 UIView + UIMediator로 분리되었습니다.
+/// - UIView: UI 컴포넌트 참조 및 표시 메서드
+/// - UIMediator: 비즈니스 로직 (버튼 핸들러, Observer 구독)
+///
+/// 마이그레이션:
+/// 1. 씬에서 UIManager 컴포넌트 제거
+/// 2. UIView와 UIMediator 컴포넌트 추가
+/// 3. UIView의 UI 컴포넌트 참조 재설정
+/// 4. UIMediator의 _view 참조에 UIView 연결
+/// 5. GameManager의 uiMediator 참조에 UIMediator 연결
 /// </summary>
+[Obsolete("UIManager는 deprecated 되었습니다. UIView + UIMediator를 사용하세요.")]
 public class UIManager : MonoBehaviour
 {
     [Header("Game Panels")]
@@ -32,12 +44,31 @@ public class UIManager : MonoBehaviour
     public TMP_Text resultLevelText;
     public Button resultNextButton;
 
+    // Observer 참조 (해제용)
+    private ActionObserver<LevelChangedEvent> _levelChangedObserver;
+
+    private void OnEnable()
+    {
+        // LevelChangedEvent 구독
+        _levelChangedObserver = GameDataContainer.Instance.AddLevelChangedObserver(OnLevelChangedEvent);
+    }
+
+    private void OnDisable()
+    {
+        // 구독 해제
+        if (_levelChangedObserver != null)
+        {
+            GameDataContainer.Instance.RemoveLevelChangedObserver(_levelChangedObserver);
+            _levelChangedObserver = null;
+        }
+    }
+
     private void Start()
     {
         // --- Home Panel Events ---
         if (homePlayButton != null)
             homePlayButton.onClick.AddListener(OnHomePlayClicked);
-        
+
         if (homeSettingsButton != null)
             homeSettingsButton.onClick.AddListener(OnHomeSettingsClicked);
 
@@ -51,23 +82,48 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
+    /// LevelChangedEvent 핸들러 (Observer 패턴)
+    /// </summary>
+    private void OnLevelChangedEvent(LevelChangedEvent evt)
+    {
+        // 홈 화면이 활성화된 상태라면 UI 업데이트
+        if (homePanel != null && homePanel.activeSelf)
+        {
+            UpdateHomeUI(evt.NewLevel);
+        }
+
+        Debug.Log($"[UIManager] 레벨 변경 이벤트 수신: {evt.OldLevel} -> {evt.NewLevel}");
+    }
+
+    /// <summary>
+    /// 홈 화면 UI 업데이트
+    /// </summary>
+    private void UpdateHomeUI(int currentLevel)
+    {
+        // 플레이 버튼 텍스트 업데이트
+        if (homePlayButtonText != null)
+        {
+            homePlayButtonText.text = $"PLAY\n<size=60%>Level {currentLevel}</size>";
+        }
+    }
+
+    /// <summary>
     /// 홈 화면을 보여줍니다.
     /// </summary>
     public void ShowHome()
     {
         ActivatePanel(homePanel);
 
+        int currentLevel = GameDataContainer.Instance.CurrentLevel;
+
         // 로비 그리드 설정 (5x5 레벨 카드)
-        if (lobbyGridManager != null && GameManager.Instance != null)
+        if (lobbyGridManager != null)
         {
-            lobbyGridManager.SetupGrid(GameManager.Instance.CurrentLevel);
+            lobbyGridManager.SetupGrid(currentLevel);
         }
 
-        // 플레이 버튼 텍스트 업데이트 (기존 방식 호환용)
-        if (GameManager.Instance != null && homePlayButtonText != null)
-        {
-            homePlayButtonText.text = $"PLAY\n<size=60%>Level {GameManager.Instance.CurrentLevel}</size>";
-        }
+        // 플레이 버튼 텍스트 업데이트
+        UpdateHomeUI(currentLevel);
     }
 
     /// <summary>

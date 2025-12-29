@@ -5,6 +5,7 @@ using WaiJigsaw.Data;
 
 /// <summary>
 /// 로비의 5x5 레벨 그리드를 생성하고 관리합니다.
+/// - Observer 패턴으로 GameDataContainer의 이벤트를 구독
 /// </summary>
 public class LobbyGridManager : MonoBehaviour
 {
@@ -25,6 +26,25 @@ public class LobbyGridManager : MonoBehaviour
 
     private const int GRID_SIZE = 5;
     private const int CARDS_PER_GROUP = 25;
+
+    // Observer 참조 (해제용)
+    private ActionObserver<LevelClearedEvent> _levelClearedObserver;
+
+    private void OnEnable()
+    {
+        // LevelClearedEvent 구독
+        _levelClearedObserver = GameDataContainer.Instance.AddLevelClearedObserver(OnLevelClearedEvent);
+    }
+
+    private void OnDisable()
+    {
+        // 구독 해제
+        if (_levelClearedObserver != null)
+        {
+            GameDataContainer.Instance.RemoveLevelClearedObserver(_levelClearedObserver);
+            _levelClearedObserver = null;
+        }
+    }
 
     /// <summary>
     /// 현재 레벨에 맞는 그리드를 생성합니다.
@@ -191,14 +211,16 @@ public class LobbyGridManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 특정 레벨이 클리어되었을 때 호출합니다.
+    /// LevelClearedEvent 핸들러 (Observer 패턴)
     /// </summary>
-    public void OnLevelCleared(int levelNumber)
+    private void OnLevelClearedEvent(LevelClearedEvent evt)
     {
         // 현재 표시 중인 그룹에 해당하는 레벨인지 확인
         if (_currentGroup == null) return;
 
+        int levelNumber = evt.ClearedLevel;
         int index = levelNumber - _currentGroup.StartLevel;
+
         if (index >= 0 && index < _cardSlots.Count)
         {
             _cardSlots[index].SetCleared();
@@ -209,6 +231,11 @@ public class LobbyGridManager : MonoBehaviour
         if (nextIndex < _cardSlots.Count)
         {
             _cardSlots[nextIndex].SetAsCurrent();
+        }
+
+        if (_showDebugInfo)
+        {
+            Debug.Log($"[LobbyGridManager] 레벨 클리어 이벤트 수신: Level {levelNumber}");
         }
     }
 

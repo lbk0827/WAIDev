@@ -1,10 +1,12 @@
 using UnityEngine;
 using WaiJigsaw.Data;
+using WaiJigsaw.UI;
 
 /// <summary>
 /// 게임의 전반적인 상태와 흐름을 관리하는 중앙 관리자입니다.
 /// (싱글턴 패턴 사용)
 /// - 데이터 관리는 GameDataContainer에 위임
+/// - UI 로직은 UIMediator에 위임
 /// - 게임 흐름 제어에 집중
 /// </summary>
 public class GameManager : MonoBehaviour
@@ -12,11 +14,10 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [Header("Component References")]
-    public UIManager uiManager;
+    public UIMediator uiMediator;
     public PuzzleBoardSetup puzzleBoard;
     public LevelManager levelManager;
     public LevelGroupManager levelGroupManager;
-    public LobbyGridManager lobbyGridManager;
 
     /// <summary>
     /// 현재 레벨 (GameDataContainer에서 가져옴)
@@ -53,9 +54,9 @@ public class GameManager : MonoBehaviour
         {
             puzzleBoard.ClearBoard();
         }
-        if (uiManager != null)
+        if (uiMediator != null)
         {
-            uiManager.ShowHome();
+            uiMediator.ShowHome();
         }
     }
 
@@ -89,19 +90,19 @@ public class GameManager : MonoBehaviour
     /// <param name="levelNumber">시작할 레벨 번호</param>
     public void StartLevel(int levelNumber)
     {
-        if (uiManager != null && puzzleBoard != null)
+        if (uiMediator != null && puzzleBoard != null)
         {
-            uiManager.ShowPuzzle();
+            uiMediator.ShowPuzzle();
             puzzleBoard.SetupCurrentLevel(levelNumber);
         }
     }
 
     public void ShowLevelIntro()
     {
-        if (uiManager != null && levelManager != null)
+        if (uiMediator != null && levelManager != null)
         {
             LevelConfig config = levelManager.GetLevelInfo(CurrentLevel);
-            uiManager.ShowLevelIntro(config);
+            uiMediator.ShowLevelIntro(config);
         }
     }
 
@@ -110,9 +111,11 @@ public class GameManager : MonoBehaviour
         int clearedLevel = CurrentLevel;
 
         // 현재 레벨을 클리어 처리 (GameDataContainer에 위임)
+        // -> LevelClearedEvent 발생 -> LobbyGridManager가 자동으로 카드 플립
         GameDataContainer.Instance.MarkLevelCleared(clearedLevel);
 
         // 다음 레벨로 이동 (GameDataContainer에 위임)
+        // -> LevelChangedEvent 발생 -> UIManager가 자동으로 UI 업데이트
         GameDataContainer.Instance.AdvanceToNextLevel();
         SaveGameData();
 
@@ -121,15 +124,9 @@ public class GameManager : MonoBehaviour
             puzzleBoard.ClearBoard();
         }
 
-        // 로비 그리드 업데이트 (클리어 애니메이션)
-        if (lobbyGridManager != null)
+        if (uiMediator != null)
         {
-            lobbyGridManager.OnLevelCleared(clearedLevel);
-        }
-
-        if (uiManager != null)
-        {
-            uiManager.ShowResult();
+            uiMediator.ShowResult();
         }
     }
 

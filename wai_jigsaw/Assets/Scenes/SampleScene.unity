@@ -331,11 +331,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e87bb7dd36440f143ae110c9b7ef3178, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiManager: {fileID: 1913944665}
+  uiMediator: {fileID: 1913944666}
   puzzleBoard: {fileID: 670978089}
   levelManager: {fileID: 0}
   levelGroupManager: {fileID: 970958770}
-  lobbyGridManager: {fileID: 970958772}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1777,7 +1776,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1913944664}
-  - component: {fileID: 1913944665}
+  - component: {fileID: 1913944667}
+  - component: {fileID: 1913944666}
   m_Layer: 0
   m_Name: UIManager
   m_TagString: Untagged
@@ -1800,7 +1800,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1913944665
+--- !u!114 &1913944666
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1809,24 +1809,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 1913944662}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b5eb7c1cbfc1e142b90645a2b037a0e, type: 3}
+  m_Script: {fileID: 11500000, guid: cdefeebffacd188459328ec908fcea94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  homePanel: {fileID: 1790452257}
-  levelIntroPanel: {fileID: 0}
-  puzzlePanel: {fileID: 211050858}
-  resultPanel: {fileID: 948934011}
-  homeTitleText: {fileID: 1978951112}
-  homeSettingsButton: {fileID: 1024364385}
-  homePlayButton: {fileID: 958063799}
-  homePlayButtonText: {fileID: 1459110783}
-  lobbyGridManager: {fileID: 970958772}
-  introLevelText: {fileID: 0}
-  introImagePreview: {fileID: 0}
-  introPiecesText: {fileID: 0}
-  introPlayButton: {fileID: 0}
-  resultLevelText: {fileID: 1338135170}
-  resultNextButton: {fileID: 1802785224}
+  _view: {fileID: 1913944667}
+--- !u!114 &1913944667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913944662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd3f72f39a3ce674ebab29471e30fdf7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _homePanel: {fileID: 1790452257}
+  _levelIntroPanel: {fileID: 0}
+  _puzzlePanel: {fileID: 211050858}
+  _resultPanel: {fileID: 948934011}
+  _homeTitleText: {fileID: 1978951112}
+  _homeSettingsButton: {fileID: 1024364385}
+  _homePlayButton: {fileID: 958063799}
+  _homePlayButtonText: {fileID: 1459110783}
+  _lobbyGridManager: {fileID: 970958772}
+  _introLevelText: {fileID: 0}
+  _introImagePreview: {fileID: 0}
+  _introPiecesText: {fileID: 0}
+  _introPlayButton: {fileID: 0}
+  _resultLevelText: {fileID: 1338135170}
+  _resultNextButton: {fileID: 1802785224}
 --- !u!1 &1978951110
 GameObject:
   m_ObjectHideFlags: 0
