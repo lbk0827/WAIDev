@@ -50,6 +50,11 @@ public class DragController : MonoBehaviour
     private Vector4 _cornerRadii = new Vector4(0.05f, 0.05f, 0.05f, 0.05f);
     private float _defaultCornerRadius = 0.05f;
 
+    // ====== Padding 시스템 (셰이더 기반 spacing) ======
+    private const string PADDING_PROPERTY = "_Padding";  // Vector4 (Left, Right, Top, Bottom)
+    private Vector4 _padding = Vector4.zero;  // 각 방향의 패딩값 (UV 비율)
+    private float _defaultPaddingWorldSize = 0f;  // 기본 패딩값 (World Space 크기)
+
     void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -223,8 +228,8 @@ public class DragController : MonoBehaviour
         // 테두리 초기화 (다시 다 보여줌)
         UpdateVisuals();
 
-        // EdgeCover 복원 (다시 다 가리기)
-        RestoreAllEdgeCovers();
+        // Padding 복원 (다시 다 가리기) - EdgeCover 대체
+        RestoreAllPadding();
 
         // 둥근 모서리 복원 (4개 모두 둥글게)
         RestoreAllCorners();
@@ -280,19 +285,32 @@ public class DragController : MonoBehaviour
     /// <summary>
     /// 둥근 모서리 셰이더를 적용합니다.
     /// </summary>
-    public void ApplyRoundedCornerShader(float cornerRadius = 0.05f)
+    /// <param name="cornerRadius">모서리 반경 (0~0.5)</param>
+    /// <param name="shader">Inspector에서 참조한 셰이더 (null이면 Shader.Find 시도)</param>
+    public void ApplyRoundedCornerShader(float cornerRadius = 0.05f, Shader shader = null)
     {
         if (_spriteRenderer == null)
             _spriteRenderer = GetComponent<SpriteRenderer>();
 
-        // 셰이더 로드 (한 번만)
+        Debug.Log($"[DragController] ApplyRoundedCornerShader 시작: pieceWidth={pieceWidth}, pieceHeight={pieceHeight}");
+
+        // 셰이더 설정 (전달받은 셰이더 우선, 없으면 Shader.Find 시도)
         if (_roundedShader == null)
         {
-            _roundedShader = Shader.Find(ROUNDED_SHADER_NAME);
-            if (_roundedShader == null)
+            if (shader != null)
             {
-                Debug.LogWarning($"[DragController] 셰이더를 찾을 수 없습니다: {ROUNDED_SHADER_NAME}");
-                return;
+                _roundedShader = shader;
+                Debug.Log($"[DragController] Inspector에서 셰이더 참조 사용: {shader.name}");
+            }
+            else
+            {
+                _roundedShader = Shader.Find(ROUNDED_SHADER_NAME);
+                if (_roundedShader == null)
+                {
+                    Debug.LogError($"[DragController] 셰이더를 찾을 수 없습니다: {ROUNDED_SHADER_NAME}");
+                    return;
+                }
+                Debug.Log($"[DragController] Shader.Find로 셰이더 로드 성공: {ROUNDED_SHADER_NAME}");
             }
         }
 
@@ -328,11 +346,12 @@ public class DragController : MonoBehaviour
         _propertyBlock.SetVector(UV_RECT_PROPERTY, uvRect);
         _propertyBlock.SetFloat(CORNER_RADIUS_PROPERTY, cornerRadius);
         _propertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+        _propertyBlock.SetVector(PADDING_PROPERTY, _padding);  // Padding 초기값도 설정
         _propertyBlock.SetTexture("_MainTex", texture);
 
         _spriteRenderer.SetPropertyBlock(_propertyBlock);
 
-        Debug.Log($"[DragController] 둥근 모서리 셰이더 적용됨. CornerRadius={cornerRadius}, UVRect={uvRect}");
+        Debug.Log($"[DragController] 둥근 모서리 셰이더 적용됨. CornerRadius={cornerRadius}, UVRect={uvRect}, Padding={_padding}");
     }
 
     /// <summary>
@@ -423,6 +442,115 @@ public class DragController : MonoBehaviour
         ApplyCornerRadii();
     }
 
+    // ====== Padding 시스템 메서드 ======
+
+    /// <summary>
+    /// 기본 패딩값을 설정합니다. (pieceSpacing/2 기준으로 UV 비율 계산)
+    /// </summary>
+    public void SetDefaultPadding(float paddingWorldSize)
+    {
+        // World space 크기 저장 (복원 시 재계산용)
+        _defaultPaddingWorldSize = paddingWorldSize;
+
+        // World space에서 UV 비율로 변환
+        // pieceWidth/Height는 Unity unit 크기이고, UV는 0~1 범위
+        // padding 비율 = paddingWorldSize / pieceWidth (또는 Height)
+        float paddingRatioX = pieceWidth > 0 ? paddingWorldSize / pieceWidth : 0f;
+        float paddingRatioY = pieceHeight > 0 ? paddingWorldSize / pieceHeight : 0f;
+
+        // 4방향 패딩 설정 (Left, Right, Top, Bottom)
+        _padding = new Vector4(paddingRatioX, paddingRatioX, paddingRatioY, paddingRatioY);
+        ApplyPadding();
+
+        Debug.Log($"[DragController] Padding 설정: worldSize={paddingWorldSize}, ratioX={paddingRatioX}, ratioY={paddingRatioY}");
+    }
+
+    /// <summary>
+    /// 현재 패딩값을 PropertyBlock에 적용합니다.
+    /// </summary>
+    private void ApplyPadding()
+    {
+        if (_propertyBlock != null && _spriteRenderer != null)
+        {
+            _propertyBlock.SetVector(PADDING_PROPERTY, _padding);
+            _spriteRenderer.SetPropertyBlock(_propertyBlock);
+            Debug.Log($"[DragController] ApplyPadding 완료: Padding={_padding}");
+        }
+        else
+        {
+            Debug.LogWarning($"[DragController] ApplyPadding 실패: _propertyBlock={_propertyBlock != null}, _spriteRenderer={_spriteRenderer != null}");
+        }
+    }
+
+    /// <summary>
+    /// 특정 방향의 패딩을 설정합니다.
+    /// direction: 0=Left, 1=Right, 2=Top, 3=Bottom
+    /// </summary>
+    public void SetPaddingAt(int direction, float value)
+    {
+        switch (direction)
+        {
+            case 0: _padding.x = value; break; // Left
+            case 1: _padding.y = value; break; // Right
+            case 2: _padding.z = value; break; // Top
+            case 3: _padding.w = value; break; // Bottom
+        }
+        ApplyPadding();
+    }
+
+    /// <summary>
+    /// 특정 방향의 패딩을 제거합니다 (0으로 설정).
+    /// direction: 0=Top, 1=Bottom, 2=Left, 3=Right (EdgeCover와 동일한 순서)
+    /// </summary>
+    public void RemovePadding(int direction)
+    {
+        // EdgeCover 순서: 0=Top, 1=Bottom, 2=Left, 3=Right
+        // Padding 순서: x=Left, y=Right, z=Top, w=Bottom
+        // 변환 필요
+        switch (direction)
+        {
+            case 0: _padding.z = 0f; break; // Top
+            case 1: _padding.w = 0f; break; // Bottom
+            case 2: _padding.x = 0f; break; // Left
+            case 3: _padding.y = 0f; break; // Right
+        }
+        ApplyPadding();
+    }
+
+    /// <summary>
+    /// 특정 방향의 패딩을 기본값으로 복원합니다.
+    /// direction: 0=Top, 1=Bottom, 2=Left, 3=Right (EdgeCover와 동일한 순서)
+    /// </summary>
+    public void RestorePadding(int direction)
+    {
+        // World size에서 UV 비율 재계산
+        float paddingRatioX = pieceWidth > 0 ? _defaultPaddingWorldSize / pieceWidth : 0f;
+        float paddingRatioY = pieceHeight > 0 ? _defaultPaddingWorldSize / pieceHeight : 0f;
+
+        // EdgeCover 순서: 0=Top, 1=Bottom, 2=Left, 3=Right
+        switch (direction)
+        {
+            case 0: _padding.z = paddingRatioY; break; // Top
+            case 1: _padding.w = paddingRatioY; break; // Bottom
+            case 2: _padding.x = paddingRatioX; break; // Left
+            case 3: _padding.y = paddingRatioX; break; // Right
+        }
+        ApplyPadding();
+    }
+
+    /// <summary>
+    /// 모든 방향의 패딩을 기본값으로 복원합니다.
+    /// </summary>
+    public void RestoreAllPadding()
+    {
+        // World size에서 UV 비율 재계산
+        float paddingRatioX = pieceWidth > 0 ? _defaultPaddingWorldSize / pieceWidth : 0f;
+        float paddingRatioY = pieceHeight > 0 ? _defaultPaddingWorldSize / pieceHeight : 0f;
+
+        _padding = new Vector4(paddingRatioX, paddingRatioX, paddingRatioY, paddingRatioY);
+        ApplyPadding();
+    }
+
     // ====== 카드 시스템 메서드 ======
 
     /// <summary>
@@ -474,15 +602,9 @@ public class DragController : MonoBehaviour
                 _borders[i].SetActive(false);
         }
 
-        // EdgeCover 생성 (spacing 영역 가리기)
-        CreateEdgeCovers();
-
-        // EdgeCover도 뒷면 상태에서는 숨김
-        for (int i = 0; i < 4; i++)
-        {
-            if (_edgeCovers[i] != null)
-                _edgeCovers[i].SetActive(false);
-        }
+        // [Deprecated] EdgeCover는 더 이상 사용하지 않음 - Padding 셰이더로 대체
+        // CreateEdgeCovers();
+        // Padding은 ApplyRoundedCornerShader 호출 후 SetDefaultPadding으로 설정됨
     }
 
     /// <summary>
@@ -614,12 +736,8 @@ public class DragController : MonoBehaviour
                 _borders[i].SetActive(true);
         }
 
-        // EdgeCover 활성화 (spacing 영역 가리기)
-        for (int i = 0; i < 4; i++)
-        {
-            if (_edgeCovers[i] != null)
-                _edgeCovers[i].SetActive(true);
-        }
+        // [Padding 셰이더 기반] EdgeCover는 더 이상 사용하지 않음
+        // Padding은 항상 활성화 상태 (셰이더에서 처리)
 
         // 2단계: 카드가 다시 펼쳐짐 (앞면이 나타나는 느낌)
         elapsed = 0f;
@@ -656,12 +774,7 @@ public class DragController : MonoBehaviour
                 _borders[i].SetActive(true);
         }
 
-        // EdgeCover 활성화
-        for (int i = 0; i < 4; i++)
-        {
-            if (_edgeCovers[i] != null)
-                _edgeCovers[i].SetActive(true);
-        }
+        // [Padding 셰이더 기반] EdgeCover 대신 Padding 사용 - 별도 처리 불필요
     }
 
     /// <summary>
@@ -682,12 +795,7 @@ public class DragController : MonoBehaviour
                 _borders[i].SetActive(false);
         }
 
-        // EdgeCover 숨김
-        for (int i = 0; i < 4; i++)
-        {
-            if (_edgeCovers[i] != null)
-                _edgeCovers[i].SetActive(false);
-        }
+        // [Padding 셰이더 기반] EdgeCover 대신 Padding 사용 - 별도 처리 불필요
     }
 
     /// <summary>

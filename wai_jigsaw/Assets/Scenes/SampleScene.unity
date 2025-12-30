@@ -300,6 +300,7 @@ MonoBehaviour:
   padding: 1
   pieceSpacing: 0.15
   cornerRadius: 0.05
+  roundedCornerShader: {fileID: 0}
   cardFlyDuration: 0.3
   cardFlyDelay: 0.05
   cardFlipDelay: 0.03
@@ -478,8 +479,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelManager: {fileID: 1453930745}
   padding: 0.5
-  pieceSpacing: 0.2
+  pieceSpacing: 0.125
   cornerRadius: 0.13
+  roundedCornerShader: {fileID: 4800000, guid: 65bb4e07d1b259945ab53f49c66aad8b, type: 3}
   cardFlyDuration: 0.3
   cardFlyDelay: 0.05
   cardFlipDelay: 0.03
