@@ -43,7 +43,12 @@ public class DragController : MonoBehaviour
     private MaterialPropertyBlock _propertyBlock;    // 개별 프로퍼티 설정용
     private const string ROUNDED_SHADER_NAME = "Custom/RoundedSprite";
     private const string CORNER_RADIUS_PROPERTY = "_CornerRadius";
+    private const string CORNER_RADII_PROPERTY = "_CornerRadii";  // Vector4 (TL, TR, BL, BR)
     private const string UV_RECT_PROPERTY = "_UVRect";
+
+    // 각 모서리 반경 저장 (TL, TR, BL, BR)
+    private Vector4 _cornerRadii = new Vector4(0.05f, 0.05f, 0.05f, 0.05f);
+    private float _defaultCornerRadius = 0.05f;
 
     void Awake()
     {
@@ -220,6 +225,9 @@ public class DragController : MonoBehaviour
 
         // EdgeCover 복원 (다시 다 가리기)
         RestoreAllEdgeCovers();
+
+        // 둥근 모서리 복원 (4개 모두 둥글게)
+        RestoreAllCorners();
     }
 
     // ====== EdgeCover 제어 메서드 ======
@@ -309,12 +317,17 @@ public class DragController : MonoBehaviour
 
         Vector4 uvRect = new Vector4(uvMinX, uvMinY, uvMaxX, uvMaxY);
 
+        // 기본 모서리 반경 저장 및 초기화
+        _defaultCornerRadius = cornerRadius;
+        _cornerRadii = new Vector4(cornerRadius, cornerRadius, cornerRadius, cornerRadius);
+
         // MaterialPropertyBlock으로 개별 프로퍼티 설정 (Material 복사 없이)
         _propertyBlock = new MaterialPropertyBlock();
         _spriteRenderer.GetPropertyBlock(_propertyBlock);
 
         _propertyBlock.SetVector(UV_RECT_PROPERTY, uvRect);
         _propertyBlock.SetFloat(CORNER_RADIUS_PROPERTY, cornerRadius);
+        _propertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
         _propertyBlock.SetTexture("_MainTex", texture);
 
         _spriteRenderer.SetPropertyBlock(_propertyBlock);
@@ -344,6 +357,70 @@ public class DragController : MonoBehaviour
             return _propertyBlock.GetFloat(CORNER_RADIUS_PROPERTY);
         }
         return 0f;
+    }
+
+    /// <summary>
+    /// 특정 방향의 모서리 반경을 설정합니다.
+    /// direction: 0=TopLeft, 1=TopRight, 2=BottomLeft, 3=BottomRight
+    /// </summary>
+    public void SetCornerRadiusAt(int direction, float radius)
+    {
+        switch (direction)
+        {
+            case 0: _cornerRadii.x = radius; break; // TL
+            case 1: _cornerRadii.y = radius; break; // TR
+            case 2: _cornerRadii.z = radius; break; // BL
+            case 3: _cornerRadii.w = radius; break; // BR
+        }
+        ApplyCornerRadii();
+    }
+
+    /// <summary>
+    /// 모든 모서리 반경을 개별적으로 설정합니다.
+    /// </summary>
+    public void SetCornerRadii(float topLeft, float topRight, float bottomLeft, float bottomRight)
+    {
+        _cornerRadii = new Vector4(topLeft, topRight, bottomLeft, bottomRight);
+        ApplyCornerRadii();
+    }
+
+    /// <summary>
+    /// 현재 모서리 반경을 PropertyBlock에 적용합니다.
+    /// </summary>
+    private void ApplyCornerRadii()
+    {
+        if (_propertyBlock != null && _spriteRenderer != null)
+        {
+            _propertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+            _spriteRenderer.SetPropertyBlock(_propertyBlock);
+        }
+    }
+
+    /// <summary>
+    /// 특정 방향의 모서리를 숨깁니다 (반경 0으로 설정).
+    /// direction: 0=TopLeft, 1=TopRight, 2=BottomLeft, 3=BottomRight
+    /// </summary>
+    public void HideCorner(int direction)
+    {
+        SetCornerRadiusAt(direction, 0f);
+    }
+
+    /// <summary>
+    /// 특정 방향의 모서리를 복원합니다 (기본 반경으로).
+    /// direction: 0=TopLeft, 1=TopRight, 2=BottomLeft, 3=BottomRight
+    /// </summary>
+    public void RestoreCorner(int direction)
+    {
+        SetCornerRadiusAt(direction, _defaultCornerRadius);
+    }
+
+    /// <summary>
+    /// 모든 모서리를 기본 반경으로 복원합니다.
+    /// </summary>
+    public void RestoreAllCorners()
+    {
+        _cornerRadii = new Vector4(_defaultCornerRadius, _defaultCornerRadius, _defaultCornerRadius, _defaultCornerRadius);
+        ApplyCornerRadii();
     }
 
     // ====== 카드 시스템 메서드 ======
@@ -632,11 +709,50 @@ public class DragController : MonoBehaviour
     public SpriteRenderer CardBackRenderer => _cardBackRenderer;
 
     /// <summary>
-    /// 그룹 내 위치에 따라 모서리 가시성을 업데이트합니다 (현재 미사용).
+    /// 그룹 내 위치에 따라 모서리 가시성을 업데이트합니다.
+    /// 인접한 조각이 있는 방향의 모서리는 직각(0)으로, 없는 방향은 둥글게.
     /// </summary>
     public void UpdateCornersBasedOnGroup()
     {
-        // 현재 미사용
+        if (group == null || group.pieces.Count <= 1)
+        {
+            // 그룹이 없거나 혼자면 모든 모서리 복원
+            RestoreAllCorners();
+            return;
+        }
+
+        // 인접 방향 확인 (같은 그룹 내에서)
+        bool hasTop = false;
+        bool hasBottom = false;
+        bool hasLeft = false;
+        bool hasRight = false;
+
+        foreach (var other in group.pieces)
+        {
+            if (other == this) continue;
+
+            int dx = other.originalGridX - this.originalGridX;
+            int dy = other.originalGridY - this.originalGridY;
+
+            // 상하좌우 인접 확인 (대각선 제외)
+            if (dx == 0 && dy == -1) hasTop = true;     // 위쪽 (Y가 작을수록 위)
+            if (dx == 0 && dy == 1) hasBottom = true;   // 아래쪽
+            if (dx == -1 && dy == 0) hasLeft = true;    // 왼쪽
+            if (dx == 1 && dy == 0) hasRight = true;    // 오른쪽
+        }
+
+        // 각 모서리 결정: 해당 모서리에 닿는 두 변 중 하나라도 인접 조각이 있으면 직각
+        // TL (Top-Left): 위 또는 왼쪽에 인접 조각 있으면 직각
+        // TR (Top-Right): 위 또는 오른쪽에 인접 조각 있으면 직각
+        // BL (Bottom-Left): 아래 또는 왼쪽에 인접 조각 있으면 직각
+        // BR (Bottom-Right): 아래 또는 오른쪽에 인접 조각 있으면 직각
+
+        float radiusTL = (hasTop || hasLeft) ? 0f : _defaultCornerRadius;
+        float radiusTR = (hasTop || hasRight) ? 0f : _defaultCornerRadius;
+        float radiusBL = (hasBottom || hasLeft) ? 0f : _defaultCornerRadius;
+        float radiusBR = (hasBottom || hasRight) ? 0f : _defaultCornerRadius;
+
+        SetCornerRadii(radiusTL, radiusTR, radiusBL, radiusBR);
     }
 }
 

@@ -6,7 +6,8 @@ Shader "Custom/RoundedSprite"
         _Color ("Tint", Color) = (1,1,1,1)
 
         [Header(Rounded Corners)]
-        _CornerRadius ("Corner Radius", Range(0, 0.5)) = 0.1
+        _CornerRadius ("Corner Radius (default)", Range(0, 0.5)) = 0.1
+        [HideInInspector] _CornerRadii ("Corner Radii (TL, TR, BL, BR)", Vector) = (0.1, 0.1, 0.1, 0.1)
 
         [Header(Debug)]
         _DebugMode ("Debug Mode (0=Off, 1=RawUV, 2=NormalizedUV)", Range(0, 2)) = 0
@@ -70,6 +71,7 @@ Shader "Custom/RoundedSprite"
             fixed4 _RendererColor;
             float4 _Flip;
             float _CornerRadius;
+            float4 _CornerRadii;  // x=TL, y=TR, z=BL, w=BR
             float4 _UVRect;  // xy = UV min, zw = UV max
             float _DebugMode;
 
@@ -108,12 +110,29 @@ Shader "Custom/RoundedSprite"
             }
 
             /// <summary>
-            /// Signed Distance Function for a rounded box
-            /// Returns negative values inside the box, positive outside
+            /// Signed Distance Function for a rounded box with 4 individual corner radii
+            /// centerPosition: -0.5~0.5 range (centered)
+            /// size: half size (0.5, 0.5)
+            /// radii: x=TopLeft, y=TopRight, z=BottomLeft, w=BottomRight
             /// </summary>
-            float roundedBoxSDF(float2 centerPosition, float2 size, float radius)
+            float roundedBoxSDF4(float2 centerPosition, float2 size, float4 radii)
             {
-                // Get the distance from the edge
+                // Determine which corner's radius to use based on quadrant
+                // centerPosition: negative x = left, positive x = right
+                //                 positive y = top, negative y = bottom
+                float radius;
+                if (centerPosition.x < 0.0)
+                {
+                    // Left side
+                    radius = (centerPosition.y > 0.0) ? radii.x : radii.z; // TL or BL
+                }
+                else
+                {
+                    // Right side
+                    radius = (centerPosition.y > 0.0) ? radii.y : radii.w; // TR or BR
+                }
+
+                // Standard rounded box SDF with selected radius
                 float2 q = abs(centerPosition) - size + radius;
                 return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
             }
@@ -149,8 +168,8 @@ Shader "Custom/RoundedSprite"
                 // Size is 0.5 (half of the 0~1 UV space)
                 float2 size = float2(0.5, 0.5);
 
-                // Calculate the signed distance
-                float dist = roundedBoxSDF(uv, size, _CornerRadius);
+                // Calculate the signed distance with 4 individual corner radii
+                float dist = roundedBoxSDF4(uv, size, _CornerRadii);
 
                 // Apply anti-aliasing using fwidth for smooth edges
                 float delta = fwidth(dist);
