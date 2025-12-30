@@ -299,6 +299,7 @@ MonoBehaviour:
   levelManager: {fileID: 0}
   padding: 1
   pieceSpacing: 0.15
+  cornerRadius: 0.05
   cardFlyDuration: 0.3
   cardFlyDelay: 0.05
   cardFlipDelay: 0.03
@@ -478,6 +479,7 @@ MonoBehaviour:
   levelManager: {fileID: 1453930745}
   padding: 0.5
   pieceSpacing: 0.2
+  cornerRadius: 0.13
   cardFlyDuration: 0.3
   cardFlyDelay: 0.05
   cardFlipDelay: 0.03

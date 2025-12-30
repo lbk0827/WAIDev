@@ -12,6 +12,10 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Tooltip("그룹화되지 않은 조각들 사이의 간격 (EdgeCover로 표현)")]
     [Range(0f, 0.5f)] public float pieceSpacing = 0.15f;
 
+    [Header("Rounded Corners")]
+    [Tooltip("퍼즐 조각의 둥근 모서리 반경 (0 = 사각형, 0.5 = 최대 둥글기)")]
+    [Range(0f, 0.5f)] public float cornerRadius = 0.05f;
+
     [Header("Card Intro Animation")]
     [Tooltip("카드가 날아가는 속도 (초)")]
     [Range(0.1f, 1.0f)] public float cardFlyDuration = 0.3f;
@@ -141,6 +145,9 @@ public class PuzzleBoardSetup : MonoBehaviour
 
                 // 카드 비주얼 초기화 (뒷면 상태로 시작)
                 dragController.InitializeCardVisuals(_cardBackSprite);
+
+                // 둥근 모서리 셰이더 적용
+                dragController.ApplyRoundedCornerShader(cornerRadius);
 
                 // 초기 위치: 카드 뭉치 (오른쪽 하단)
                 // 카드가 겹쳐 보이도록 약간의 오프셋 적용

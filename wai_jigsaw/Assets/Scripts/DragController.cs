@@ -37,6 +37,14 @@ public class DragController : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private int _originalSortingOrder;
 
+    // ====== 둥근 모서리 셰이더 ======
+    private static Material _sharedRoundedMaterial;  // 공유 Material (메모리 효율)
+    private static Shader _roundedShader;
+    private MaterialPropertyBlock _propertyBlock;    // 개별 프로퍼티 설정용
+    private const string ROUNDED_SHADER_NAME = "Custom/RoundedSprite";
+    private const string CORNER_RADIUS_PROPERTY = "_CornerRadius";
+    private const string UV_RECT_PROPERTY = "_UVRect";
+
     void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -257,6 +265,85 @@ public class DragController : MonoBehaviour
         Vector3 mouseScreenPos = Input.mousePosition;
         mouseScreenPos.z = _cameraZDepth;
         return Camera.main.ScreenToWorldPoint(mouseScreenPos);
+    }
+
+    // ====== 둥근 모서리 셰이더 메서드 ======
+
+    /// <summary>
+    /// 둥근 모서리 셰이더를 적용합니다.
+    /// </summary>
+    public void ApplyRoundedCornerShader(float cornerRadius = 0.05f)
+    {
+        if (_spriteRenderer == null)
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+
+        // 셰이더 로드 (한 번만)
+        if (_roundedShader == null)
+        {
+            _roundedShader = Shader.Find(ROUNDED_SHADER_NAME);
+            if (_roundedShader == null)
+            {
+                Debug.LogWarning($"[DragController] 셰이더를 찾을 수 없습니다: {ROUNDED_SHADER_NAME}");
+                return;
+            }
+        }
+
+        // 공유 Material 생성 (한 번만)
+        if (_sharedRoundedMaterial == null)
+        {
+            _sharedRoundedMaterial = new Material(_roundedShader);
+        }
+
+        // Material 적용
+        _spriteRenderer.sharedMaterial = _sharedRoundedMaterial;
+
+        // 스프라이트의 UV rect 계산
+        Sprite sprite = _spriteRenderer.sprite;
+        Texture2D texture = sprite.texture;
+
+        Rect spriteRect = sprite.rect;
+        float uvMinX = spriteRect.x / texture.width;
+        float uvMinY = spriteRect.y / texture.height;
+        float uvMaxX = (spriteRect.x + spriteRect.width) / texture.width;
+        float uvMaxY = (spriteRect.y + spriteRect.height) / texture.height;
+
+        Vector4 uvRect = new Vector4(uvMinX, uvMinY, uvMaxX, uvMaxY);
+
+        // MaterialPropertyBlock으로 개별 프로퍼티 설정 (Material 복사 없이)
+        _propertyBlock = new MaterialPropertyBlock();
+        _spriteRenderer.GetPropertyBlock(_propertyBlock);
+
+        _propertyBlock.SetVector(UV_RECT_PROPERTY, uvRect);
+        _propertyBlock.SetFloat(CORNER_RADIUS_PROPERTY, cornerRadius);
+        _propertyBlock.SetTexture("_MainTex", texture);
+
+        _spriteRenderer.SetPropertyBlock(_propertyBlock);
+
+        Debug.Log($"[DragController] 둥근 모서리 셰이더 적용됨. CornerRadius={cornerRadius}, UVRect={uvRect}");
+    }
+
+    /// <summary>
+    /// 둥근 모서리 반경을 설정합니다.
+    /// </summary>
+    public void SetCornerRadius(float radius)
+    {
+        if (_propertyBlock != null && _spriteRenderer != null)
+        {
+            _propertyBlock.SetFloat(CORNER_RADIUS_PROPERTY, radius);
+            _spriteRenderer.SetPropertyBlock(_propertyBlock);
+        }
+    }
+
+    /// <summary>
+    /// 현재 둥근 모서리 반경을 반환합니다.
+    /// </summary>
+    public float GetCornerRadius()
+    {
+        if (_propertyBlock != null)
+        {
+            return _propertyBlock.GetFloat(CORNER_RADIUS_PROPERTY);
+        }
+        return 0f;
     }
 
     // ====== 카드 시스템 메서드 ======
