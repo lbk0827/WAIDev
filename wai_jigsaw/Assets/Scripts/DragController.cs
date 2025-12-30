@@ -18,9 +18,17 @@ public class DragController : MonoBehaviour
     // ====== 그룹 시스템 ======
     public PieceGroup group; // 내가 속한 그룹
 
-    // ====== 시각 효과 (테두리) ======
-    // 0:Top, 1:Bottom, 2:Left, 3:Right
-    private GameObject[] _borders = new GameObject[4];
+    // ====== 시각 효과 (프레임 방식 이중 테두리) ======
+    private GameObject _whiteFrame;  // 안쪽 하얀색 프레임
+    private GameObject _blackFrame;  // 바깥쪽 검정색 프레임
+    private SpriteRenderer _whiteFrameRenderer;
+    private SpriteRenderer _blackFrameRenderer;
+    private MaterialPropertyBlock _whiteFramePropertyBlock;
+    private MaterialPropertyBlock _blackFramePropertyBlock;
+
+    // 테두리 두께 설정 (PuzzleBoardSetup에서 전달받음)
+    private float _whiteBorderThickness = 0.025f;  // 조각 크기 대비 비율
+    private float _blackBorderThickness = 0.008f;  // 조각 크기 대비 비율
 
     // ====== EdgeCover 시스템 (spacing 영역 가리기) ======
     // 0:Top, 1:Bottom, 2:Left, 3:Right
@@ -40,11 +48,22 @@ public class DragController : MonoBehaviour
     // ====== 둥근 모서리 셰이더 ======
     private static Material _sharedRoundedMaterial;  // 공유 Material (메모리 효율)
     private static Shader _roundedShader;
-    private MaterialPropertyBlock _propertyBlock;    // 개별 프로퍼티 설정용
+    private MaterialPropertyBlock _propertyBlock;    // 개별 프로퍼티 설정용 (앞면)
+    private MaterialPropertyBlock _cardBackPropertyBlock;  // 카드 뒷면용 PropertyBlock
     private const string ROUNDED_SHADER_NAME = "Custom/RoundedSprite";
     private const string CORNER_RADIUS_PROPERTY = "_CornerRadius";
     private const string CORNER_RADII_PROPERTY = "_CornerRadii";  // Vector4 (TL, TR, BL, BR)
     private const string UV_RECT_PROPERTY = "_UVRect";
+
+    // ====== 프레임 셰이더 (오버레이 방식) ======
+    private static Material _sharedFrameMaterial;  // 프레임용 공유 Material
+    private static Shader _frameShader;
+    private const string FRAME_SHADER_NAME = "Custom/RoundedFrame";
+    private const string FRAME_THICKNESS_PROPERTY = "_FrameThickness";
+    private const string HIDE_DIRECTIONS_PROPERTY = "_HideDirections";
+
+    // 프레임 방향 숨김 상태 (Top, Bottom, Left, Right)
+    private Vector4 _frameHideDirections = Vector4.zero;
 
     // 각 모서리 반경 저장 (TL, TR, BL, BR)
     private Vector4 _cornerRadii = new Vector4(0.05f, 0.05f, 0.05f, 0.05f);
@@ -68,10 +87,19 @@ public class DragController : MonoBehaviour
         _cameraZDepth = Camera.main.transform.position.z;
 
         // 테두리가 아직 생성되지 않았으면 생성
-        if (_borders[0] == null)
+        if (_whiteFrame == null)
         {
-            CreateBorders();
+            CreateFrameBorders();
         }
+    }
+
+    /// <summary>
+    /// 테두리 두께를 설정합니다 (PuzzleBoardSetup에서 호출).
+    /// </summary>
+    public void SetBorderThickness(float whiteRatio, float blackRatio)
+    {
+        _whiteBorderThickness = whiteRatio;
+        _blackBorderThickness = blackRatio;
     }
 
     private void OnMouseDown()
@@ -123,49 +151,100 @@ public class DragController : MonoBehaviour
     {
         transform.position = newPos;
     }
-    void CreateBorders()
+    /// <summary>
+    /// 오버레이 방식의 이중 테두리를 생성합니다.
+    /// 퍼즐 이미지 위에 프레임을 오버레이 (중앙 투명 셰이더 사용)
+    /// </summary>
+    void CreateFrameBorders()
     {
-        // 간단하게 4개의 자식 오브젝트(LineRenderer 또는 Sprite)로 테두리를 만듭니다.
-        // 여기서는 Pixel 단위 1px 두께의 Sprite를 늘려서 사용한다고 가정하거나,
-        // LineRenderer를 사용합니다. LineRenderer가 깔끔합니다.
-        
-        Color borderColor = new Color(0.2f, 0.2f, 0.2f, 1f); // 진한 회색
+        if (_spriteRenderer == null) return;
+
         float width = _spriteRenderer.bounds.size.x;
         float height = _spriteRenderer.bounds.size.y;
-        float thickness = 0.05f; // 테두리 두께
+        float baseSize = Mathf.Min(width, height);
 
-        Vector3 center = Vector3.zero;
-        Vector3[] positions = new Vector3[]
-        {
-            new Vector3(0, height/2, 0),  // Top
-            new Vector3(0, -height/2, 0), // Bottom
-            new Vector3(-width/2, 0, 0),  // Left
-            new Vector3(width/2, 0, 0)    // Right
-        };
+        // 테두리 두께 계산 (World Space)
+        float whiteThickness = baseSize * _whiteBorderThickness;
+        float blackThickness = baseSize * _blackBorderThickness;
 
-        Vector3[] scales = new Vector3[]
-        {
-            new Vector3(width, thickness, 1),  // Top
-            new Vector3(width, thickness, 1),  // Bottom
-            new Vector3(thickness, height, 1), // Left
-            new Vector3(thickness, height, 1)  // Right
-        };
+        // 1. 하얀 프레임 생성 (전체 테두리 영역, 아래 레이어)
+        _whiteFrame = new GameObject("WhiteFrame");
+        _whiteFrame.transform.SetParent(transform, false);
+        _whiteFrame.transform.localPosition = Vector3.zero;
 
-        for(int i=0; i<4; i++)
+        _whiteFrameRenderer = _whiteFrame.AddComponent<SpriteRenderer>();
+        _whiteFrameRenderer.sprite = CreateUnitSprite();
+        _whiteFrameRenderer.color = Color.white;
+        _whiteFrameRenderer.sortingOrder = 2;  // 퍼즐 이미지(1) 위
+
+        // 하얀 프레임 크기 = 퍼즐 이미지와 동일
+        _whiteFrame.transform.localScale = new Vector3(width, height, 1);
+
+        // 2. 검정 프레임 생성 (바깥 테두리만, 위 레이어)
+        _blackFrame = new GameObject("BlackFrame");
+        _blackFrame.transform.SetParent(transform, false);
+        _blackFrame.transform.localPosition = Vector3.zero;
+
+        _blackFrameRenderer = _blackFrame.AddComponent<SpriteRenderer>();
+        _blackFrameRenderer.sprite = CreateUnitSprite();
+        _blackFrameRenderer.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+        _blackFrameRenderer.sortingOrder = 3;  // 하얀 프레임 위
+
+        // 검정 프레임 크기 = 퍼즐 이미지와 동일
+        _blackFrame.transform.localScale = new Vector3(width, height, 1);
+
+        // 프레임 셰이더 적용 (중앙 투명)
+        ApplyShaderToFrames();
+    }
+
+    /// <summary>
+    /// 프레임에 RoundedFrame 셰이더를 적용합니다 (중앙 투명, 오버레이 방식).
+    /// </summary>
+    private void ApplyShaderToFrames()
+    {
+        if (_whiteFrameRenderer == null || _blackFrameRenderer == null)
+            return;
+
+        // 프레임 셰이더 로드 (한 번만)
+        if (_frameShader == null)
         {
-            GameObject border = new GameObject($"Border_{i}");
-            border.transform.parent = transform;
-            border.transform.localPosition = positions[i];
-            
-            SpriteRenderer sr = border.AddComponent<SpriteRenderer>();
-            // 하얀색 1x1 픽셀 스프라이트 생성 (임시)
-            sr.sprite = CreatePixelSprite(); 
-            sr.color = borderColor;
-            sr.sortingOrder = 2; // 조각보다 위에
-            
-            border.transform.localScale = scales[i];
-            _borders[i] = border;
+            _frameShader = Shader.Find(FRAME_SHADER_NAME);
+            if (_frameShader == null)
+            {
+                Debug.LogWarning($"[DragController] 프레임 셰이더를 찾을 수 없습니다: {FRAME_SHADER_NAME}");
+                return;
+            }
         }
+
+        if (_sharedFrameMaterial == null)
+        {
+            _sharedFrameMaterial = new Material(_frameShader);
+        }
+
+        float baseSize = Mathf.Min(pieceWidth, pieceHeight);
+        if (baseSize <= 0) baseSize = 1f;
+
+        // 하얀 프레임 설정 (전체 테두리 영역 - 아래 레이어)
+        _whiteFrameRenderer.sharedMaterial = _sharedFrameMaterial;
+        _whiteFramePropertyBlock = new MaterialPropertyBlock();
+        _whiteFrameRenderer.GetPropertyBlock(_whiteFramePropertyBlock);
+
+        // 하얀 프레임 두께 = 전체 (하얀 + 검정)
+        float whiteFrameThicknessUV = _whiteBorderThickness + _blackBorderThickness;
+        _whiteFramePropertyBlock.SetFloat(FRAME_THICKNESS_PROPERTY, whiteFrameThicknessUV);
+        _whiteFramePropertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+        _whiteFrameRenderer.SetPropertyBlock(_whiteFramePropertyBlock);
+
+        // 검정 프레임 설정 (바깥쪽만 - 위 레이어)
+        _blackFrameRenderer.sharedMaterial = _sharedFrameMaterial;
+        _blackFramePropertyBlock = new MaterialPropertyBlock();
+        _blackFrameRenderer.GetPropertyBlock(_blackFramePropertyBlock);
+
+        // 검정 프레임 두께 = 검정만 (하얀 위에 덮어서 바깥 부분만 보이게)
+        float blackFrameThicknessUV = _blackBorderThickness;
+        _blackFramePropertyBlock.SetFloat(FRAME_THICKNESS_PROPERTY, blackFrameThicknessUV);
+        _blackFramePropertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+        _blackFrameRenderer.SetPropertyBlock(_blackFramePropertyBlock);
     }
 
     Sprite CreatePixelSprite()
@@ -180,37 +259,138 @@ public class DragController : MonoBehaviour
     public void UpdateVisuals()
     {
         // Start() 전에 호출될 수 있으므로 테두리가 없으면 먼저 생성
-        if (_borders[0] == null)
+        if (_whiteFrame == null)
         {
-            CreateBorders();
+            CreateFrameBorders();
         }
 
-        // 기본적으로 다 켜고
-        for (int i = 0; i < 4; i++)
-        {
-            if (_borders[i] != null)
-            {
-                _borders[i].SetActive(true);
-            }
-        }
+        // 프레임 활성화
+        ShowFrames(true);
 
         // 그룹 내의 다른 조각들과 관계를 확인하여 겹치는 부분 끄기
-        // 로직은 PieceGroup이나 Board에서 호출하여 처리
+        // 프레임 방식에서는 Padding 셰이더로 간격을 처리함
     }
 
     public void HideBorder(int direction)
     {
         // 0:Top, 1:Bottom, 2:Left, 3:Right
-        // Start() 전에 호출될 수 있으므로 테두리가 없으면 먼저 생성
-        if (_borders[0] == null)
+        // 프레임 셰이더의 _HideDirections 업데이트
+        switch (direction)
         {
-            CreateBorders();
+            case 0: _frameHideDirections.x = 1f; break; // Top
+            case 1: _frameHideDirections.y = 1f; break; // Bottom
+            case 2: _frameHideDirections.z = 1f; break; // Left
+            case 3: _frameHideDirections.w = 1f; break; // Right
         }
+        ApplyFrameHideDirections();
 
-        if (direction >= 0 && direction < 4 && _borders[direction] != null)
+        // 테두리 숨김 시 연결된 모서리도 직각 처리 (자연스러운 연결을 위해)
+        // Top → TopLeft, TopRight 직각
+        // Bottom → BottomLeft, BottomRight 직각
+        // Left → TopLeft, BottomLeft 직각
+        // Right → TopRight, BottomRight 직각
+        switch (direction)
         {
-            _borders[direction].SetActive(false);
+            case 0: // Top
+                _cornerRadii.x = 0f; // TopLeft
+                _cornerRadii.y = 0f; // TopRight
+                break;
+            case 1: // Bottom
+                _cornerRadii.z = 0f; // BottomLeft
+                _cornerRadii.w = 0f; // BottomRight
+                break;
+            case 2: // Left
+                _cornerRadii.x = 0f; // TopLeft
+                _cornerRadii.z = 0f; // BottomLeft
+                break;
+            case 3: // Right
+                _cornerRadii.y = 0f; // TopRight
+                _cornerRadii.w = 0f; // BottomRight
+                break;
         }
+        ApplyCornerRadii();
+    }
+
+    /// <summary>
+    /// 특정 방향의 프레임 테두리를 복원합니다.
+    /// </summary>
+    public void ShowBorder(int direction)
+    {
+        switch (direction)
+        {
+            case 0: _frameHideDirections.x = 0f; break; // Top
+            case 1: _frameHideDirections.y = 0f; break; // Bottom
+            case 2: _frameHideDirections.z = 0f; break; // Left
+            case 3: _frameHideDirections.w = 0f; break; // Right
+        }
+        ApplyFrameHideDirections();
+
+        // 테두리 복원 시 연결된 모서리도 복원 (인접 테두리가 모두 보일 때만)
+        // 모서리는 인접한 두 테두리가 모두 보여야 둥글게 복원됨
+        RecalculateCornerRadii();
+    }
+
+    /// <summary>
+    /// 현재 테두리 숨김 상태에 따라 모서리 반경을 재계산합니다.
+    /// 모서리는 인접한 두 테두리가 모두 보일 때만 둥글게 됩니다.
+    /// </summary>
+    private void RecalculateCornerRadii()
+    {
+        bool showTop = _frameHideDirections.x < 0.5f;
+        bool showBottom = _frameHideDirections.y < 0.5f;
+        bool showLeft = _frameHideDirections.z < 0.5f;
+        bool showRight = _frameHideDirections.w < 0.5f;
+
+        // TopLeft: Top과 Left 모두 보여야 둥글게
+        _cornerRadii.x = (showTop && showLeft) ? _defaultCornerRadius : 0f;
+        // TopRight: Top과 Right 모두 보여야 둥글게
+        _cornerRadii.y = (showTop && showRight) ? _defaultCornerRadius : 0f;
+        // BottomLeft: Bottom과 Left 모두 보여야 둥글게
+        _cornerRadii.z = (showBottom && showLeft) ? _defaultCornerRadius : 0f;
+        // BottomRight: Bottom과 Right 모두 보여야 둥글게
+        _cornerRadii.w = (showBottom && showRight) ? _defaultCornerRadius : 0f;
+
+        ApplyCornerRadii();
+    }
+
+    /// <summary>
+    /// 모든 프레임 테두리를 복원합니다.
+    /// </summary>
+    public void ShowAllBorders()
+    {
+        _frameHideDirections = Vector4.zero;
+        ApplyFrameHideDirections();
+
+        // 모든 테두리가 보이면 모든 모서리도 둥글게 복원
+        RecalculateCornerRadii();
+    }
+
+    /// <summary>
+    /// 프레임 숨김 상태를 셰이더에 적용합니다.
+    /// </summary>
+    private void ApplyFrameHideDirections()
+    {
+        if (_whiteFramePropertyBlock != null && _whiteFrameRenderer != null)
+        {
+            _whiteFramePropertyBlock.SetVector(HIDE_DIRECTIONS_PROPERTY, _frameHideDirections);
+            _whiteFrameRenderer.SetPropertyBlock(_whiteFramePropertyBlock);
+        }
+        if (_blackFramePropertyBlock != null && _blackFrameRenderer != null)
+        {
+            _blackFramePropertyBlock.SetVector(HIDE_DIRECTIONS_PROPERTY, _frameHideDirections);
+            _blackFrameRenderer.SetPropertyBlock(_blackFramePropertyBlock);
+        }
+    }
+
+    /// <summary>
+    /// 프레임 전체를 보이거나 숨깁니다.
+    /// </summary>
+    public void ShowFrames(bool show)
+    {
+        if (_whiteFrame != null)
+            _whiteFrame.SetActive(show);
+        if (_blackFrame != null)
+            _blackFrame.SetActive(show);
     }
 
     // 그룹에서 강제로 탈퇴 (스왑 당할 때 등)
@@ -227,6 +407,7 @@ public class DragController : MonoBehaviour
 
         // 테두리 초기화 (다시 다 보여줌)
         UpdateVisuals();
+        ShowAllBorders();  // 프레임 테두리 모두 복원
 
         // Padding 복원 (다시 다 가리기) - EdgeCover 대체
         RestoreAllPadding();
@@ -351,7 +532,51 @@ public class DragController : MonoBehaviour
 
         _spriteRenderer.SetPropertyBlock(_propertyBlock);
 
+        // 카드 뒷면에도 셰이더 적용 (있는 경우)
+        ApplyShaderToCardBack();
+
+        // 프레임에도 셰이더 적용 (있는 경우)
+        ApplyShaderToFrames();
+
         Debug.Log($"[DragController] 둥근 모서리 셰이더 적용됨. CornerRadius={cornerRadius}, UVRect={uvRect}, Padding={_padding}");
+    }
+
+    /// <summary>
+    /// 카드 뒷면에 둥근 모서리 셰이더를 적용합니다.
+    /// </summary>
+    private void ApplyShaderToCardBack()
+    {
+        if (_cardBackRenderer == null || _sharedRoundedMaterial == null)
+            return;
+
+        // 카드 뒷면에 동일한 Material 적용
+        _cardBackRenderer.sharedMaterial = _sharedRoundedMaterial;
+
+        // 카드 뒷면 스프라이트의 UV 계산
+        Sprite backSprite = _cardBackRenderer.sprite;
+        if (backSprite == null) return;
+
+        Texture2D texture = backSprite.texture;
+        Rect spriteRect = backSprite.rect;
+        float uvMinX = spriteRect.x / texture.width;
+        float uvMinY = spriteRect.y / texture.height;
+        float uvMaxX = (spriteRect.x + spriteRect.width) / texture.width;
+        float uvMaxY = (spriteRect.y + spriteRect.height) / texture.height;
+        Vector4 uvRect = new Vector4(uvMinX, uvMinY, uvMaxX, uvMaxY);
+
+        // 카드 뒷면용 PropertyBlock 설정
+        _cardBackPropertyBlock = new MaterialPropertyBlock();
+        _cardBackRenderer.GetPropertyBlock(_cardBackPropertyBlock);
+
+        _cardBackPropertyBlock.SetVector(UV_RECT_PROPERTY, uvRect);
+        _cardBackPropertyBlock.SetFloat(CORNER_RADIUS_PROPERTY, _defaultCornerRadius);
+        _cardBackPropertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+        _cardBackPropertyBlock.SetVector(PADDING_PROPERTY, _padding);
+        _cardBackPropertyBlock.SetTexture("_MainTex", texture);
+
+        _cardBackRenderer.SetPropertyBlock(_cardBackPropertyBlock);
+
+        Debug.Log($"[DragController] 카드 뒷면 셰이더 적용됨. UVRect={uvRect}");
     }
 
     /// <summary>
@@ -408,10 +633,30 @@ public class DragController : MonoBehaviour
     /// </summary>
     private void ApplyCornerRadii()
     {
+        // 앞면 적용
         if (_propertyBlock != null && _spriteRenderer != null)
         {
             _propertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
             _spriteRenderer.SetPropertyBlock(_propertyBlock);
+        }
+
+        // 뒷면도 적용
+        if (_cardBackPropertyBlock != null && _cardBackRenderer != null)
+        {
+            _cardBackPropertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+            _cardBackRenderer.SetPropertyBlock(_cardBackPropertyBlock);
+        }
+
+        // 프레임에도 적용
+        if (_whiteFramePropertyBlock != null && _whiteFrameRenderer != null)
+        {
+            _whiteFramePropertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+            _whiteFrameRenderer.SetPropertyBlock(_whiteFramePropertyBlock);
+        }
+        if (_blackFramePropertyBlock != null && _blackFrameRenderer != null)
+        {
+            _blackFramePropertyBlock.SetVector(CORNER_RADII_PROPERTY, _cornerRadii);
+            _blackFrameRenderer.SetPropertyBlock(_blackFramePropertyBlock);
         }
     }
 
@@ -470,15 +715,22 @@ public class DragController : MonoBehaviour
     /// </summary>
     private void ApplyPadding()
     {
+        // 앞면 적용
         if (_propertyBlock != null && _spriteRenderer != null)
         {
             _propertyBlock.SetVector(PADDING_PROPERTY, _padding);
             _spriteRenderer.SetPropertyBlock(_propertyBlock);
-            Debug.Log($"[DragController] ApplyPadding 완료: Padding={_padding}");
         }
         else
         {
             Debug.LogWarning($"[DragController] ApplyPadding 실패: _propertyBlock={_propertyBlock != null}, _spriteRenderer={_spriteRenderer != null}");
+        }
+
+        // 뒷면도 적용
+        if (_cardBackPropertyBlock != null && _cardBackRenderer != null)
+        {
+            _cardBackPropertyBlock.SetVector(PADDING_PROPERTY, _padding);
+            _cardBackRenderer.SetPropertyBlock(_cardBackPropertyBlock);
         }
     }
 
@@ -499,7 +751,7 @@ public class DragController : MonoBehaviour
     }
 
     /// <summary>
-    /// 특정 방향의 패딩을 제거합니다 (0으로 설정).
+    /// 특정 방향의 패딩을 제거합니다 (음수값으로 설정하여 살짝 겹침).
     /// direction: 0=Top, 1=Bottom, 2=Left, 3=Right (EdgeCover와 동일한 순서)
     /// </summary>
     public void RemovePadding(int direction)
@@ -507,12 +759,17 @@ public class DragController : MonoBehaviour
         // EdgeCover 순서: 0=Top, 1=Bottom, 2=Left, 3=Right
         // Padding 순서: x=Left, y=Right, z=Top, w=Bottom
         // 변환 필요
+        //
+        // 음수 패딩을 사용하여 이미지가 살짝 겹치게 함 (경계선 제거)
+        // -0.005 = 0.5% 확장으로 인접 카드와 겹침
+        const float overlapPadding = -0.005f;
+
         switch (direction)
         {
-            case 0: _padding.z = 0f; break; // Top
-            case 1: _padding.w = 0f; break; // Bottom
-            case 2: _padding.x = 0f; break; // Left
-            case 3: _padding.y = 0f; break; // Right
+            case 0: _padding.z = overlapPadding; break; // Top
+            case 1: _padding.w = overlapPadding; break; // Bottom
+            case 2: _padding.x = overlapPadding; break; // Left
+            case 3: _padding.y = overlapPadding; break; // Right
         }
         ApplyPadding();
     }
@@ -582,7 +839,7 @@ public class DragController : MonoBehaviour
             _cardBackRenderer.sprite = backSprite;
             _cardBackRenderer.color = new Color(0.2f, 0.3f, 0.5f); // 기본 파란색
         }
-        _cardBackRenderer.sortingOrder = 3; // 퍼즐 이미지와 테두리 위에
+        _cardBackRenderer.sortingOrder = 10; // 퍼즐 이미지와 테두리 위에 (테두리가 5,6 사용)
 
         // 스프라이트 원본 크기 기준으로 스케일 계산
         float backSpriteWidth = backSprite.bounds.size.x;
@@ -596,11 +853,7 @@ public class DragController : MonoBehaviour
         _spriteRenderer.enabled = false; // 퍼즐 이미지 숨김
 
         // 기존 테두리 숨기기 (뒷면 상태에서는 보이지 않음)
-        for (int i = 0; i < 4; i++)
-        {
-            if (_borders[i] != null)
-                _borders[i].SetActive(false);
-        }
+        ShowFrames(false);
 
         // [Deprecated] EdgeCover는 더 이상 사용하지 않음 - Padding 셰이더로 대체
         // CreateEdgeCovers();
@@ -729,15 +982,8 @@ public class DragController : MonoBehaviour
         _cardBackRenderer.gameObject.SetActive(false);
         _spriteRenderer.enabled = true;
 
-        // 테두리 다시 활성화
-        for (int i = 0; i < 4; i++)
-        {
-            if (_borders[i] != null)
-                _borders[i].SetActive(true);
-        }
-
-        // [Padding 셰이더 기반] EdgeCover는 더 이상 사용하지 않음
-        // Padding은 항상 활성화 상태 (셰이더에서 처리)
+        // 테두리 다시 활성화 (프레임 방식)
+        ShowFrames(true);
 
         // 2단계: 카드가 다시 펼쳐짐 (앞면이 나타나는 느낌)
         elapsed = 0f;
@@ -767,14 +1013,8 @@ public class DragController : MonoBehaviour
         _spriteRenderer.enabled = true;
         _isFlipped = true;
 
-        // 테두리 활성화
-        for (int i = 0; i < 4; i++)
-        {
-            if (_borders[i] != null)
-                _borders[i].SetActive(true);
-        }
-
-        // [Padding 셰이더 기반] EdgeCover 대신 Padding 사용 - 별도 처리 불필요
+        // 테두리 활성화 (프레임 방식)
+        ShowFrames(true);
     }
 
     /// <summary>
@@ -788,14 +1028,8 @@ public class DragController : MonoBehaviour
         _spriteRenderer.enabled = false;
         _isFlipped = false;
 
-        // 테두리 숨김
-        for (int i = 0; i < 4; i++)
-        {
-            if (_borders[i] != null)
-                _borders[i].SetActive(false);
-        }
-
-        // [Padding 셰이더 기반] EdgeCover 대신 Padding 사용 - 별도 처리 불필요
+        // 테두리 숨김 (프레임 방식)
+        ShowFrames(false);
     }
 
     /// <summary>
@@ -950,10 +1184,10 @@ public class PieceGroup
             // 카드 뒷면 (맨 위)
             if (piece.CardBackRenderer != null)
             {
-                piece.CardBackRenderer.sortingOrder = order + 3;
+                piece.CardBackRenderer.sortingOrder = order + 10;
             }
 
-            // 테두리 (퍼즐 이미지 위)
+            // 프레임 테두리 (퍼즐 이미지 위, 오버레이 방식)
             var allRenderers = piece.GetComponentsInChildren<SpriteRenderer>();
             foreach (var sr in allRenderers)
             {
@@ -961,8 +1195,13 @@ public class PieceGroup
                 if (sr.gameObject == piece.gameObject) continue;
                 if (piece.CardBackRenderer != null && sr == piece.CardBackRenderer) continue;
 
-                // 나머지는 테두리
-                sr.sortingOrder = order + 1;
+                // 프레임 종류에 따라 다른 order 적용 (퍼즐 이미지 위에 오버레이)
+                if (sr.gameObject.name == "WhiteFrame")
+                    sr.sortingOrder = order + 1;  // 퍼즐 이미지 위
+                else if (sr.gameObject.name == "BlackFrame")
+                    sr.sortingOrder = order + 2;  // 하얀 프레임 위
+                else
+                    sr.sortingOrder = order + 1;
             }
         }
     }

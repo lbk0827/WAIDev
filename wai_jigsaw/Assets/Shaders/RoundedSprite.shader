@@ -112,7 +112,8 @@ Shader "Custom/RoundedSprite"
             }
 
             // Signed Distance Function for rounded box with 4 corner radii
-            float roundedBoxSDF4(float2 centerPos, float2 size, float4 radii)
+            // Returns distance and selected radius
+            float roundedBoxSDF4(float2 centerPos, float2 size, float4 radii, out float selectedRadius)
             {
                 float radius;
                 if (centerPos.x < 0.0)
@@ -123,6 +124,8 @@ Shader "Custom/RoundedSprite"
                 {
                     radius = (centerPos.y > 0.0) ? radii.y : radii.w;
                 }
+
+                selectedRadius = radius;
 
                 float2 q = abs(centerPos) - size + radius;
                 return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
@@ -149,41 +152,66 @@ Shader "Custom/RoundedSprite"
                 }
 
                 // Apply Padding (crop edges)
+                // 양수 패딩: 이미지 자르기 (간격 표현)
+                // 음수 패딩: 이미지 확장 (겹침 표현, 경계선 제거용)
                 float paddingLeft = _Padding.x;
                 float paddingRight = _Padding.y;
                 float paddingTop = _Padding.z;
                 float paddingBottom = _Padding.w;
 
-                // Check if pixel is in padding area
-                if (normalizedUV.x < paddingLeft ||
-                    normalizedUV.x > (1.0 - paddingRight) ||
-                    normalizedUV.y > (1.0 - paddingTop) ||
-                    normalizedUV.y < paddingBottom)
+                // 양수 패딩일 때만 자르기 (음수면 확장이므로 자르지 않음)
+                if ((paddingLeft > 0 && normalizedUV.x < paddingLeft) ||
+                    (paddingRight > 0 && normalizedUV.x > (1.0 - paddingRight)) ||
+                    (paddingTop > 0 && normalizedUV.y > (1.0 - paddingTop)) ||
+                    (paddingBottom > 0 && normalizedUV.y < paddingBottom))
                 {
                     return fixed4(0, 0, 0, 0);
                 }
 
                 // Remap UV to visible area for rounded corner calculation
-                float visibleWidth = 1.0 - paddingLeft - paddingRight;
-                float visibleHeight = 1.0 - paddingTop - paddingBottom;
+                // 음수 패딩은 0으로 처리하여 모서리 계산에 영향 없도록 함
+                float effectiveLeft = max(paddingLeft, 0.0);
+                float effectiveRight = max(paddingRight, 0.0);
+                float effectiveTop = max(paddingTop, 0.0);
+                float effectiveBottom = max(paddingBottom, 0.0);
+
+                float visibleWidth = 1.0 - effectiveLeft - effectiveRight;
+                float visibleHeight = 1.0 - effectiveTop - effectiveBottom;
 
                 float2 paddedUV;
-                paddedUV.x = (normalizedUV.x - paddingLeft) / visibleWidth;
-                paddedUV.y = (normalizedUV.y - paddingBottom) / visibleHeight;
+                paddedUV.x = (normalizedUV.x - effectiveLeft) / visibleWidth;
+                paddedUV.y = (normalizedUV.y - effectiveBottom) / visibleHeight;
 
                 // Convert to centered coordinates (-0.5 to 0.5)
                 float2 uv = paddedUV - 0.5;
 
-                // Calculate signed distance
-                float2 size = float2(0.5, 0.5);
-                float dist = roundedBoxSDF4(uv, size, _CornerRadii);
+                // Check if all corner radii are zero (no rounding needed)
+                float maxRadius = max(max(_CornerRadii.x, _CornerRadii.y), max(_CornerRadii.z, _CornerRadii.w));
 
-                // Anti-aliasing
-                float delta = fwidth(dist);
-                float alpha = 1.0 - smoothstep(-delta, delta, dist);
+                if (maxRadius > 0.001)
+                {
+                    // Calculate signed distance with selected radius
+                    float2 size = float2(0.5, 0.5);
+                    float selectedRadius;
+                    float dist = roundedBoxSDF4(uv, size, _CornerRadii, selectedRadius);
 
-                // Apply rounded corner alpha
-                c.a *= alpha;
+                    // Only apply anti-aliasing if this corner has radius > 0
+                    if (selectedRadius > 0.001)
+                    {
+                        float delta = fwidth(dist);
+                        float alpha = 1.0 - smoothstep(-delta, delta, dist);
+                        c.a *= alpha;
+                    }
+                    else
+                    {
+                        // No rounding for this corner - hard edge (no anti-aliasing)
+                        if (dist > 0.0)
+                        {
+                            c.a = 0.0;
+                        }
+                    }
+                }
+                // If all radii are 0, skip rounding entirely (full square)
 
                 // Premultiply alpha
                 c.rgb *= c.a;

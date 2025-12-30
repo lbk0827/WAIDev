@@ -18,6 +18,18 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Tooltip("둥근 모서리 셰이더 (Assets/Shaders/RoundedSprite.shader)")]
     public Shader roundedCornerShader;
 
+    [Header("Card Slot")]
+    [Tooltip("카드 슬롯 배경 색상")]
+    public Color slotBackgroundColor = new Color(0.85f, 0.85f, 0.85f, 1f);  // 밝은 회색
+    [Tooltip("슬롯 크기 비율 (1.0 = 카드와 동일, 0.95 = 약간 작음)")]
+    [Range(0.9f, 1.0f)] public float slotSizeRatio = 0.98f;
+
+    [Header("Card Border (Frame)")]
+    [Tooltip("하얀 테두리 두께 (조각 크기 대비 비율)")]
+    [Range(0.01f, 0.1f)] public float whiteBorderRatio = 0.025f;
+    [Tooltip("검정 테두리 두께 (조각 크기 대비 비율)")]
+    [Range(0.005f, 0.05f)] public float blackBorderRatio = 0.008f;
+
     [Header("Card Intro Animation")]
     [Tooltip("카드가 날아가는 속도 (초)")]
     [Range(0.1f, 1.0f)] public float cardFlyDuration = 0.3f;
@@ -34,6 +46,7 @@ public class PuzzleBoardSetup : MonoBehaviour
 
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
+    private List<GameObject> _cardSlots = new List<GameObject>();  // 카드 슬롯 배경
 
     // Grid dimensions
     private int _rows;
@@ -78,6 +91,7 @@ public class PuzzleBoardSetup : MonoBehaviour
         foreach (Transform child in transform) Destroy(child.gameObject);
         _slotPositions.Clear();
         _piecesOnBoard.Clear();
+        _cardSlots.Clear();
         _rows = config.rows;
         _cols = config.cols;
 
@@ -102,17 +116,37 @@ public class PuzzleBoardSetup : MonoBehaviour
         float deckPosY = startY - ((_rows - 1) * slotHeight);
         Vector3 deckPosition = new Vector3(deckPosX, deckPosY, 0);
 
+        // 1단계: 카드 슬롯 배경 생성 (카드보다 먼저 생성)
+        CreateCardSlots(startX, startY, slotWidth, slotHeight);
+
         int index = 0;
         for (int row = 0; row < _rows; row++)
         {
             for (int col = 0; col < _cols; col++)
             {
-                // 스프라이트 잘라내기 (오버랩 없이 원본 크기)
+                // 스프라이트 잘라내기 (인접 조각과의 경계선 제거를 위해 1픽셀 오버랩)
                 float x = col * pieceWidth;
                 float y = (_rows - 1 - row) * pieceHeight;
 
-                Rect rect = new Rect(x, y, pieceWidth, pieceHeight);
-                Sprite newSprite = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
+                // 오버랩 픽셀 (가장자리가 아닌 경우에만 적용)
+                float overlapPixels = 1f;
+                float overlapLeft = (col > 0) ? overlapPixels : 0;
+                float overlapRight = (col < _cols - 1) ? overlapPixels : 0;
+                float overlapBottom = (row < _rows - 1) ? overlapPixels : 0;  // row가 작을수록 위쪽, texture y는 아래가 0
+                float overlapTop = (row > 0) ? overlapPixels : 0;
+
+                // 텍스처 좌표 확장 (오버랩 적용)
+                float rectX = x - overlapLeft;
+                float rectY = y - overlapBottom;
+                float rectWidth = pieceWidth + overlapLeft + overlapRight;
+                float rectHeight = pieceHeight + overlapTop + overlapBottom;
+
+                // 피벗 조정 (오버랩으로 인한 크기 변화 보정)
+                float pivotX = (0.5f * pieceWidth + overlapLeft) / rectWidth;
+                float pivotY = (0.5f * pieceHeight + overlapBottom) / rectHeight;
+
+                Rect rect = new Rect(rectX, rectY, rectWidth, rectHeight);
+                Sprite newSprite = Sprite.Create(texture, rect, new Vector2(pivotX, pivotY));
 
                 // 오브젝트 생성
                 GameObject newPiece = new GameObject($"Piece_{row}_{col}");
@@ -142,6 +176,9 @@ public class PuzzleBoardSetup : MonoBehaviour
                 dragController.pieceWidth = _unitWidth;
                 dragController.pieceHeight = _unitHeight;
 
+                // 테두리 두께 설정 (프레임 생성 전에 호출)
+                dragController.SetBorderThickness(whiteBorderRatio, blackBorderRatio);
+
                 // 카드 비주얼 초기화 (뒷면 상태로 시작)
                 dragController.InitializeCardVisuals(_cardBackSprite);
 
@@ -162,6 +199,78 @@ public class PuzzleBoardSetup : MonoBehaviour
                 index++;
             }
         }
+    }
+
+    /// <summary>
+    /// 카드 슬롯 배경을 생성합니다.
+    /// </summary>
+    void CreateCardSlots(float startX, float startY, float slotWidth, float slotHeight)
+    {
+        // 슬롯 컨테이너 생성
+        GameObject slotContainer = new GameObject("CardSlots");
+        slotContainer.transform.SetParent(transform, false);
+
+        // 슬롯 크기 (약간 작게)
+        float actualSlotWidth = slotWidth * slotSizeRatio;
+        float actualSlotHeight = slotHeight * slotSizeRatio;
+
+        for (int row = 0; row < _rows; row++)
+        {
+            for (int col = 0; col < _cols; col++)
+            {
+                // 슬롯 위치 계산
+                float posX = startX + (col * slotWidth);
+                float posY = startY - (row * slotHeight);
+
+                // 슬롯 GameObject 생성
+                GameObject slot = new GameObject($"Slot_{row}_{col}");
+                slot.transform.SetParent(slotContainer.transform, false);
+                slot.transform.position = new Vector3(posX, posY, 0.1f);  // 카드보다 뒤에 (z = 0.1)
+
+                // SpriteRenderer 추가
+                SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
+                sr.sprite = CreateSlotSprite();
+                sr.color = slotBackgroundColor;
+                sr.sortingOrder = -1;  // 카드(1)보다 뒤에
+
+                // 슬롯 크기 조절
+                slot.transform.localScale = new Vector3(actualSlotWidth, actualSlotHeight, 1f);
+
+                // 둥근 모서리 셰이더 적용
+                if (roundedCornerShader != null)
+                {
+                    Material slotMaterial = new Material(roundedCornerShader);
+                    sr.material = slotMaterial;
+
+                    // PropertyBlock으로 설정
+                    MaterialPropertyBlock block = new MaterialPropertyBlock();
+                    sr.GetPropertyBlock(block);
+
+                    // UV는 전체 스프라이트 (0,0,1,1)
+                    block.SetVector("_UVRect", new Vector4(0, 0, 1, 1));
+                    block.SetFloat("_CornerRadius", cornerRadius);
+                    block.SetVector("_CornerRadii", new Vector4(cornerRadius, cornerRadius, cornerRadius, cornerRadius));
+                    block.SetVector("_Padding", Vector4.zero);  // 슬롯은 패딩 없음
+
+                    sr.SetPropertyBlock(block);
+                }
+
+                _cardSlots.Add(slot);
+            }
+        }
+
+        Debug.Log($"[PuzzleBoardSetup] 카드 슬롯 {_cardSlots.Count}개 생성됨");
+    }
+
+    /// <summary>
+    /// 슬롯용 1x1 픽셀 스프라이트를 생성합니다.
+    /// </summary>
+    Sprite CreateSlotSprite()
+    {
+        Texture2D texture = new Texture2D(1, 1);
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);  // PPU = 1
     }
 
     void FitCameraToPuzzle(int rows, int cols)
@@ -679,12 +788,13 @@ public class PuzzleBoardSetup : MonoBehaviour
         List<DragController> allPieces = new List<DragController>(group.pieces);
         group.pieces.Clear();
 
-        // 1. Reset everyone to individual groups (Padding, Corners 복원 포함)
+        // 1. Reset everyone to individual groups (Padding, Corners, Borders 복원 포함)
         foreach (var p in allPieces)
         {
             p.group = new PieceGroup();
             p.group.AddPiece(p);
             p.UpdateVisuals();
+            p.ShowAllBorders();      // 모든 테두리 복원
             p.RestoreAllPadding();   // 모든 Padding 복원
             p.RestoreAllCorners();   // 모든 모서리 복원
         }
