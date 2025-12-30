@@ -22,7 +22,7 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Tooltip("카드 슬롯 배경 색상")]
     public Color slotBackgroundColor = new Color(0.85f, 0.85f, 0.85f, 1f);  // 밝은 회색
     [Tooltip("슬롯 크기 비율 (1.0 = 카드와 동일, 0.95 = 약간 작음)")]
-    [Range(0.9f, 1.0f)] public float slotSizeRatio = 0.98f;
+    [Range(0.9f, 1.0f)] public float slotSizeRatio = 1.0f;
 
     [Header("Card Border (Frame)")]
     [Tooltip("하얀 테두리 두께 (조각 크기 대비 비율)")]
