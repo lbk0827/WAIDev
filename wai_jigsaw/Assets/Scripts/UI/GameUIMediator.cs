@@ -28,6 +28,11 @@ namespace WaiJigsaw.UI
         [SerializeField] private TMP_Text _resultLevelText;
         [SerializeField] private Button _resultNextButton;
 
+        [Header("Reward UI")]
+        [SerializeField] private GameObject _rewardContainer;     // 보상 UI 컨테이너
+        [SerializeField] private Image _coinIcon;                 // 코인 아이콘
+        [SerializeField] private TMP_Text _rewardAmountText;      // 보상량 텍스트 (예: "+10")
+
         [Header("Puzzle Board")]
         [SerializeField] private PuzzleBoardSetup _puzzleBoardSetup;
 
@@ -144,6 +149,51 @@ namespace WaiJigsaw.UI
             // 클리어한 레벨 (현재 레벨 - 1)
             int clearedLevel = GameDataContainer.Instance.CurrentLevel - 1;
             UpdateResultLevelText(clearedLevel);
+
+            // 코인 보상 표시 및 지급
+            DisplayAndAwardCoinReward(clearedLevel);
+        }
+
+        /// <summary>
+        /// 코인 보상 표시 및 지급
+        /// </summary>
+        private void DisplayAndAwardCoinReward(int clearedLevel)
+        {
+            // LevelTable에서 보상량 가져오기
+            LevelTableRecord levelRecord = LevelTable.Get(clearedLevel);
+            int rewardAmount = levelRecord?.reward ?? 0;
+
+            if (rewardAmount > 0)
+            {
+                // 코인 지급
+                GameDataContainer.Instance.AddCoin(rewardAmount);
+                GameDataContainer.Instance.Save();
+
+                // UI 표시
+                if (_rewardContainer != null)
+                    _rewardContainer.SetActive(true);
+
+                if (_rewardAmountText != null)
+                    _rewardAmountText.text = $"+{rewardAmount}";
+
+                // 코인 아이콘 설정 (OutgameResourcePath에서 로드)
+                if (_coinIcon != null)
+                {
+                    Sprite coinSprite = ItemTable.GetCoinIcon();
+                    if (coinSprite != null)
+                    {
+                        _coinIcon.sprite = coinSprite;
+                    }
+                }
+
+                Debug.Log($"[GameUIMediator] 레벨 {clearedLevel} 클리어 보상: +{rewardAmount} 코인 (총 {GameDataContainer.Instance.Coin})");
+            }
+            else
+            {
+                // 보상이 없으면 UI 숨김
+                if (_rewardContainer != null)
+                    _rewardContainer.SetActive(false);
+            }
         }
 
         /// <summary>
