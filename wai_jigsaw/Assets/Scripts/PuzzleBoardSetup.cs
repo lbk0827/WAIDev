@@ -869,9 +869,81 @@ public class PuzzleBoardSetup : MonoBehaviour
     /// </summary>
     private void PlayGroupPumpingAnimation(PieceGroup group)
     {
-        foreach (var piece in group.pieces)
+        if (group == null || group.pieces.Count == 0) return;
+        List<DragController> piecesSnapshot = new List<DragController>(group.pieces);
+        StartCoroutine(GroupPumpingCoroutine(piecesSnapshot, pumpingScale, pumpingDuration));
+    }
+
+    private IEnumerator GroupPumpingCoroutine(List<DragController> pieces, float maxScale, float duration)
+    {
+        if (pieces == null || pieces.Count == 0) yield break;
+
+        Vector3 groupCenter = Vector3.zero;
+        foreach (var piece in pieces)
+            if (piece != null) groupCenter += piece.transform.position;
+        groupCenter /= pieces.Count;
+
+        Dictionary<DragController, Vector3> originalPositions = new Dictionary<DragController, Vector3>();
+        Dictionary<DragController, Vector3> originalScales = new Dictionary<DragController, Vector3>();
+        Dictionary<DragController, Vector3> offsetFromCenter = new Dictionary<DragController, Vector3>();
+
+        foreach (var piece in pieces)
         {
-            piece.PlayPumpingAnimation(pumpingScale, pumpingDuration);
+            if (piece != null)
+            {
+                originalPositions[piece] = piece.transform.position;
+                originalScales[piece] = piece.transform.localScale;
+                offsetFromCenter[piece] = piece.transform.position - groupCenter;
+            }
+        }
+
+        float halfDuration = duration / 2f;
+        float elapsed = 0f;
+
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / halfDuration);
+            float easedT = 1f - (1f - t) * (1f - t);
+            float currentScale = Mathf.Lerp(1f, maxScale, easedT);
+
+            foreach (var piece in pieces)
+            {
+                if (piece != null && originalScales.ContainsKey(piece))
+                {
+                    piece.transform.localScale = originalScales[piece] * currentScale;
+                    piece.transform.position = groupCenter + offsetFromCenter[piece] * currentScale;
+                }
+            }
+            yield return null;
+        }
+
+        elapsed = 0f;
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / halfDuration);
+            float easedT = t * t;
+            float currentScale = Mathf.Lerp(maxScale, 1f, easedT);
+
+            foreach (var piece in pieces)
+            {
+                if (piece != null && originalScales.ContainsKey(piece))
+                {
+                    piece.transform.localScale = originalScales[piece] * currentScale;
+                    piece.transform.position = groupCenter + offsetFromCenter[piece] * currentScale;
+                }
+            }
+            yield return null;
+        }
+
+        foreach (var piece in pieces)
+        {
+            if (piece != null && originalPositions.ContainsKey(piece))
+            {
+                piece.transform.localScale = originalScales[piece];
+                piece.transform.position = originalPositions[piece];
+            }
         }
     }
 
