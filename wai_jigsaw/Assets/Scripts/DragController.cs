@@ -1040,6 +1040,57 @@ public class DragController : MonoBehaviour
         _canDrag = canDrag;
     }
 
+    #region Pumping Animation
+
+    private bool _isPumping = false;
+
+    /// <summary>
+    /// 펌핑 애니메이션을 재생합니다 (합쳐질 때 피드백).
+    /// </summary>
+    /// <param name="scale">최대 스케일 (1.0 기준, 예: 1.15 = 15% 확대)</param>
+    /// <param name="duration">애니메이션 시간 (초)</param>
+    public void PlayPumpingAnimation(float scale = 1.15f, float duration = 0.2f)
+    {
+        if (_isPumping) return;
+        StartCoroutine(PumpingAnimation(scale, duration));
+    }
+
+    private IEnumerator PumpingAnimation(float maxScale, float duration)
+    {
+        _isPumping = true;
+
+        Vector3 originalScale = transform.localScale;
+        Vector3 targetScale = originalScale * maxScale;
+        float halfDuration = duration / 2f;
+
+        // 1단계: 확대 (Ease Out)
+        float elapsed = 0f;
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float easedT = 1f - Mathf.Pow(1f - t, 2f); // Ease Out Quad
+            transform.localScale = Vector3.Lerp(originalScale, targetScale, easedT);
+            yield return null;
+        }
+
+        // 2단계: 축소 (Ease In)
+        elapsed = 0f;
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float easedT = t * t; // Ease In Quad
+            transform.localScale = Vector3.Lerp(targetScale, originalScale, easedT);
+            yield return null;
+        }
+
+        transform.localScale = originalScale;
+        _isPumping = false;
+    }
+
+    #endregion
+
     /// <summary>
     /// 카드가 뒤집혔는지 확인합니다.
     /// </summary>

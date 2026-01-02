@@ -405,6 +405,8 @@ MonoBehaviour:
   cardFlipDelay: 0.03
   cardFlipDuration: 0.25
   swapAnimationDuration: 0.15
+  pumpingScale: 1.15
+  pumpingDuration: 0.2
 --- !u!4 &185799674
 Transform:
   m_ObjectHideFlags: 0
@@ -625,6 +627,8 @@ MonoBehaviour:
   cardFlipDelay: 0.03
   cardFlipDuration: 0.25
   swapAnimationDuration: 0.15
+  pumpingScale: 1.05
+  pumpingDuration: 0.15
 --- !u!1 &1324155937
 GameObject:
   m_ObjectHideFlags: 0

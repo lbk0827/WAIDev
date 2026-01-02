@@ -44,6 +44,12 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Tooltip("스왑 시 카드 이동 시간 (초)")]
     [Range(0.05f, 0.5f)] public float swapAnimationDuration = 0.15f;
 
+    [Header("Merge Pumping Animation")]
+    [Tooltip("합쳐질 때 펌핑 최대 스케일 (1.0 기준)")]
+    [Range(1.05f, 1.3f)] public float pumpingScale = 1.15f;
+    [Tooltip("펌핑 애니메이션 시간 (초)")]
+    [Range(0.1f, 0.5f)] public float pumpingDuration = 0.2f;
+
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
     private List<GameObject> _cardSlots = new List<GameObject>();  // 카드 슬롯 배경
@@ -749,6 +755,17 @@ public class PuzzleBoardSetup : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
 
+        // 병합 전 그룹 크기 기록
+        int draggedGroupSizeBefore = draggedGroup.pieces.Count;
+        Dictionary<PieceGroup, int> swappedGroupSizes = new Dictionary<PieceGroup, int>();
+        foreach (var piece in swappedPieces)
+        {
+            if (!swappedGroupSizes.ContainsKey(piece.group))
+            {
+                swappedGroupSizes[piece.group] = piece.group.pieces.Count;
+            }
+        }
+
         // 1. 드래그한 그룹의 연결 체크
         CheckConnectionsRecursive(draggedGroup);
 
@@ -768,8 +785,46 @@ public class PuzzleBoardSetup : MonoBehaviour
         // 모든 조각의 모서리 업데이트
         UpdateAllPieceCorners();
 
+        // 병합이 발생했는지 확인하고 펌핑 애니메이션 재생
+        HashSet<PieceGroup> mergedGroups = new HashSet<PieceGroup>();
+
+        // 드래그 그룹이 커졌으면 병합됨
+        if (draggedGroup.pieces.Count > draggedGroupSizeBefore)
+        {
+            mergedGroups.Add(draggedGroup);
+        }
+
+        // 스왑된 조각들의 그룹이 커졌으면 병합됨
+        foreach (var piece in swappedPieces)
+        {
+            if (swappedGroupSizes.TryGetValue(piece.group, out int sizeBefore))
+            {
+                if (piece.group.pieces.Count > sizeBefore && !mergedGroups.Contains(piece.group))
+                {
+                    mergedGroups.Add(piece.group);
+                }
+            }
+        }
+
+        // 병합된 그룹의 모든 조각에 펌핑 애니메이션 재생
+        foreach (var group in mergedGroups)
+        {
+            PlayGroupPumpingAnimation(group);
+        }
+
         // 완료 체크
         CheckCompletion();
+    }
+
+    /// <summary>
+    /// 그룹 내 모든 조각에 펌핑 애니메이션을 재생합니다.
+    /// </summary>
+    private void PlayGroupPumpingAnimation(PieceGroup group)
+    {
+        foreach (var piece in group.pieces)
+        {
+            piece.PlayPumpingAnimation(pumpingScale, pumpingDuration);
+        }
     }
 
     /// <summary>
