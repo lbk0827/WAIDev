@@ -23,6 +23,10 @@ public class PuzzleBoardSetup : MonoBehaviour
     public Color slotBackgroundColor = new Color(0.85f, 0.85f, 0.85f, 1f);  // 밝은 회색
     [Tooltip("슬롯 크기 비율 (1.0 = 시각적 카드 크기와 동일)")]
     [Range(0.5f, 1.2f)] public float slotSizeRatio = 1.0f;
+    [Tooltip("슬롯 테두리 두께 (슬롯 크기 대비 비율)")]
+    [Range(0.005f, 0.05f)] public float slotBorderThickness = 0.015f;
+    [Tooltip("슬롯 테두리 색상")]
+    public Color slotBorderColor = new Color(0.2f, 0.2f, 0.2f, 1f);  // 진한 회색/검은색
 
     [Header("Card Border (Frame)")]
     [Tooltip("하얀 테두리 두께 (조각 크기 대비 비율)")]
@@ -230,6 +234,9 @@ public class PuzzleBoardSetup : MonoBehaviour
         float actualSlotWidth = pieceWidth * slotSizeRatio;
         float actualSlotHeight = pieceHeight * slotSizeRatio;
 
+        // 프레임 셰이더 로드
+        Shader frameShader = Shader.Find("Custom/RoundedFrame");
+
         for (int row = 0; row < _rows; row++)
         {
             for (int col = 0; col < _cols; col++)
@@ -247,7 +254,7 @@ public class PuzzleBoardSetup : MonoBehaviour
                 SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
                 sr.sprite = CreateSlotSprite();
                 sr.color = slotBackgroundColor;
-                sr.sortingOrder = -1;  // 카드(1)보다 뒤에
+                sr.sortingOrder = -2;  // 테두리(-1)보다 뒤에
 
                 // 슬롯 크기 조절
                 slot.transform.localScale = new Vector3(actualSlotWidth, actualSlotHeight, 1f);
@@ -271,11 +278,51 @@ public class PuzzleBoardSetup : MonoBehaviour
                     sr.SetPropertyBlock(block);
                 }
 
+                // 테두리 프레임 추가
+                if (frameShader != null)
+                {
+                    CreateSlotBorder(slot, actualSlotWidth, actualSlotHeight, frameShader);
+                }
+
                 _cardSlots.Add(slot);
             }
         }
 
-        Debug.Log($"[PuzzleBoardSetup] 카드 슬롯 {_cardSlots.Count}개 생성됨");
+        Debug.Log($"[PuzzleBoardSetup] 카드 슬롯 {_cardSlots.Count}개 생성됨 (테두리 포함)");
+    }
+
+    /// <summary>
+    /// 슬롯에 테두리 프레임을 추가합니다.
+    /// </summary>
+    void CreateSlotBorder(GameObject slot, float slotWidth, float slotHeight, Shader frameShader)
+    {
+        // 테두리 GameObject 생성
+        GameObject border = new GameObject("Border");
+        border.transform.SetParent(slot.transform, false);
+        border.transform.localPosition = Vector3.zero;
+
+        // SpriteRenderer 추가
+        SpriteRenderer borderSr = border.AddComponent<SpriteRenderer>();
+        borderSr.sprite = CreateSlotSprite();
+        borderSr.color = slotBorderColor;
+        borderSr.sortingOrder = -1;  // 배경(-2)보다 위, 카드(1)보다 아래
+
+        // 스케일 = 부모와 동일 (localScale이므로 1,1,1)
+        border.transform.localScale = Vector3.one;
+
+        // 프레임 셰이더 적용
+        Material borderMaterial = new Material(frameShader);
+        borderSr.material = borderMaterial;
+
+        // PropertyBlock으로 설정
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        borderSr.GetPropertyBlock(block);
+
+        block.SetFloat("_FrameThickness", slotBorderThickness);
+        block.SetVector("_CornerRadii", new Vector4(cornerRadius, cornerRadius, cornerRadius, cornerRadius));
+        block.SetVector("_HideDirections", Vector4.zero);  // 모든 방향 표시
+
+        borderSr.SetPropertyBlock(block);
     }
 
     /// <summary>
@@ -486,21 +533,22 @@ public class PuzzleBoardSetup : MonoBehaviour
     /// </summary>
     private IEnumerator SmoothMoveGroup(PieceGroup group, DragController anchorPiece, Vector3 anchorTargetPos, float duration)
     {
+        // [중요] 코루틴 시작 시점의 조각 리스트 스냅샷 저장
+        // 코루틴 실행 중 그룹에 새 조각이 병합되어도 안전하게 동작
+        List<DragController> piecesSnapshot = new List<DragController>(group.pieces);
+
         // 각 조각의 시작 위치와 목표 위치 계산
         Vector3 offset = anchorTargetPos - anchorPiece.transform.position;
         Dictionary<DragController, Vector3> targetPositions = new Dictionary<DragController, Vector3>();
+        Dictionary<DragController, Vector3> startPositions = new Dictionary<DragController, Vector3>();
 
-        foreach (var piece in group.pieces)
+        foreach (var piece in piecesSnapshot)
         {
+            startPositions[piece] = piece.transform.position;
             targetPositions[piece] = piece.transform.position + offset;
         }
 
         float elapsed = 0f;
-        Dictionary<DragController, Vector3> startPositions = new Dictionary<DragController, Vector3>();
-        foreach (var piece in group.pieces)
-        {
-            startPositions[piece] = piece.transform.position;
-        }
 
         while (elapsed < duration)
         {
@@ -508,7 +556,7 @@ public class PuzzleBoardSetup : MonoBehaviour
             float t = elapsed / duration;
             float easedT = 1f - Mathf.Pow(1f - t, 2f);
 
-            foreach (var piece in group.pieces)
+            foreach (var piece in piecesSnapshot)
             {
                 piece.transform.position = Vector3.Lerp(startPositions[piece], targetPositions[piece], easedT);
             }
@@ -516,7 +564,7 @@ public class PuzzleBoardSetup : MonoBehaviour
         }
 
         // 최종 위치 보정
-        foreach (var piece in group.pieces)
+        foreach (var piece in piecesSnapshot)
         {
             piece.transform.position = targetPositions[piece];
         }
