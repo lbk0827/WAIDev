@@ -928,9 +928,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _levelGroupManager: {fileID: 1380872574}
-  _gridContainer: {fileID: 0}
+  _gridContainer: {fileID: 1563543197}
   _cardSlotPrefab: {fileID: 0}
-  _cardBackSprite: {fileID: 0}
+  _cardBackSprite: {fileID: 21300000, guid: a20931af44b74664998b0942a7ba084d, type: 3}
   _showDebugInfo: 1
 --- !u!114 &1380872574
 MonoBehaviour:

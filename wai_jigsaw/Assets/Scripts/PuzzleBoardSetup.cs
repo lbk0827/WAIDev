@@ -5,7 +5,7 @@ using WaiJigsaw.Data;
 
 public class PuzzleBoardSetup : MonoBehaviour
 {
-    public LevelManager levelManager;
+    [Header("Camera")]
     [Range(0.1f, 2.0f)] public float padding = 0.5f;
 
     [Header("Piece Spacing")]
@@ -64,7 +64,7 @@ public class PuzzleBoardSetup : MonoBehaviour
 
     public void SetupCurrentLevel(int levelNumber)
     {
-        LevelConfig config = levelManager.GetLevelInfo(levelNumber);
+        LevelConfig config = LevelManager.Instance.GetLevelInfo(levelNumber);
         if (config.puzzleData == null || config.puzzleData.sourceImage == null) return;
 
         // 카드 뒷면 스프라이트 로드
@@ -117,7 +117,12 @@ public class PuzzleBoardSetup : MonoBehaviour
         Vector3 deckPosition = new Vector3(deckPosX, deckPosY, 0);
 
         // 1단계: 카드 슬롯 배경 생성 (카드보다 먼저 생성)
-        CreateCardSlots(startX, startY, slotWidth, slotHeight);
+        // 슬롯 크기 = 실제 조각 크기 × (1 - pieceSpacing) → 패딩 적용 후 시각적 크기와 동일
+        float actualPieceWidth = (pieceWidth + 2f) / 100f;
+        float actualPieceHeight = (pieceHeight + 2f) / 100f;
+        float visiblePieceWidth = actualPieceWidth * (1f - pieceSpacing);
+        float visiblePieceHeight = actualPieceHeight * (1f - pieceSpacing);
+        CreateCardSlots(startX, startY, slotWidth, slotHeight, visiblePieceWidth, visiblePieceHeight);
 
         int index = 0;
         for (int row = 0; row < _rows; row++)
@@ -204,15 +209,21 @@ public class PuzzleBoardSetup : MonoBehaviour
     /// <summary>
     /// 카드 슬롯 배경을 생성합니다.
     /// </summary>
-    void CreateCardSlots(float startX, float startY, float slotWidth, float slotHeight)
+    /// <param name="startX">시작 X 좌표</param>
+    /// <param name="startY">시작 Y 좌표</param>
+    /// <param name="slotWidth">슬롯 간격 (위치 계산용)</param>
+    /// <param name="slotHeight">슬롯 간격 (위치 계산용)</param>
+    /// <param name="pieceWidth">실제 조각 너비 (슬롯 크기용)</param>
+    /// <param name="pieceHeight">실제 조각 높이 (슬롯 크기용)</param>
+    void CreateCardSlots(float startX, float startY, float slotWidth, float slotHeight, float pieceWidth, float pieceHeight)
     {
         // 슬롯 컨테이너 생성
         GameObject slotContainer = new GameObject("CardSlots");
         slotContainer.transform.SetParent(transform, false);
 
-        // 슬롯 크기 (약간 작게)
-        float actualSlotWidth = slotWidth * slotSizeRatio;
-        float actualSlotHeight = slotHeight * slotSizeRatio;
+        // 슬롯 크기 = 실제 조각 크기 * 비율
+        float actualSlotWidth = pieceWidth * slotSizeRatio;
+        float actualSlotHeight = pieceHeight * slotSizeRatio;
 
         for (int row = 0; row < _rows; row++)
         {
