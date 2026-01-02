@@ -168,7 +168,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d75acd1478c3440a9337b2fdcf247d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  levelManager: {fileID: 0}
   padding: 1
   pieceSpacing: 0.15
   cornerRadius: 0.05
@@ -931,6 +930,9 @@ MonoBehaviour:
   _gridContainer: {fileID: 1563543197}
   _cardSlotPrefab: {fileID: 0}
   _cardBackSprite: {fileID: 21300000, guid: a20931af44b74664998b0942a7ba084d, type: 3}
+  _whiteBorderWidth: 3
+  _blackBorderWidth: 2
+  _cornerRadius: 0.08
   _showDebugInfo: 1
 --- !u!114 &1380872574
 MonoBehaviour:
@@ -1018,7 +1020,7 @@ MonoBehaviour:
   m_StartCorner: 0
   m_StartAxis: 0
   m_CellSize: {x: 150, y: 269}
-  m_Spacing: {x: 10, y: 10}
+  m_Spacing: {x: 3, y: 3}
   m_Constraint: 1
   m_ConstraintCount: 5
 --- !u!114 &1563543199

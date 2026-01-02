@@ -19,15 +19,40 @@ public class LobbyGridManager : MonoObject
     [Header("Card Back Settings")]
     [SerializeField] private Sprite _cardBackSprite;        // 카드 뒷면 스프라이트
 
+    [Header("Card Visual Settings")]
+    [SerializeField] private float _whiteBorderWidth = 3f;   // 하얀 테두리 두께 (픽셀)
+    [SerializeField] private float _blackBorderWidth = 2f;   // 검정 테두리 두께 (픽셀)
+    [SerializeField] private float _cornerRadius = 0.08f;    // 둥근 모서리 반경 (0~0.5)
+
     [Header("Debug")]
     [SerializeField] private bool _showDebugInfo = true;
 
     private List<LobbyCardSlot> _cardSlots = new List<LobbyCardSlot>();
     private LevelGroupTableRecord _currentGroup;
     private int _currentLevel;
+    private Material _roundedUIMaterial;
 
     private const int GRID_SIZE = 5;
     private const int CARDS_PER_GROUP = 25;
+
+    /// <summary>
+    /// 둥근 모서리 Material을 초기화합니다.
+    /// </summary>
+    private void InitializeRoundedMaterial()
+    {
+        if (_roundedUIMaterial != null) return;
+
+        Shader roundedShader = Shader.Find("UI/RoundedUI");
+        if (roundedShader != null)
+        {
+            _roundedUIMaterial = new Material(roundedShader);
+            _roundedUIMaterial.SetFloat("_CornerRadius", _cornerRadius);
+        }
+        else
+        {
+            Debug.LogWarning("[LobbyGridManager] UI/RoundedUI 셰이더를 찾을 수 없습니다.");
+        }
+    }
 
     #region MonoObject Lifecycle
 
@@ -50,6 +75,9 @@ public class LobbyGridManager : MonoObject
     public void SetupGrid(int currentLevel)
     {
         _currentLevel = currentLevel;
+
+        // 0. 둥근 모서리 Material 초기화
+        InitializeRoundedMaterial();
 
         // 1. 현재 레벨이 속한 그룹 가져오기
         _currentGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
@@ -125,7 +153,9 @@ public class LobbyGridManager : MonoObject
     /// </summary>
     private GameObject CreateDefaultCardSlot()
     {
-        // 루트 오브젝트 (Button + CanvasGroup)
+        float totalBorderWidth = _whiteBorderWidth + _blackBorderWidth;
+
+        // 루트 오브젝트 (Button)
         GameObject slotObj = new GameObject("CardSlot");
         slotObj.transform.SetParent(_gridContainer, false);
 
@@ -136,15 +166,43 @@ public class LobbyGridManager : MonoObject
         // Button 컴포넌트
         Button button = slotObj.AddComponent<Button>();
 
-        // 뒷면 이미지 (배경)
+        // === 1. 검정 테두리 (가장 바깥) ===
+        GameObject blackBorderObj = new GameObject("BlackBorder");
+        blackBorderObj.transform.SetParent(slotObj.transform, false);
+        RectTransform blackBorderRect = blackBorderObj.AddComponent<RectTransform>();
+        blackBorderRect.anchorMin = Vector2.zero;
+        blackBorderRect.anchorMax = Vector2.one;
+        blackBorderRect.sizeDelta = Vector2.zero;
+        blackBorderRect.offsetMin = Vector2.zero;
+        blackBorderRect.offsetMax = Vector2.zero;
+
+        Image blackBorderImage = blackBorderObj.AddComponent<Image>();
+        blackBorderImage.color = Color.black;
+        ApplyRoundedMaterial(blackBorderImage);
+
+        // === 2. 하얀 테두리 (검정 안쪽) ===
+        GameObject whiteBorderObj = new GameObject("WhiteBorder");
+        whiteBorderObj.transform.SetParent(slotObj.transform, false);
+        RectTransform whiteBorderRect = whiteBorderObj.AddComponent<RectTransform>();
+        whiteBorderRect.anchorMin = Vector2.zero;
+        whiteBorderRect.anchorMax = Vector2.one;
+        whiteBorderRect.sizeDelta = Vector2.zero;
+        whiteBorderRect.offsetMin = new Vector2(_blackBorderWidth, _blackBorderWidth);
+        whiteBorderRect.offsetMax = new Vector2(-_blackBorderWidth, -_blackBorderWidth);
+
+        Image whiteBorderImage = whiteBorderObj.AddComponent<Image>();
+        whiteBorderImage.color = Color.white;
+        ApplyRoundedMaterial(whiteBorderImage);
+
+        // === 3. 뒷면 이미지 (배경) - 테두리 안쪽 ===
         GameObject backObj = new GameObject("BackImage");
         backObj.transform.SetParent(slotObj.transform, false);
         RectTransform backRect = backObj.AddComponent<RectTransform>();
         backRect.anchorMin = Vector2.zero;
         backRect.anchorMax = Vector2.one;
         backRect.sizeDelta = Vector2.zero;
-        backRect.offsetMin = Vector2.zero;
-        backRect.offsetMax = Vector2.zero;
+        backRect.offsetMin = new Vector2(totalBorderWidth, totalBorderWidth);
+        backRect.offsetMax = new Vector2(-totalBorderWidth, -totalBorderWidth);
 
         Image backImage = backObj.AddComponent<Image>();
         if (_cardBackSprite != null)
@@ -155,28 +213,32 @@ public class LobbyGridManager : MonoObject
         {
             backImage.color = new Color(0.3f, 0.3f, 0.4f, 1f); // 기본 어두운 색
         }
+        ApplyRoundedMaterial(backImage);
 
-        // 앞면 이미지 (조각)
+        // === 4. 앞면 이미지 (조각) - 테두리 안쪽 ===
         GameObject frontObj = new GameObject("FrontImage");
         frontObj.transform.SetParent(slotObj.transform, false);
         RectTransform frontRect = frontObj.AddComponent<RectTransform>();
         frontRect.anchorMin = Vector2.zero;
         frontRect.anchorMax = Vector2.one;
         frontRect.sizeDelta = Vector2.zero;
-        frontRect.offsetMin = Vector2.zero;
-        frontRect.offsetMax = Vector2.zero;
+        frontRect.offsetMin = new Vector2(totalBorderWidth, totalBorderWidth);
+        frontRect.offsetMax = new Vector2(-totalBorderWidth, -totalBorderWidth);
 
         Image frontImage = frontObj.AddComponent<Image>();
         frontImage.preserveAspect = false; // 셀 크기에 맞게 채움
+        ApplyRoundedMaterial(frontImage);
         frontObj.SetActive(false); // 기본은 숨김
 
-        // 레벨 번호 텍스트
+        // === 5. 레벨 번호 텍스트 ===
         GameObject textObj = new GameObject("LevelText");
         textObj.transform.SetParent(slotObj.transform, false);
         RectTransform textRect = textObj.AddComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
         textRect.sizeDelta = Vector2.zero;
+        textRect.offsetMin = new Vector2(totalBorderWidth, totalBorderWidth);
+        textRect.offsetMax = new Vector2(-totalBorderWidth, -totalBorderWidth);
 
         TMPro.TMP_Text levelText = textObj.AddComponent<TMPro.TextMeshProUGUI>();
         levelText.alignment = TMPro.TextAlignmentOptions.Center;
@@ -184,13 +246,22 @@ public class LobbyGridManager : MonoObject
         levelText.color = Color.white;
         levelText.fontStyle = TMPro.FontStyles.Bold;
 
-        // LobbyCardSlot에 참조 연결 (Reflection 대신 직접 설정)
+        // LobbyCardSlot에 참조 연결
         LobbyCardSlot cardSlot = slotObj.AddComponent<LobbyCardSlot>();
-
-        // SerializeField를 런타임에 설정하기 위해 public 메서드 사용
         cardSlot.SetReferences(frontImage, backImage, levelText, button);
 
         return slotObj;
+    }
+
+    /// <summary>
+    /// 이미지에 둥근 모서리 Material을 적용합니다.
+    /// </summary>
+    private void ApplyRoundedMaterial(Image image)
+    {
+        if (_roundedUIMaterial != null && image != null)
+        {
+            image.material = _roundedUIMaterial;
+        }
     }
 
     /// <summary>
