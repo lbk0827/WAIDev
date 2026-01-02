@@ -18,5 +18,8 @@ namespace WaiJigsaw.Data
 		public string ImageName;
 		public int Rows;
 		public int Cols;
+		public string difficulty;
+		public int reward;
+		public int adreward;
 	}
 }
