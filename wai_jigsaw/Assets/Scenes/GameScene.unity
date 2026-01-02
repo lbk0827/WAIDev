@@ -1023,7 +1023,7 @@ MonoBehaviour:
   pieceSpacing: 0.12
   cornerRadius: 0.12
   roundedCornerShader: {fileID: 4800000, guid: 65bb4e07d1b259945ab53f49c66aad8b, type: 3}
-  slotBackgroundColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
+  slotBackgroundColor: {r: 0.040049832, g: 0.33962262, b: 0.25640798, a: 1}
   slotSizeRatio: 1.05
   whiteBorderRatio: 0.01
   blackBorderRatio: 0.008

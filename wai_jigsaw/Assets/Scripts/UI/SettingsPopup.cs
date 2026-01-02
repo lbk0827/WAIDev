@@ -211,11 +211,23 @@ namespace WaiJigsaw.UI
                 _inGameButtonsContainer.SetActive(isInGame);
             }
 
+            // 팝업 열림 상태 설정 (퍼즐 드래그 차단)
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.IsPopupOpen = true;
+            }
+
             gameObject.SetActive(true);
         }
 
         public void Close()
         {
+            // 팝업 닫힘 상태 설정 (퍼즐 드래그 허용)
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.IsPopupOpen = false;
+            }
+
             PlayCloseAnimation(() =>
             {
                 gameObject.SetActive(false);

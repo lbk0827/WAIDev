@@ -34,6 +34,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public int CurrentLevel => GameDataContainer.Instance.CurrentLevel;
 
+    /// <summary>
+    /// 팝업이 열려있는지 여부 (열려있으면 퍼즐 조각 드래그 불가)
+    /// </summary>
+    public bool IsPopupOpen { get; set; } = false;
+
     private void Awake()
     {
         // 싱글턴 인스턴스 설정

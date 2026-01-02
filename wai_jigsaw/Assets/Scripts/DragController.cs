@@ -107,6 +107,9 @@ public class DragController : MonoBehaviour
         // 인트로 중에는 드래그 불가
         if (!_canDrag) return;
 
+        // 팝업이 열려있으면 드래그 불가
+        if (GameManager.Instance != null && GameManager.Instance.IsPopupOpen) return;
+
         Vector3 screenPoint = Camera.main.WorldToScreenPoint(transform.position);
         _cameraZDepth = screenPoint.z;
 
@@ -124,6 +127,9 @@ public class DragController : MonoBehaviour
     {
         if (!_canDrag) return;
 
+        // 팝업이 열려있으면 드래그 불가
+        if (GameManager.Instance != null && GameManager.Instance.IsPopupOpen) return;
+
         // 마우스의 총 이동량 계산
         Vector3 currentMousePos = GetMouseWorldPos();
         group.OnDragUpdate(currentMousePos);
@@ -132,6 +138,9 @@ public class DragController : MonoBehaviour
     private void OnMouseUp()
     {
         if (!_canDrag) return;
+
+        // 팝업이 열려있으면 드래그 불가
+        if (GameManager.Instance != null && GameManager.Instance.IsPopupOpen) return;
 
         group.SetSortingOrder(1);
 
