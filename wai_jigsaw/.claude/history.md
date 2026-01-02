@@ -1,6 +1,47 @@
 # 작업 히스토리
 
-## 2025-12-26 (2)
+## 2024-12-26
+
+### 퍼즐 그룹화 시각 효과 개선
+- `pieceSpacing` 변수 추가 (조각 간 간격)
+- `MergeGroupWithSnap()` - 그룹 병합 시 spacing 제거
+- `CheckConnectionsRecursive()` - 연쇄 병합 처리
+- `MoveGroupWithRelativePositions()` - 그룹 이동 시 상대적 위치 유지
+
+### TableExporter 연동
+- Excel → JSON 변환 도구 설정
+- `config/export_config.json` - 프로젝트 경로 설정
+- `config/local_config.json` - 로컬 경로 설정
+
+### 데이터 테이블 시스템 구축
+- **LevelTable** (`Assets/Scripts/Data/Generated/LevelTable.cs`)
+  - 레벨 정보 (levelID, ImageName, Rows, Cols)
+  - JSON: `Assets/Resources/Tables/LevelTable.json`
+
+- **LevelGroupTable** (`Assets/Scripts/Data/Generated/LevelGroupTable.cs`)
+  - 그룹 정보 (GroupID, StartLevel, EndLevel, ImageName)
+  - JSON: `Assets/Resources/Tables/LevelGroupTable.json`
+
+### 수정된 스크립트
+- `LevelManager.cs` - LevelTable 사용으로 변경
+- `LevelGroupManager.cs` - LevelGroupTable 사용으로 변경
+- `LobbyGridManager.cs` - LevelGroupTableRecord 타입 사용
+
+### 삭제된 파일
+- `Assets/Resources/LevelData.json` (기존)
+- `Assets/Resources/LevelGroupData.json` (기존)
+
+### 로비 UI 개선
+- 카드 앞면 이미지 `preserveAspect = false`
+- Cell Size: 150 x 269 (이미지 비율 맞춤)
+- 카드 클릭 시 레벨 진입 비활성화 (Play 버튼으로만 진입)
+
+### UI 텍스트 수정
+- Play 버튼: "플레이" → "PLAY" (폰트 호환성)
+
+---
+
+## 2025-12-26
 
 ### 카드 인트로 연출 시스템 구현
 
@@ -57,44 +98,60 @@
 
 ---
 
-## 2024-12-26
+## 2025-12-29
 
-### 퍼즐 그룹화 시각 효과 개선
-- `pieceSpacing` 변수 추가 (조각 간 간격)
-- `MergeGroupWithSnap()` - 그룹 병합 시 spacing 제거
-- `CheckConnectionsRecursive()` - 연쇄 병합 처리
-- `MoveGroupWithRelativePositions()` - 그룹 이동 시 상대적 위치 유지
+### WhiteFrame 테두리 경계선 문제 해결 시도
 
-### TableExporter 연동
-- Excel → JSON 변환 도구 설정
-- `config/export_config.json` - 프로젝트 경로 설정
-- `config/local_config.json` - 로컬 경로 설정
+#### 문제 현상
+- 병합된 카드 사이에 WhiteFrame으로 인한 경계선이 보임
+- `_HideDirections`로 방향별 숨김 처리해도 경계선 잔상 발생
 
-### 데이터 테이블 시스템 구축
-- **LevelTable** (`Assets/Scripts/Data/Generated/LevelTable.cs`)
-  - 레벨 정보 (levelID, ImageName, Rows, Cols)
-  - JSON: `Assets/Resources/Tables/LevelTable.json`
+#### 방안 1: 방향별 프레임 두께 조절 (셰이더 수정)
+- `RoundedFrame.shader` 수정
+  - `_FrameThickness` (float) → `_FrameThicknesses` (Vector4)로 변경
+  - `innerBoxSDF()` 함수 추가하여 방향별 두께 적용
+- `DragController.cs` 수정
+  - `SetFrameThicknessAt()` - 특정 방향 프레임 두께 설정
+  - `RestoreFrameThicknessAt()` - 특정 방향 두께 복원
+  - `RestoreAllFrameThicknesses()` - 모든 방향 두께 복원
+- **결과**: 일부 개선되었으나 회색 경계선 여전히 보임 (안티앨리어싱 아티팩트)
 
-- **LevelGroupTable** (`Assets/Scripts/Data/Generated/LevelGroupTable.cs`)
-  - 그룹 정보 (GroupID, StartLevel, EndLevel, ImageName)
-  - JSON: `Assets/Resources/Tables/LevelGroupTable.json`
+#### 방안 3: 4개 개별 Edge + 4개 Corner 오브젝트
+- 프레임을 8개의 개별 오브젝트로 분리
+  - `_whiteFrameEdges[4]`, `_blackFrameEdges[4]` - 상/하/좌/우 Edge
+  - `_whiteCorners[4]`, `_blackCorners[4]` - TL/TR/BL/BR Corner
+- `RoundedCorner.shader` 신규 생성 - 1/4 원 렌더링
+- `CreateFrameBorders()` → `CreateFrameEdges()` + `CreateFrameCorners()`
+- `UpdateCornerVisibility()` - 모서리 가시성 업데이트
+- **결과**: 모서리가 직각으로 표시되는 문제 발생
 
-### 수정된 스크립트
-- `LevelManager.cs` - LevelTable 사용으로 변경
-- `LevelGroupManager.cs` - LevelGroupTable 사용으로 변경
-- `LobbyGridManager.cs` - LevelGroupTableRecord 타입 사용
+#### 최종 결과
+- 모든 변경사항 롤백 (Discard)
+- 추후 재작업 필요
 
-### 삭제된 파일
-- `Assets/Resources/LevelData.json` (기존)
-- `Assets/Resources/LevelGroupData.json` (기존)
+---
 
-### 로비 UI 개선
-- 카드 앞면 이미지 `preserveAspect = false`
-- Cell Size: 150 x 269 (이미지 비율 맞춤)
-- 카드 클릭 시 레벨 진입 비활성화 (Play 버튼으로만 진입)
+### CardSlot 크기 조정
 
-### UI 텍스트 수정
-- Play 버튼: "플레이" → "PLAY" (폰트 호환성)
+#### 변경 내용
+- **파일**: `Assets/Scripts/PuzzleBoardSetup.cs`
+- `slotSizeRatio`: `0.98f` → `1.0f`
+- CardSlot 크기가 카드와 정확히 동일하게 표시됨
+
+---
+
+### 관련 셰이더 정보 (참고용)
+
+#### RoundedFrame.shader 주요 속성
+- `_FrameThickness` - 프레임 두께 (UV 비율)
+- `_HideDirections` - 방향별 숨김 (Top, Bottom, Left, Right)
+- `_CornerRadii` - 개별 모서리 반경 (TL, TR, BL, BR)
+
+#### RoundedSprite.shader 주요 속성
+- `_CornerRadius` - 기본 모서리 반경
+- `_CornerRadii` - 개별 모서리 반경
+- `_Padding` - 패딩 (Left, Right, Top, Bottom)
+- `_UVRect` - UV 정규화 영역
 
 ---
 
