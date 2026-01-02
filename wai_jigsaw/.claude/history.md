@@ -224,6 +224,47 @@
 
 ---
 
+## 2026-01-02
+
+### 이미지-프레임 사이 투명 틈 이슈 발견 및 해결 시도
+
+#### 문제 현상
+- 퍼즐 이미지와 하얀 테두리(WhiteFrame) 사이에 투명한 틈이 보임
+- RoundedSprite.shader의 `_Padding`이 이미지 가장자리를 잘라내지만, WhiteFrame이 그 영역을 덮지 못함
+
+#### 시도한 해결 방법: 프레임 두께에 패딩 추가
+- `ApplyShaderToFrames()`에서 WhiteFrame 두께 계산 시 padding 포함
+```csharp
+float paddingRatioX = Mathf.Max(_padding.x, _padding.y);
+float paddingRatioY = Mathf.Max(_padding.z, _padding.w);
+float avgPaddingRatio = (paddingRatioX + paddingRatioY) / 2f;
+float whiteFrameThicknessUV = _whiteBorderThickness + _blackBorderThickness + avgPaddingRatio;
+```
+- **원리**: padding으로 투명해진 이미지 가장자리를 WhiteFrame이 덮도록 두께 확장
+
+#### 병합 카드 테두리 연결 문제 시도 (실패 → 롤백)
+- 병합된 카드 사이에서 테두리가 끊어지는 현상 해결 시도
+- **프레임 확장 방식** 구현:
+  - `_frameExtendDirections` (Vector4) - 각 방향 확장 상태
+  - `_originalFrameWidth`, `_originalFrameHeight` - 원본 프레임 크기
+  - `ApplyFrameExtension()` - 인접 카드 방향으로 프레임 스케일/위치 조정
+  - `HideBorder()` → 숨기는 대신 확장하도록 변경
+  - `RecalculateCornerRadii()` - 확장 상태에 따른 모서리 반경 재계산
+- **결과**: 프레임이 과도하게 확장되어 인접 카드 이미지까지 덮어버림
+- **모든 변경사항 롤백 (Discard)**
+
+#### 현재 상태
+- 투명 틈 이슈 미해결 상태로 복귀
+- 추후 재작업 필요
+
+#### 향후 해결 방향 제안
+1. **프레임 두께 확장 방식** (가장 안전)
+   - `ApplyShaderToFrames()`에서 WhiteFrame 두께에 padding 추가
+   - 프레임 크기/위치 변경 없이 셰이더 속성만 조정
+2. 병합 테두리 연결 문제는 별도로 접근 필요
+
+---
+
 ## 주요 파일 위치
 
 | 구분 | 경로 |
