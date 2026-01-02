@@ -155,6 +155,75 @@
 
 ---
 
+## 2025-12-30 ~ 2026-01-02
+
+### 씬 분리
+- LobbyScene / GameScene 분리
+- 각 씬별 독립적인 UI 및 게임 로직 관리
+
+### 펌핑(Pumping) 연출 시스템
+
+#### PuzzleBoardSetup.cs 수정
+- `pumpingScale` (1.15f) - 합쳐질 때 최대 스케일
+- `pumpingDuration` (0.2f) - 펌핑 애니메이션 시간
+- 카드 그룹이 합쳐질 때 스케일 애니메이션 적용
+
+#### 버그 수정
+- 그룹 펌핑 연출 관련 버그 수정
+
+### Settings 팝업 시스템
+
+#### 추가된 기능
+- 인게임 설정 버튼 추가
+- SettingsPopup 프리팹 생성
+- DimBackground 노출 처리
+- 팝업 열린 상태에서 아래 UI 상호작용 차단
+
+### CardSlots 개선
+- 인게임 CardSlots에 검정 테두리 추가
+- `slotBorderThickness` (0.015f) - 테두리 두께
+- `slotBorderColor` - 테두리 색상 (진한 회색/검은색)
+
+### 아이템 시스템 구축
+
+#### ItemTable 추가
+- **파일**: `Assets/Scripts/Data/Generated/ItemTable.cs`
+- **JSON**: `Assets/Resources/Tables/ItemTable.json`
+- 아이템 타입 상수: `ITEM_TYPE_COIN = 101`
+- 필드: Item_Type, Item_Category, Item_GetType, Item_Price, Item_Icon
+
+#### OutgameResourcePath 추가
+- **파일**: `Assets/Scripts/Data/OutgameResourcePath.cs`
+- **에셋**: `Assets/Resources/OutgameResourcePath.asset`
+- Inspector에서 아이템별 아이콘 스프라이트 직접 할당
+- ItemType으로 아이콘 조회 기능
+
+### 코인 시스템
+
+#### GameDataContainer.cs 확장
+- `Coin` 프로퍼티 추가
+- `AddCoin(int amount)` - 코인 획득
+- `SpendCoin(int amount)` - 코인 소비 (잔액 체크)
+- `HasEnoughCoin(int amount)` - 잔액 확인
+- `CoinChangedEvent` - 코인 변경 이벤트 (Observer 패턴)
+- PlayerPrefs 저장/로드 지원
+
+#### LevelTable 확장
+- 스테이지 클리어 시 획득 코인 필드 추가
+
+#### CoinDisplay.cs 추가
+- **파일**: `Assets/Scripts/UI/CoinDisplay.cs`
+- 화면 상단 코인 잔액 표시 UI
+- Observer 패턴으로 코인 변경 시 자동 갱신
+- 카운팅 애니메이션 (Ease Out Quad)
+- 1000 이상 시 K 단위 표시 (예: 1.2K)
+
+### 레벨 콘텐츠 확장
+- Level 15 ~ 25 이미지 추가
+- LevelTable.json 업데이트 (25개 레벨)
+
+---
+
 ## 주요 파일 위치
 
 | 구분 | 경로 |
