@@ -14,6 +14,9 @@ namespace WaiJigsaw.Data
         public string ImageName;
         public int Rows;
         public int Cols;
+        public string difficulty;
+        public int reward;      // 기본 클리어 보상 코인
+        public int adreward;    // 광고 시청 추가 보상 코인
     }
 
     /// <summary>
