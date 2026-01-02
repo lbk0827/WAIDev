@@ -43,21 +43,33 @@ namespace WaiJigsaw.UI
 
         // 인게임 모드 여부
         private bool _isInGameMode = false;
+        private bool _isInitialized = false;
 
-        private void Start()
+        private void Awake()
         {
+            // Awake는 비활성화 상태에서도 호출됨
+            Debug.Log("[SettingsPopup] Awake 호출됨");
             RegisterButtonEvents();
-            RefreshToggleVisuals();
+            _isInitialized = true;
         }
 
         private void OnEnable()
         {
+            // Awake가 호출되지 않은 경우 대비 (Prefab 인스턴스 등)
+            if (!_isInitialized)
+            {
+                RegisterButtonEvents();
+                _isInitialized = true;
+            }
+
             RefreshToggleVisuals();
             PlayOpenAnimation();
         }
 
         private void RegisterButtonEvents()
         {
+            Debug.Log($"[SettingsPopup] RegisterButtonEvents - dimButton: {_dimButton != null}, closeButton: {_closeButton != null}");
+
             if (_dimButton != null)
                 _dimButton.onClick.AddListener(Close);
 
