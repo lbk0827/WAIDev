@@ -129,6 +129,36 @@ public class GameManager : MonoBehaviour
         SceneTransitionManager.Instance.LoadGameScene();
     }
 
+    /// <summary>
+    /// 현재 레벨을 재시작합니다. (인게임에서 Retry 버튼용)
+    /// </summary>
+    public void RetryCurrentLevel()
+    {
+        // 퍼즐 보드 정리
+        if (puzzleBoard != null)
+        {
+            puzzleBoard.ClearBoard();
+        }
+
+        // GameUIMediator를 통해 퍼즐 다시 시작
+        if (_gameUIMediator == null)
+        {
+            _gameUIMediator = FindObjectOfType<GameUIMediator>();
+        }
+
+        if (_gameUIMediator != null)
+        {
+            _gameUIMediator.StartGame();
+        }
+        else if (puzzleBoard != null)
+        {
+            // Mediator가 없으면 직접 퍼즐 보드 설정
+            puzzleBoard.SetupCurrentLevel(CurrentLevel);
+        }
+
+        Debug.Log($"[GameManager] 레벨 {CurrentLevel} 재시작");
+    }
+
     #endregion
 
     private void Start()

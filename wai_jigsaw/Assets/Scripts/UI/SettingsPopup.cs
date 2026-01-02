@@ -36,6 +36,14 @@ namespace WaiJigsaw.UI
         [SerializeField] private RectTransform _popupPanel;
         [SerializeField] private float _animationDuration = 0.2f;
 
+        [Header("InGame Only Buttons")]
+        [SerializeField] private GameObject _inGameButtonsContainer;  // Retry, Home 버튼을 담는 컨테이너
+        [SerializeField] private Button _retryButton;
+        [SerializeField] private Button _homeButton;
+
+        // 인게임 모드 여부
+        private bool _isInGameMode = false;
+
         private void Start()
         {
             RegisterButtonEvents();
@@ -64,7 +72,32 @@ namespace WaiJigsaw.UI
 
             if (_hapticToggleButton != null)
                 _hapticToggleButton.onClick.AddListener(OnHapticToggleClicked);
+
+            // InGame 전용 버튼
+            if (_retryButton != null)
+                _retryButton.onClick.AddListener(OnRetryClicked);
+
+            if (_homeButton != null)
+                _homeButton.onClick.AddListener(OnHomeClicked);
         }
+
+        #region InGame Button Events
+
+        private void OnRetryClicked()
+        {
+            Close();
+            // 현재 레벨 재시작
+            GameManager.Instance?.RetryCurrentLevel();
+        }
+
+        private void OnHomeClicked()
+        {
+            Close();
+            // 로비로 이동
+            GameManager.Instance?.LoadLobbyScene();
+        }
+
+        #endregion
 
         #region Toggle Events
 
@@ -152,8 +185,20 @@ namespace WaiJigsaw.UI
 
         #region Open/Close
 
-        public void Open()
+        /// <summary>
+        /// 설정 팝업을 엽니다.
+        /// </summary>
+        /// <param name="isInGame">인게임 모드 여부 (true면 Retry, Home 버튼 표시)</param>
+        public void Open(bool isInGame = false)
         {
+            _isInGameMode = isInGame;
+
+            // 인게임 버튼 컨테이너 표시/숨김
+            if (_inGameButtonsContainer != null)
+            {
+                _inGameButtonsContainer.SetActive(isInGame);
+            }
+
             gameObject.SetActive(true);
         }
 

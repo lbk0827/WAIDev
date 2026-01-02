@@ -19,6 +19,10 @@ namespace WaiJigsaw.UI
 
         [Header("Puzzle Panel UI")]
         [SerializeField] private TMP_Text _currentLevelText;  // 현재 레벨 표시
+        [SerializeField] private Button _settingsButton;      // 설정 버튼
+
+        [Header("Popups")]
+        [SerializeField] private SettingsPopup _settingsPopup;
 
         [Header("Result Panel UI")]
         [SerializeField] private TMP_Text _resultLevelText;
@@ -54,12 +58,28 @@ namespace WaiJigsaw.UI
         {
             if (_resultNextButton != null)
                 _resultNextButton.onClick.AddListener(OnResultNextClicked);
+
+            if (_settingsButton != null)
+                _settingsButton.onClick.AddListener(OnSettingsClicked);
         }
 
         private void OnResultNextClicked()
         {
             // LobbyScene으로 전환
             GameManager.Instance.LoadLobbyScene();
+        }
+
+        private void OnSettingsClicked()
+        {
+            if (_settingsPopup != null)
+            {
+                // 인게임 모드로 팝업 열기 (Retry, Home 버튼 표시)
+                _settingsPopup.Open(isInGame: true);
+            }
+            else
+            {
+                Debug.LogWarning("[GameUIMediator] SettingsPopup이 할당되지 않았습니다.");
+            }
         }
 
         #endregion
