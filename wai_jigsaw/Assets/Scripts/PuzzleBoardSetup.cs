@@ -728,27 +728,43 @@ public class PuzzleBoardSetup : MonoBehaviour
         StartCoroutine(SmoothMoveGroup(rootPiece.group, rootPiece, _slotPositions[rootPiece.currentSlotIndex], swapAnimationDuration));
 
         // 장애물(스왑된 조각들)은 부드럽게 개별 slot 위치로 이동
+        List<DragController> swappedPieces = new List<DragController>();
         foreach (var info in transactionList)
         {
             if (!movingGroup.Contains(info.Piece))
             {
                 StartCoroutine(SmoothMovePiece(info.Piece, _slotPositions[info.TargetSlotIndex], swapAnimationDuration));
+                swappedPieces.Add(info.Piece);
             }
         }
 
         // 5. 결합 및 완료 체크 (연쇄 병합 포함) - 약간의 딜레이 후 실행
-        StartCoroutine(DelayedConnectionCheck(rootPiece.group, swapAnimationDuration));
+        // 드래그한 그룹과 스왑된 조각들 모두 연결 체크
+        StartCoroutine(DelayedConnectionCheckWithSwapped(rootPiece.group, swappedPieces, swapAnimationDuration));
     }
 
     /// <summary>
-    /// 스왑 애니메이션 후 연결 체크를 수행합니다.
+    /// 스왑 애니메이션 후 연결 체크를 수행합니다. (드래그 그룹 + 스왑된 조각들)
     /// </summary>
-    private IEnumerator DelayedConnectionCheck(PieceGroup group, float delay)
+    private IEnumerator DelayedConnectionCheckWithSwapped(PieceGroup draggedGroup, List<DragController> swappedPieces, float delay)
     {
         yield return new WaitForSeconds(delay);
 
-        // 결합 체크 (연쇄 병합 포함)
-        CheckConnectionsRecursive(group);
+        // 1. 드래그한 그룹의 연결 체크
+        CheckConnectionsRecursive(draggedGroup);
+
+        // 2. 스왑된 조각들의 연결 체크 (각 조각의 그룹에 대해)
+        HashSet<PieceGroup> checkedGroups = new HashSet<PieceGroup>();
+        checkedGroups.Add(draggedGroup);  // 이미 체크한 그룹은 제외
+
+        foreach (var piece in swappedPieces)
+        {
+            // 이미 체크한 그룹은 스킵 (드래그 그룹에 병합되었을 수 있음)
+            if (checkedGroups.Contains(piece.group)) continue;
+
+            CheckConnectionsRecursive(piece.group);
+            checkedGroups.Add(piece.group);
+        }
 
         // 모든 조각의 모서리 업데이트
         UpdateAllPieceCorners();
