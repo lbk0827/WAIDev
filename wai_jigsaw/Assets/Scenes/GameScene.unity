@@ -392,13 +392,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d75acd1478c3440a9337b2fdcf247d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  levelManager: {fileID: 0}
   padding: 1
   pieceSpacing: 0.15
   cornerRadius: 0.05
   roundedCornerShader: {fileID: 0}
   slotBackgroundColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
-  slotSizeRatio: 0.98
+  slotSizeRatio: 1.2
   whiteBorderRatio: 0.025
   blackBorderRatio: 0.008
   cardFlyDuration: 0.3
@@ -613,13 +612,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d75acd1478c3440a9337b2fdcf247d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  levelManager: {fileID: 0}
-  padding: 0.1
+  padding: 1.2
   pieceSpacing: 0.12
   cornerRadius: 0.12
   roundedCornerShader: {fileID: 4800000, guid: 65bb4e07d1b259945ab53f49c66aad8b, type: 3}
   slotBackgroundColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
-  slotSizeRatio: 0.98
+  slotSizeRatio: 1.05
   whiteBorderRatio: 0.01
   blackBorderRatio: 0.008
   cardFlyDuration: 0.3

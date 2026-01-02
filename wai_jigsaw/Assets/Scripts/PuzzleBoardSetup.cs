@@ -21,8 +21,8 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Header("Card Slot")]
     [Tooltip("카드 슬롯 배경 색상")]
     public Color slotBackgroundColor = new Color(0.85f, 0.85f, 0.85f, 1f);  // 밝은 회색
-    [Tooltip("슬롯 크기 비율 (1.0 = 카드와 동일, 0.95 = 약간 작음)")]
-    [Range(0.9f, 1.0f)] public float slotSizeRatio = 1.0f;
+    [Tooltip("슬롯 크기 비율 (1.0 = 시각적 카드 크기와 동일)")]
+    [Range(0.5f, 1.2f)] public float slotSizeRatio = 1.0f;
 
     [Header("Card Border (Frame)")]
     [Tooltip("하얀 테두리 두께 (조각 크기 대비 비율)")]
@@ -117,11 +117,10 @@ public class PuzzleBoardSetup : MonoBehaviour
         Vector3 deckPosition = new Vector3(deckPosX, deckPosY, 0);
 
         // 1단계: 카드 슬롯 배경 생성 (카드보다 먼저 생성)
-        // 슬롯 크기 = 실제 조각 크기 × (1 - pieceSpacing) → 패딩 적용 후 시각적 크기와 동일
-        float actualPieceWidth = (pieceWidth + 2f) / 100f;
-        float actualPieceHeight = (pieceHeight + 2f) / 100f;
-        float visiblePieceWidth = actualPieceWidth * (1f - pieceSpacing);
-        float visiblePieceHeight = actualPieceHeight * (1f - pieceSpacing);
+        // 슬롯 크기 = 카드의 시각적 크기 (셰이더 패딩 적용 후)
+        // pieceSpacing/2 만큼 각 가장자리가 잘리므로, 시각적 크기 = 원래 크기 × (1 - pieceSpacing)
+        float visiblePieceWidth = _unitWidth * (1f - pieceSpacing);
+        float visiblePieceHeight = _unitHeight * (1f - pieceSpacing);
         CreateCardSlots(startX, startY, slotWidth, slotHeight, visiblePieceWidth, visiblePieceHeight);
 
         int index = 0;

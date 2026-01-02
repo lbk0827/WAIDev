@@ -173,7 +173,7 @@ MonoBehaviour:
   cornerRadius: 0.05
   roundedCornerShader: {fileID: 0}
   slotBackgroundColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
-  slotSizeRatio: 0.98
+  slotSizeRatio: 0.9
   whiteBorderRatio: 0.025
   blackBorderRatio: 0.008
   cardFlyDuration: 0.3
