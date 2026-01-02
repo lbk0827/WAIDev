@@ -38,8 +38,11 @@ namespace WaiJigsaw.UI
             RegisterButtonEvents();
         }
 
-        private void Start()
+        protected override void Start()
         {
+            // 부모 클래스의 Start() 호출 → OnInitialize() → RegisterButtonEvents()
+            base.Start();
+
             // GameManager에 참조 등록
             if (GameManager.Instance != null)
             {
