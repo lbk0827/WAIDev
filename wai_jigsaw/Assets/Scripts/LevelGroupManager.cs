@@ -8,12 +8,26 @@ using WaiJigsaw.Data;
 /// </summary>
 public class LevelGroupManager : MonoBehaviour
 {
+    public static LevelGroupManager Instance { get; private set; }
+
     private const int GRID_SIZE = 5; // 5x5 그리드
 
     private Dictionary<int, Sprite[]> _slicedSpritesCache = new Dictionary<int, Sprite[]>();
 
     private void Awake()
     {
+        // 싱글턴 설정
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         // LevelGroupTable 초기화
         LevelGroupTable.Load();
     }

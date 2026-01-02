@@ -13,10 +13,24 @@ public struct LevelConfig
 
 public class LevelManager : MonoBehaviour
 {
+    public static LevelManager Instance { get; private set; }
+
     private Dictionary<int, LevelConfig> _levelCache = new Dictionary<int, LevelConfig>();
 
     private void Awake()
     {
+        // 싱글턴 설정
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         // LevelTable 초기화
         LevelTable.Load();
     }

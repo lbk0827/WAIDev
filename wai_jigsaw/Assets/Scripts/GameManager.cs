@@ -13,11 +13,20 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Component References")]
-    public UIMediator uiMediator;
-    public PuzzleBoardSetup puzzleBoard;
-    public LevelManager levelManager;
-    public LevelGroupManager levelGroupManager;
+    [Header("Scene-Specific References (씬별로 자동/수동 설정)")]
+    public UIMediator uiMediator;           // 단일 씬 모드용 (SampleScene)
+    public PuzzleBoardSetup puzzleBoard;    // GameScene에서 설정됨
+
+    [Header("Multi-Scene Mediators (자동 탐색)")]
+    private GameUIMediator _gameUIMediator; // GameScene용
+
+    [Header("Persistent Managers (자동 탐색)")]
+    [SerializeField] private LevelManager _levelManagerPrefab;
+    [SerializeField] private LevelGroupManager _levelGroupManagerPrefab;
+
+    // 싱글턴 인스턴스 접근용 프로퍼티
+    public LevelManager levelManager => LevelManager.Instance;
+    public LevelGroupManager levelGroupManager => LevelGroupManager.Instance;
 
     /// <summary>
     /// 현재 레벨 (GameDataContainer에서 가져옴)
@@ -38,16 +47,95 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        // 영속 매니저들 초기화
+        EnsurePersistentManagers();
+
         // GameDataContainer 초기화 및 데이터 로드
         GameDataContainer.Instance.Load();
     }
 
-    private void Start()
+    /// <summary>
+    /// 영속 매니저들이 존재하는지 확인하고, 없으면 생성합니다.
+    /// </summary>
+    private void EnsurePersistentManagers()
     {
-        // 게임 시작 시 홈 화면으로 이동
-        GoToHome();
+        // SceneTransitionManager 확인 및 생성
+        if (SceneTransitionManager.Instance == null)
+        {
+            GameObject go = new GameObject("SceneTransitionManager");
+            go.AddComponent<SceneTransitionManager>();
+        }
+
+        // LevelManager 확인 및 생성
+        if (LevelManager.Instance == null)
+        {
+            if (_levelManagerPrefab != null)
+            {
+                Instantiate(_levelManagerPrefab);
+            }
+            else
+            {
+                // 프리팹이 없으면 새 GameObject 생성
+                GameObject go = new GameObject("LevelManager");
+                go.AddComponent<LevelManager>();
+            }
+        }
+
+        // LevelGroupManager 확인 및 생성
+        if (LevelGroupManager.Instance == null)
+        {
+            if (_levelGroupManagerPrefab != null)
+            {
+                Instantiate(_levelGroupManagerPrefab);
+            }
+            else
+            {
+                // 프리팹이 없으면 새 GameObject 생성
+                GameObject go = new GameObject("LevelGroupManager");
+                go.AddComponent<LevelGroupManager>();
+            }
+        }
     }
 
+    #region Scene Transition Methods
+
+    /// <summary>
+    /// 로비 씬으로 전환합니다.
+    /// </summary>
+    public void LoadLobbyScene()
+    {
+        // 퍼즐 보드 정리
+        if (puzzleBoard != null)
+        {
+            puzzleBoard.ClearBoard();
+        }
+
+        SceneTransitionManager.Instance.LoadLobbyScene();
+    }
+
+    /// <summary>
+    /// 게임 씬으로 전환합니다.
+    /// </summary>
+    public void LoadGameScene()
+    {
+        SceneTransitionManager.Instance.LoadGameScene();
+    }
+
+    #endregion
+
+    private void Start()
+    {
+        // SampleScene (단일 씬 모드) 호환성 유지
+        // LobbyScene/GameScene 분리 시에는 각 씬의 Mediator가 초기화 담당
+        if (uiMediator != null)
+        {
+            GoToHome();
+        }
+    }
+
+    /// <summary>
+    /// 홈 화면으로 이동합니다. (단일 씬 모드용)
+    /// </summary>
     public void GoToHome()
     {
         if (puzzleBoard != null)
@@ -124,9 +212,25 @@ public class GameManager : MonoBehaviour
             puzzleBoard.ClearBoard();
         }
 
+        // 결과 화면 표시 (단일 씬 모드 또는 멀티 씬 모드)
         if (uiMediator != null)
         {
+            // 단일 씬 모드 (SampleScene)
             uiMediator.ShowResult();
+        }
+        else if (_gameUIMediator != null)
+        {
+            // 멀티 씬 모드 (GameScene)
+            _gameUIMediator.ShowResult();
+        }
+        else
+        {
+            // GameUIMediator 자동 탐색
+            _gameUIMediator = FindObjectOfType<GameUIMediator>();
+            if (_gameUIMediator != null)
+            {
+                _gameUIMediator.ShowResult();
+            }
         }
     }
 
