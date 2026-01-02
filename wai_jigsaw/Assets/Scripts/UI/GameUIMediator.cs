@@ -17,6 +17,9 @@ namespace WaiJigsaw.UI
         [SerializeField] private GameObject _puzzlePanel;
         [SerializeField] private GameObject _resultPanel;
 
+        [Header("Puzzle Panel UI")]
+        [SerializeField] private TMP_Text _currentLevelText;  // 현재 레벨 표시
+
         [Header("Result Panel UI")]
         [SerializeField] private TMP_Text _resultLevelText;
         [SerializeField] private Button _resultNextButton;
@@ -71,9 +74,24 @@ namespace WaiJigsaw.UI
             ShowPuzzle();
 
             int currentLevel = GameDataContainer.Instance.CurrentLevel;
+
+            // 현재 레벨 텍스트 업데이트
+            UpdateCurrentLevelText(currentLevel);
+
             if (_puzzleBoardSetup != null)
             {
                 _puzzleBoardSetup.SetupCurrentLevel(currentLevel);
+            }
+        }
+
+        /// <summary>
+        /// 현재 레벨 텍스트 업데이트
+        /// </summary>
+        private void UpdateCurrentLevelText(int level)
+        {
+            if (_currentLevelText != null)
+            {
+                _currentLevelText.text = $"LEVEL {level}";
             }
         }
 

@@ -25,6 +25,9 @@ namespace WaiJigsaw.UI
         [Header("Lobby Grid")]
         [SerializeField] private LobbyGridManager _lobbyGridManager;
 
+        [Header("Popups")]
+        [SerializeField] private SettingsPopup _settingsPopup;
+
         #region MonoObject Lifecycle
 
         protected override void OnEnabled()
@@ -62,7 +65,14 @@ namespace WaiJigsaw.UI
 
         private void OnSettingsClicked()
         {
-            Debug.Log("[LobbyUIMediator] 설정 버튼 클릭됨 (구현 예정)");
+            if (_settingsPopup != null)
+            {
+                _settingsPopup.Open();
+            }
+            else
+            {
+                Debug.LogWarning("[LobbyUIMediator] SettingsPopup이 할당되지 않았습니다.");
+            }
         }
 
         #endregion

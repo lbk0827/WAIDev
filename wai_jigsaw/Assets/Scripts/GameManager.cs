@@ -1,4 +1,5 @@
 using UnityEngine;
+using WaiJigsaw.Core;
 using WaiJigsaw.Data;
 using WaiJigsaw.UI;
 
@@ -94,6 +95,13 @@ public class GameManager : MonoBehaviour
                 GameObject go = new GameObject("LevelGroupManager");
                 go.AddComponent<LevelGroupManager>();
             }
+        }
+
+        // GameOptionManager 확인 및 생성
+        if (GameOptionManager.Instance == null)
+        {
+            GameObject go = new GameObject("GameOptionManager");
+            go.AddComponent<GameOptionManager>();
         }
     }
 
