@@ -17,7 +17,7 @@ public class GroupBorderRenderer : MonoBehaviour
     [SerializeField] private Color _blackColor = new Color(0.15f, 0.15f, 0.15f, 1f);
 
     [Header("Sorting")]
-    [SerializeField] private int _baseSortingOrder = 100;  // 높은 값으로 변경
+    [SerializeField] private int _baseSortingOrder = 2;  // 기본값은 낮게 (드래그 시 PieceGroup.SetSortingOrder에서 높여줌)
 
     // 컴포넌트 참조
     private CompositeCollider2D _compositeCollider;
@@ -774,6 +774,16 @@ public class GroupBorderRenderer : MonoBehaviour
         }
 
         if (!_hasOriginalPositions) return;
+
+        // LineRenderer의 현재 positionCount와 원본 배열 길이가 다르면 스케일 적용 불가
+        // (테두리가 중간에 업데이트되어 positionCount가 변경된 경우)
+        if (_whiteLineRenderer.positionCount != _originalWhiteLinePositions.Length ||
+            _blackLineRenderer.positionCount != _originalBlackLinePositions.Length)
+        {
+            // 원본 데이터 무효화하고 리턴
+            _hasOriginalPositions = false;
+            return;
+        }
 
         // 원본 위치를 기준으로 스케일 적용 (월드 좌표)
         for (int i = 0; i < _originalWhiteLinePositions.Length; i++)
