@@ -69,14 +69,24 @@ public class GroupBorderRenderer : MonoBehaviour
         // LineRenderer 생성 (검은색 - 바깥쪽, 먼저 그림)
         GameObject blackLineObj = new GameObject("BlackBorderLine");
         blackLineObj.transform.SetParent(transform, false);
+        // 명시적으로 transform 초기화 (빌드에서의 예기치 않은 동작 방지)
+        blackLineObj.transform.localPosition = Vector3.zero;
+        blackLineObj.transform.localRotation = Quaternion.identity;
+        blackLineObj.transform.localScale = Vector3.one;
         _blackLineRenderer = blackLineObj.AddComponent<LineRenderer>();
-        SetupLineRenderer(_blackLineRenderer, _blackColor, _whiteBorderWidth + _blackBorderWidth, _baseSortingOrder);
+        // 초기 width는 0으로 설정 - SetBorderWidth에서 올바른 값으로 설정됨
+        SetupLineRenderer(_blackLineRenderer, _blackColor, 0f, _baseSortingOrder);
 
         // LineRenderer 생성 (흰색 - 안쪽, 나중에 그림)
         GameObject whiteLineObj = new GameObject("WhiteBorderLine");
         whiteLineObj.transform.SetParent(transform, false);
+        // 명시적으로 transform 초기화 (빌드에서의 예기치 않은 동작 방지)
+        whiteLineObj.transform.localPosition = Vector3.zero;
+        whiteLineObj.transform.localRotation = Quaternion.identity;
+        whiteLineObj.transform.localScale = Vector3.one;
         _whiteLineRenderer = whiteLineObj.AddComponent<LineRenderer>();
-        SetupLineRenderer(_whiteLineRenderer, _whiteColor, _whiteBorderWidth, _baseSortingOrder + 1);
+        // 초기 width는 0으로 설정 - SetBorderWidth에서 올바른 값으로 설정됨
+        SetupLineRenderer(_whiteLineRenderer, _whiteColor, 0f, _baseSortingOrder + 1);
     }
 
     /// <summary>
@@ -84,6 +94,7 @@ public class GroupBorderRenderer : MonoBehaviour
     /// </summary>
     private void SetupLineRenderer(LineRenderer lr, Color color, float width, int sortingOrder)
     {
+        // 월드 좌표 사용 - 로컬 좌표 모드에서 오프셋 문제 발생하여 월드 좌표로 복원
         lr.useWorldSpace = true;
         lr.loop = true;  // 닫힌 도형
         lr.startWidth = width;
@@ -91,20 +102,34 @@ public class GroupBorderRenderer : MonoBehaviour
         lr.numCornerVertices = 8;  // 모서리 둥글게
         lr.numCapVertices = 4;
 
-        // Material 설정 (단색) - Sprites/Default가 없을 경우 대비
-        Shader shader = Shader.Find("Sprites/Default");
-        if (shader == null)
+        // Material 설정 - 빌드에서 Shader.Find가 실패할 수 있으므로 기본 Material 사용
+        // Unity의 기본 Sprites-Default Material 복사본 사용
+        Material baseMaterial = Resources.Load<Material>("Materials/LineBorderMaterial");
+        if (baseMaterial != null)
         {
-            shader = Shader.Find("Unlit/Color");
-            Debug.LogWarning("[GroupBorderRenderer] Sprites/Default 셰이더를 찾을 수 없어 Unlit/Color 사용");
+            lr.material = new Material(baseMaterial);
         }
-        lr.material = new Material(shader);
+        else
+        {
+            // 폴백: 새 Material 생성 시도
+            Shader shader = Shader.Find("Sprites/Default");
+            if (shader != null)
+            {
+                lr.material = new Material(shader);
+            }
+            else
+            {
+                // 최후의 폴백: 기본 LineRenderer Material 사용
+                Debug.LogWarning("[GroupBorderRenderer] Sprites/Default 셰이더를 찾을 수 없습니다. 기본 Material을 사용합니다.");
+                lr.material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended"));
+            }
+        }
         lr.startColor = color;
         lr.endColor = color;
         lr.sortingOrder = sortingOrder;
         lr.sortingLayerName = "Default";  // 명시적으로 소팅 레이어 설정
 
-        Debug.Log($"[GroupBorderRenderer] LineRenderer 설정 완료 - color: {color}, width: {width}, sortingOrder: {sortingOrder}");
+        Debug.Log($"[GroupBorderRenderer] LineRenderer 설정 완료 - color: {color}, width: {width}, sortingOrder: {sortingOrder}, material: {(lr.material != null ? lr.material.name : "null")}, localPos: {lr.transform.localPosition}, localScale: {lr.transform.localScale}");
     }
 
     /// <summary>
@@ -130,7 +155,42 @@ public class GroupBorderRenderer : MonoBehaviour
         Physics2D.SyncTransforms();
         _compositeCollider.GenerateGeometry();
 
+        // 즉시 테두리 업데이트 (에디터에서 정상 동작 확인용)
         UpdateBorderFromCollider();
+
+        // 빌드에서 CompositeCollider2D 지오메트리 생성이 지연될 수 있으므로
+        // 코루틴을 사용하여 추가 업데이트 (안전장치)
+        StartCoroutine(DelayedUpdateBorder());
+    }
+
+    /// <summary>
+    /// 한 프레임 대기 후 테두리를 업데이트합니다.
+    /// 빌드에서 CompositeCollider2D 지오메트리 생성이 지연될 수 있음.
+    /// </summary>
+    private System.Collections.IEnumerator DelayedUpdateBorder()
+    {
+        // 여러 프레임 대기하여 물리 엔진이 완전히 처리할 시간 확보
+        yield return new WaitForFixedUpdate();
+        yield return null;  // 추가 프레임 대기
+
+        // 지오메트리 재생성 확인
+        Physics2D.SyncTransforms();
+        _compositeCollider.GenerateGeometry();
+
+        Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 호출 - pathCount={_compositeCollider.pathCount}");
+
+        UpdateBorderFromCollider();
+
+        // 추가 안전장치: 한번 더 대기 후 업데이트
+        yield return new WaitForFixedUpdate();
+        yield return null;
+
+        if (_compositeCollider.pathCount > 0)
+        {
+            int pointCount = _compositeCollider.GetPathPointCount(0);
+            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 2차 확인 - pathCount={_compositeCollider.pathCount}, pointCount={pointCount}");
+            UpdateBorderFromCollider();
+        }
     }
 
     /// <summary>
@@ -140,34 +200,49 @@ public class GroupBorderRenderer : MonoBehaviour
     {
         // 조각의 월드 크기 계산
         SpriteRenderer sr = piece.GetComponent<SpriteRenderer>();
-        if (sr == null || sr.sprite == null) return;
-
-        Vector2 pieceSize = sr.sprite.bounds.size;
-        pieceSize.x *= piece.transform.localScale.x;
-        pieceSize.y *= piece.transform.localScale.y;
-
-        // 콜라이더 크기를 확장하여 인접 조각과 겹치도록 함
-        // CompositeCollider2D가 병합하려면 콜라이더들이 겹쳐야 함
-        // 조각 간격이 있으므로 충분히 확장해야 함
-        float overlapMargin = 0.10f;  // 10% 확장
-
-        // 수축 오프셋 계산
-        // 확장은 중심 기준 양쪽으로 퍼지므로, 각 변에서 수축할 거리 = pieceSize * margin / 2
-        if (_shrinkOffset == 0f)
+        if (sr == null || sr.sprite == null)
         {
-            _shrinkOffset = Mathf.Min(pieceSize.x, pieceSize.y) * overlapMargin * 0.5f;
+            Debug.LogError($"[GroupBorderRenderer] SpriteRenderer 또는 Sprite가 null: piece({piece.originalGridX},{piece.originalGridY})");
+            return;
         }
 
+        // pieceWidth/pieceHeight 사용 (PuzzleBoardSetup에서 슬롯 간격 계산에 사용하는 값)
+        // 이 값으로 테두리를 그려야 조각 간격과 일치함
+        Vector2 pieceSize = new Vector2(piece.pieceWidth, piece.pieceHeight);
+
+        Debug.Log($"[GroupBorderRenderer] CreateColliderForPiece - pieceWidth={piece.pieceWidth}, pieceHeight={piece.pieceHeight}, pieceSize={pieceSize}, localScale={piece.transform.localScale}");
+
+        // 콜라이더 크기 확장 없음 - 인접 조각들이 이미 같은 위치에 있으므로 병합됨
+        // 확장하면 수축 과정에서 오차가 발생하여 테두리가 커짐
+        float overlapMargin = 0f;  // 확장 없음
+
+        // 원본 pieceSize 저장 (수축 오프셋 계산용)
+        Vector2 originalPieceSize = pieceSize;
+
+        // 확장된 콜라이더 크기
         pieceSize.x *= (1f + overlapMargin);
         pieceSize.y *= (1f + overlapMargin);
+
+        // 수축 오프셋 계산
+        // 확장된 크기에서 원본 크기로 돌아가려면:
+        // 확장된 크기 - 원본 크기 = originalSize * margin
+        // 각 변에서 수축할 거리 = (확장된 크기 - 원본 크기) / 2 = originalSize * margin / 2
+        if (_shrinkOffset == 0f)
+        {
+            _shrinkOffset = Mathf.Min(originalPieceSize.x, originalPieceSize.y) * overlapMargin * 0.5f;
+            Debug.Log($"[GroupBorderRenderer] shrinkOffset 계산 - originalPieceSize={originalPieceSize}, margin={overlapMargin}, shrinkOffset={_shrinkOffset}");
+        }
 
         // 자식 GameObject 생성 (BoxCollider2D 담을 용도)
         GameObject colliderObj = new GameObject($"Collider_{piece.originalGridX}_{piece.originalGridY}");
         colliderObj.layer = LayerMask.NameToLayer("Ignore Raycast");  // 마우스 입력 무시
         colliderObj.transform.SetParent(transform, false);  // 로컬 좌표 사용
 
-        // 부모(GroupBorder)가 (0,0,0)에 있으므로, 조각의 월드 좌표가 곧 로컬 좌표
-        colliderObj.transform.localPosition = piece.transform.position;
+        // GroupBorder 컨테이너의 월드 위치 기준으로 조각의 상대 위치 계산
+        // transform.position이 원점(0,0,0)이 아닐 수 있으므로 명시적으로 변환
+        Vector3 pieceWorldPos = piece.transform.position;
+        Vector3 localPos = transform.InverseTransformPoint(pieceWorldPos);
+        colliderObj.transform.localPosition = localPos;
 
         // BoxCollider2D 추가
         BoxCollider2D boxCollider = colliderObj.AddComponent<BoxCollider2D>();
@@ -177,7 +252,7 @@ public class GroupBorderRenderer : MonoBehaviour
 
         _childColliders.Add(boxCollider);
 
-        Debug.Log($"[GroupBorderRenderer] 콜라이더 생성 - piece({piece.originalGridX},{piece.originalGridY}), pos={colliderObj.transform.localPosition}, size={pieceSize}, shrinkOffset={_shrinkOffset}");
+        Debug.Log($"[GroupBorderRenderer] 콜라이더 생성 - piece({piece.originalGridX},{piece.originalGridY}), pieceWorldPos={pieceWorldPos}, localPos={localPos}, size={pieceSize}, shrinkOffset={_shrinkOffset}, borderPos={transform.position}");
     }
 
     /// <summary>
@@ -232,12 +307,25 @@ public class GroupBorderRenderer : MonoBehaviour
         }
 
         int pointCount = maxPointCount;
-        Debug.Log($"[GroupBorderRenderer] pathCount = {_compositeCollider.pathCount}, 선택된 pathIndex = {bestPathIndex}, pointCount = {pointCount}");
+        Debug.Log($"[GroupBorderRenderer] pathCount = {_compositeCollider.pathCount}, 선택된 pathIndex = {bestPathIndex}, pointCount = {pointCount}, borderTransform pos={transform.position}, scale={transform.localScale}");
 
         if (pointCount < 3) return;
 
         Vector2[] points2D = new Vector2[pointCount];
         _compositeCollider.GetPath(bestPathIndex, points2D);
+
+        // 디버그: CompositeCollider2D에서 가져온 원본 좌표의 범위 확인
+        if (points2D.Length > 0)
+        {
+            Vector2 minPoint = points2D[0];
+            Vector2 maxPoint = points2D[0];
+            for (int i = 1; i < points2D.Length; i++)
+            {
+                minPoint = Vector2.Min(minPoint, points2D[i]);
+                maxPoint = Vector2.Max(maxPoint, points2D[i]);
+            }
+            Debug.Log($"[GroupBorderRenderer] 원본 Path 범위 - min={minPoint}, max={maxPoint}, size={maxPoint - minPoint}");
+        }
 
         // 외곽선 조정 적용:
         // 1. 콜라이더 확장량 (_shrinkOffset) - 병합을 위해 확장한 만큼 복원 (수축)
@@ -259,7 +347,7 @@ public class GroupBorderRenderer : MonoBehaviour
         Debug.Log($"[GroupBorderRenderer] ApplyRoundedCorners 호출 - cornerRadius={_cornerRadius:F4}, pointCount={points2D.Length}");
         List<Vector3> smoothedPoints = ApplyRoundedCorners(points2D, _cornerRadius);
 
-        // LineRenderer에 적용
+        // LineRenderer에 적용 (useWorldSpace=true이므로 월드 좌표로 변환)
         _whiteLineRenderer.positionCount = smoothedPoints.Count;
         _blackLineRenderer.positionCount = smoothedPoints.Count;
 
@@ -270,8 +358,8 @@ public class GroupBorderRenderer : MonoBehaviour
             Vector3 firstWorld = transform.TransformPoint(firstLocal);
             Vector3 lastLocal = smoothedPoints[smoothedPoints.Count - 1];
             Vector3 lastWorld = transform.TransformPoint(lastLocal);
-            Debug.Log($"[GroupBorderRenderer] 첫 점: local={firstLocal}, world={firstWorld}");
-            Debug.Log($"[GroupBorderRenderer] 끝 점: local={lastLocal}, world={lastWorld}");
+            Debug.Log($"[GroupBorderRenderer] 첫 점 - 로컬: {firstLocal}, 월드: {firstWorld}");
+            Debug.Log($"[GroupBorderRenderer] 끝 점 - 로컬: {lastLocal}, 월드: {lastWorld}");
             Debug.Log($"[GroupBorderRenderer] transform.position={transform.position}, transform.localScale={transform.localScale}");
         }
 
@@ -280,15 +368,16 @@ public class GroupBorderRenderer : MonoBehaviour
             // CompositeCollider2D의 GetPath()는 로컬 좌표를 반환하므로 월드 좌표로 변환
             Vector3 localPos = smoothedPoints[i];
             Vector3 worldPos = transform.TransformPoint(localPos);
-            // Z축: 퍼즐 조각은 보통 z=0, 카메라는 z=-10 정도
-            // LineRenderer를 z=0에 가깝게 두어 조각 위에 렌더링
             worldPos.z = 0f;
 
             _whiteLineRenderer.SetPosition(i, worldPos);
             _blackLineRenderer.SetPosition(i, worldPos);
         }
 
-        Debug.Log($"[GroupBorderRenderer] LineRenderer 포지션 설정 완료 - {smoothedPoints.Count}개 점");
+        // 최종 LineRenderer 상태 로그
+        Debug.Log($"[GroupBorderRenderer] LineRenderer 포지션 설정 완료 - {smoothedPoints.Count}개 점 (월드 좌표 사용)");
+        Debug.Log($"[GroupBorderRenderer] WhiteLineRenderer - width={_whiteLineRenderer.startWidth:F4}, positionCount={_whiteLineRenderer.positionCount}, enabled={_whiteLineRenderer.enabled}");
+        Debug.Log($"[GroupBorderRenderer] BlackLineRenderer - width={_blackLineRenderer.startWidth:F4}, positionCount={_blackLineRenderer.positionCount}, enabled={_blackLineRenderer.enabled}");
     }
 
     /// <summary>
@@ -640,14 +729,23 @@ public class GroupBorderRenderer : MonoBehaviour
         {
             if (_childColliders[i] != null && _pieces[i] != null)
             {
-                // GroupBorder가 (0,0,0)에 있으므로 조각의 월드 좌표가 곧 로컬 좌표
-                _childColliders[i].transform.localPosition = _pieces[i].transform.position;
+                // GroupBorder 컨테이너의 월드 위치 기준으로 조각의 상대 위치 계산
+                Vector3 pieceWorldPos = _pieces[i].transform.position;
+                Vector3 localPos = transform.InverseTransformPoint(pieceWorldPos);
+                _childColliders[i].transform.localPosition = localPos;
             }
         }
 
         // 외곽선 업데이트
         Physics2D.SyncTransforms();
         _compositeCollider.GenerateGeometry();
+
+        // pathCount가 0이면 콜라이더가 제대로 병합되지 않은 것
+        if (_compositeCollider.pathCount == 0)
+        {
+            Debug.LogWarning($"[GroupBorderRenderer] UpdatePosition - pathCount가 0입니다. 조각 수: {_pieces.Count}");
+        }
+
         UpdateBorderFromCollider();
     }
 
@@ -664,7 +762,7 @@ public class GroupBorderRenderer : MonoBehaviour
     {
         if (_whiteLineRenderer == null || _blackLineRenderer == null) return;
 
-        // 원본 위치가 없으면 현재 위치를 원본으로 저장
+        // 원본 위치가 없으면 현재 위치를 원본으로 저장 (월드 좌표)
         if (!_hasOriginalPositions && _whiteLineRenderer.positionCount > 0)
         {
             _originalWhiteLinePositions = new Vector3[_whiteLineRenderer.positionCount];
@@ -677,7 +775,7 @@ public class GroupBorderRenderer : MonoBehaviour
 
         if (!_hasOriginalPositions) return;
 
-        // 원본 위치를 기준으로 스케일 적용
+        // 원본 위치를 기준으로 스케일 적용 (월드 좌표)
         for (int i = 0; i < _originalWhiteLinePositions.Length; i++)
         {
             Vector3 offset = _originalWhiteLinePositions[i] - _originalCenter;
@@ -724,13 +822,11 @@ public class GroupBorderRenderer : MonoBehaviour
         _blackBorderWidth = blackWidth;
 
         // LineRenderer는 중심선 기준으로 양쪽으로 퍼져서 그려짐
-        // 테두리가 이미지 경계 바깥에 그려지려면:
-        // - 콜라이더 확장량(_shrinkOffset)만 수축하면 이미지 경계에 맞춰짐
-        // - 그 상태에서 LineRenderer가 중심선 기준으로 그려지면 절반은 이미지 안쪽으로 들어감
-        // - 테두리가 완전히 이미지 바깥에 그려지려면 추가로 바깥쪽으로 확장해야 함
-        // - 즉, _borderCenterOffset을 음수로 설정하여 외곽선을 바깥으로 이동
+        // 개별 카드의 프레임은 이미지 위에 오버레이되므로, 그룹 테두리도 이미지 경계에 맞춰야 함
+        // _shrinkOffset으로 콜라이더 확장량만 수축하면 이미지 경계에 맞춰짐
+        // _borderCenterOffset = 0으로 설정하여 추가 확장/수축 없이 이미지 경계에 테두리 그리기
         float totalBorderWidth = whiteWidth + blackWidth;
-        _borderCenterOffset = -totalBorderWidth * 0.5f;  // 테두리 절반만큼 바깥으로 확장
+        _borderCenterOffset = 0f;  // 이미지 경계에 맞춤 (개별 카드 프레임과 동일)
 
         Debug.Log($"[GroupBorderRenderer] SetBorderWidth - white={whiteWidth:F4}, black={blackWidth:F4}, totalBorder={totalBorderWidth:F4}, borderCenterOffset={_borderCenterOffset:F4}");
 

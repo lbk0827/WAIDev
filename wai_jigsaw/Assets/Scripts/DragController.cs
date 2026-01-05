@@ -111,7 +111,22 @@ public class DragController : MonoBehaviour
     public void GetBorderThicknessWorldSpace(out float whiteWidth, out float blackWidth)
     {
         float baseSize = Mathf.Min(pieceWidth, pieceHeight);
-        if (baseSize <= 0) baseSize = 1f;
+
+        // pieceWidth/pieceHeight가 0인 경우 SpriteRenderer에서 직접 계산
+        if (baseSize <= 0)
+        {
+            var sr = GetComponent<SpriteRenderer>();
+            if (sr != null && sr.sprite != null)
+            {
+                Vector2 spriteSize = sr.sprite.bounds.size;
+                spriteSize.x *= transform.localScale.x;
+                spriteSize.y *= transform.localScale.y;
+                baseSize = Mathf.Min(spriteSize.x, spriteSize.y);
+                Debug.LogWarning($"[DragController] GetBorderThicknessWorldSpace - pieceWidth/Height가 0이어서 SpriteRenderer에서 계산: baseSize={baseSize:F4}");
+            }
+
+            if (baseSize <= 0) baseSize = 1f;
+        }
 
         // 개별 카드 프레임의 시각적 두께와 일치하도록 계산
         // WhiteFrame: _whiteBorderThickness + _blackBorderThickness (전체)
@@ -135,7 +150,21 @@ public class DragController : MonoBehaviour
     public float GetCornerRadiusWorldSpace()
     {
         float baseSize = Mathf.Min(pieceWidth, pieceHeight);
-        if (baseSize <= 0) baseSize = 1f;
+
+        // pieceWidth/pieceHeight가 0인 경우 SpriteRenderer에서 직접 계산
+        if (baseSize <= 0)
+        {
+            var sr = GetComponent<SpriteRenderer>();
+            if (sr != null && sr.sprite != null)
+            {
+                Vector2 spriteSize = sr.sprite.bounds.size;
+                spriteSize.x *= transform.localScale.x;
+                spriteSize.y *= transform.localScale.y;
+                baseSize = Mathf.Min(spriteSize.x, spriteSize.y);
+            }
+
+            if (baseSize <= 0) baseSize = 1f;
+        }
 
         // 기본 반경 사용 (병합 시에도 GroupBorder는 둥근 모서리 유지)
         return baseSize * _defaultCornerRadius;
@@ -1377,13 +1406,21 @@ public class PieceGroup
         if (_borderContainer == null)
         {
             _borderContainer = new GameObject("GroupBorder");
+
+            // 명시적으로 원점에 배치하고 스케일 1로 설정 (좌표 계산의 기준점)
+            _borderContainer.transform.position = Vector3.zero;
+            _borderContainer.transform.rotation = Quaternion.identity;
+            _borderContainer.transform.localScale = Vector3.one;
+
             _borderRenderer = _borderContainer.AddComponent<GroupBorderRenderer>();
 
-            // 테두리 두께 및 모서리 반경 설정 (첫 번째 조각 기준 - 개별 카드와 동일한 값 사용)
+            // 테두리 두께 및 모서리 반경 설정 (첫 번째 조각 기준)
             var firstPiece = pieces[0];
             float whiteWidth, blackWidth;
             firstPiece.GetBorderThicknessWorldSpace(out whiteWidth, out blackWidth);
             float cornerRadius = firstPiece.GetCornerRadiusWorldSpace();
+
+            Debug.Log($"[PieceGroup] CreateOrUpdateGroupBorder - pieceWidth={firstPiece.pieceWidth:F4}, pieceHeight={firstPiece.pieceHeight:F4}, whiteWidth={whiteWidth:F4}, blackWidth={blackWidth:F4}, cornerRadius={cornerRadius:F4}");
 
             _borderRenderer.SetBorderWidth(whiteWidth, blackWidth);
             _borderRenderer.SetCornerRadius(cornerRadius);
