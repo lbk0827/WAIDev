@@ -487,6 +487,58 @@ public class GroupBorderRenderer : MonoBehaviour
         UpdateBorderFromCollider();
     }
 
+    // 펌핑 애니메이션용 - 원본 LineRenderer 점들 저장
+    private Vector3[] _originalWhiteLinePositions;
+    private Vector3[] _originalBlackLinePositions;
+    private Vector3 _originalCenter;
+    private bool _hasOriginalPositions = false;
+
+    /// <summary>
+    /// 펌핑 애니메이션용 - 그룹 중심 기준으로 스케일 적용
+    /// </summary>
+    public void UpdatePositionWithScale(Vector3 groupCenter, float scale)
+    {
+        if (_whiteLineRenderer == null || _blackLineRenderer == null) return;
+
+        // 원본 위치가 없으면 현재 위치를 원본으로 저장
+        if (!_hasOriginalPositions && _whiteLineRenderer.positionCount > 0)
+        {
+            _originalWhiteLinePositions = new Vector3[_whiteLineRenderer.positionCount];
+            _originalBlackLinePositions = new Vector3[_blackLineRenderer.positionCount];
+            _whiteLineRenderer.GetPositions(_originalWhiteLinePositions);
+            _blackLineRenderer.GetPositions(_originalBlackLinePositions);
+            _originalCenter = groupCenter;
+            _hasOriginalPositions = true;
+        }
+
+        if (!_hasOriginalPositions) return;
+
+        // 원본 위치를 기준으로 스케일 적용
+        for (int i = 0; i < _originalWhiteLinePositions.Length; i++)
+        {
+            Vector3 offset = _originalWhiteLinePositions[i] - _originalCenter;
+            Vector3 scaledPos = groupCenter + offset * scale;
+            _whiteLineRenderer.SetPosition(i, scaledPos);
+        }
+
+        for (int i = 0; i < _originalBlackLinePositions.Length; i++)
+        {
+            Vector3 offset = _originalBlackLinePositions[i] - _originalCenter;
+            Vector3 scaledPos = groupCenter + offset * scale;
+            _blackLineRenderer.SetPosition(i, scaledPos);
+        }
+    }
+
+    /// <summary>
+    /// 펌핑 애니메이션 완료 후 원본 위치 데이터 초기화
+    /// </summary>
+    public void ResetScaleData()
+    {
+        _hasOriginalPositions = false;
+        _originalWhiteLinePositions = null;
+        _originalBlackLinePositions = null;
+    }
+
     /// <summary>
     /// Sorting Order를 설정합니다.
     /// </summary>

@@ -183,9 +183,9 @@ MonoBehaviour:
   cardFlyDelay: 0.05
   cardFlipDelay: 0.03
   cardFlipDuration: 0.25
-  swapAnimationDuration: 0.15
-  pumpingScale: 1.15
-  pumpingDuration: 0.2
+  swapAnimationDuration: 0.8
+  pumpingScale: 1.01
+  pumpingDuration: 0.15
 --- !u!4 &63403368
 Transform:
   m_ObjectHideFlags: 0

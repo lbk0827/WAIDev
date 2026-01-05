@@ -1406,6 +1406,28 @@ public class PieceGroup
     }
 
     /// <summary>
+    /// 펌핑 애니메이션용 - 그룹 테두리를 중심 기준으로 스케일 적용
+    /// </summary>
+    public void UpdateGroupBorderWithScale(Vector3 groupCenter, float scale)
+    {
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.UpdatePositionWithScale(groupCenter, scale);
+        }
+    }
+
+    /// <summary>
+    /// 펌핑 애니메이션 완료 후 테두리 스케일 데이터 초기화
+    /// </summary>
+    public void ResetGroupBorderScaleData()
+    {
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.ResetScaleData();
+        }
+    }
+
+    /// <summary>
     /// 그룹 테두리를 제거합니다.
     /// </summary>
     public void DestroyGroupBorder()

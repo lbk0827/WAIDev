@@ -50,11 +50,11 @@ public class PuzzleBoardSetup : MonoBehaviour
 
     [Header("Swap Animation")]
     [Tooltip("스왑 시 카드 이동 시간 (초)")]
-    [Range(0.05f, 0.5f)] public float swapAnimationDuration = 0.15f;
+    [Range(0.1f, 0.8f)] public float swapAnimationDuration = 0.3f;
 
     [Header("Merge Pumping Animation")]
     [Tooltip("합쳐질 때 펌핑 최대 스케일 (1.0 기준)")]
-    [Range(1.05f, 1.3f)] public float pumpingScale = 1.15f;
+    [Range(1.0f, 1.3f)] public float pumpingScale = 1.15f;
     [Tooltip("펌핑 애니메이션 시간 (초)")]
     [Range(0.1f, 0.5f)] public float pumpingDuration = 0.2f;
 
@@ -915,6 +915,9 @@ public class PuzzleBoardSetup : MonoBehaviour
         float halfDuration = duration / 2f;
         float elapsed = 0f;
 
+        // 그룹 테두리 참조 (첫 번째 조각의 그룹에서 가져옴)
+        PieceGroup pieceGroup = pieces.Count > 0 && pieces[0] != null ? pieces[0].group : null;
+
         while (elapsed < halfDuration)
         {
             elapsed += Time.deltaTime;
@@ -930,6 +933,10 @@ public class PuzzleBoardSetup : MonoBehaviour
                     piece.transform.position = groupCenter + offsetFromCenter[piece] * currentScale;
                 }
             }
+
+            // 그룹 테두리도 함께 스케일 적용
+            pieceGroup?.UpdateGroupBorderWithScale(groupCenter, currentScale);
+
             yield return null;
         }
 
@@ -949,6 +956,10 @@ public class PuzzleBoardSetup : MonoBehaviour
                     piece.transform.position = groupCenter + offsetFromCenter[piece] * currentScale;
                 }
             }
+
+            // 그룹 테두리도 함께 스케일 적용
+            pieceGroup?.UpdateGroupBorderWithScale(groupCenter, currentScale);
+
             yield return null;
         }
 
@@ -960,6 +971,9 @@ public class PuzzleBoardSetup : MonoBehaviour
                 piece.transform.position = originalPositions[piece];
             }
         }
+
+        // 펌핑 완료 후 스케일 데이터 초기화
+        pieceGroup?.ResetGroupBorderScaleData();
     }
 
     /// <summary>
