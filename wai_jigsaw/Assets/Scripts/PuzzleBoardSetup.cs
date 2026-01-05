@@ -8,6 +8,10 @@ public class PuzzleBoardSetup : MonoBehaviour
     [Header("Camera")]
     [Range(0.1f, 2.0f)] public float padding = 0.5f;
 
+    [Header("Board Size")]
+    [Tooltip("보드 전체 크기 스케일 (1.0 = 기본, 0.8 = 80% 크기)")]
+    [Range(0.5f, 1.2f)] public float boardScale = 1.0f;
+
     [Header("Piece Spacing")]
     [Tooltip("그룹화되지 않은 조각들 사이의 간격 (셰이더 Padding으로 표현)")]
     [Range(0f, 0.5f)] public float pieceSpacing = 0.15f;
@@ -354,7 +358,11 @@ public class PuzzleBoardSetup : MonoBehaviour
         float sizeH = (totalH / 2) + padding;
         float sizeW = ((totalW / screenAspect) / 2) + padding;
 
-        mainCam.orthographicSize = Mathf.Max(sizeH, sizeW);
+        float baseSize = Mathf.Max(sizeH, sizeW);
+
+        // boardScale 적용 (스케일이 작을수록 카메라 줌아웃 → 보드가 작아 보임)
+        // boardScale 1.0 = 기본, 0.8 = 보드가 80% 크기로 보임
+        mainCam.orthographicSize = baseSize / boardScale;
     }
 
     // ====== 인트로 애니메이션 ======

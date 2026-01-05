@@ -284,6 +284,9 @@ public class LobbyGridManager : MonoObject
     /// </summary>
     private void OnLevelClearedEvent(LevelClearedEvent evt)
     {
+        // 씬 전환 등으로 오브젝트가 파괴된 경우 무시
+        if (this == null) return;
+
         // 현재 표시 중인 그룹에 해당하는 레벨인지 확인
         if (_currentGroup == null) return;
 
@@ -292,14 +295,22 @@ public class LobbyGridManager : MonoObject
 
         if (index >= 0 && index < _cardSlots.Count)
         {
-            _cardSlots[index].SetCleared();
+            // 카드 슬롯이 파괴되지 않았는지 확인
+            if (_cardSlots[index] != null)
+            {
+                _cardSlots[index].SetCleared();
+            }
         }
 
         // 다음 레벨을 현재 레벨로 표시
         int nextIndex = index + 1;
         if (nextIndex < _cardSlots.Count)
         {
-            _cardSlots[nextIndex].SetAsCurrent();
+            // 카드 슬롯이 파괴되지 않았는지 확인
+            if (_cardSlots[nextIndex] != null)
+            {
+                _cardSlots[nextIndex].SetAsCurrent();
+            }
         }
 
         if (_showDebugInfo)

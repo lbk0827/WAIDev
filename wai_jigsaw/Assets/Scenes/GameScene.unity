@@ -662,6 +662,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   padding: 1.2
+  boardScale: 1
   pieceSpacing: 0.15
   cornerRadius: 0.05
   roundedCornerShader: {fileID: 0}
@@ -1172,6 +1173,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   padding: 1.2
+  boardScale: 0.95
   pieceSpacing: 0.12
   cornerRadius: 0.12
   roundedCornerShader: {fileID: 4800000, guid: 65bb4e07d1b259945ab53f49c66aad8b, type: 3}
@@ -1185,9 +1187,9 @@ MonoBehaviour:
   cardFlyDelay: 0.05
   cardFlipDelay: 0.03
   cardFlipDuration: 0.25
-  swapAnimationDuration: 0.15
+  swapAnimationDuration: 0.2
   pumpingScale: 1.05
-  pumpingDuration: 0.2
+  pumpingDuration: 0.15
 --- !u!1 &941591446
 GameObject:
   m_ObjectHideFlags: 0
