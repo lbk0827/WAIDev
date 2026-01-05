@@ -41,6 +41,9 @@ namespace WaiJigsaw.UI
         [SerializeField] private Button _retryButton;
         [SerializeField] private Button _homeButton;
 
+        [Header("Data Reset")]
+        [SerializeField] private Button _resetDataButton;  // 데이터 초기화 버튼
+
         // 인게임 모드 여부
         private bool _isInGameMode = false;
         private bool _isInitialized = false;
@@ -91,6 +94,10 @@ namespace WaiJigsaw.UI
 
             if (_homeButton != null)
                 _homeButton.onClick.AddListener(OnHomeClicked);
+
+            // 데이터 초기화 버튼
+            if (_resetDataButton != null)
+                _resetDataButton.onClick.AddListener(OnResetDataClicked);
         }
 
         #region InGame Button Events
@@ -106,6 +113,19 @@ namespace WaiJigsaw.UI
         {
             Close();
             // 로비로 이동
+            GameManager.Instance?.LoadLobbyScene();
+        }
+
+        private void OnResetDataClicked()
+        {
+            // 모든 진행 데이터 초기화
+            WaiJigsaw.Data.GameDataContainer.Instance.ResetAllProgress();
+
+            Debug.Log("[SettingsPopup] 플레이어 데이터 초기화 완료");
+
+            Close();
+
+            // 로비로 이동 (Level 1부터 다시 시작)
             GameManager.Instance?.LoadLobbyScene();
         }
 
