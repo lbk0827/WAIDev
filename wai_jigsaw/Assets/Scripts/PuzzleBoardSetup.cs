@@ -568,6 +568,10 @@ public class PuzzleBoardSetup : MonoBehaviour
             {
                 piece.transform.position = Vector3.Lerp(startPositions[piece], targetPositions[piece], easedT);
             }
+
+            // 애니메이션 중에도 테두리 위치 업데이트 (조각과 함께 이동)
+            group.UpdateGroupBorderPosition();
+
             yield return null;
         }
 
@@ -576,6 +580,9 @@ public class PuzzleBoardSetup : MonoBehaviour
         {
             piece.transform.position = targetPositions[piece];
         }
+
+        // 그룹 테두리 위치 업데이트
+        group.UpdateGroupBorder();
     }
 
     void ShufflePieces()
@@ -988,11 +995,17 @@ public class PuzzleBoardSetup : MonoBehaviour
         {
             piece.UpdatePosition(piece.transform.position + offset);
         }
+
+        // 그룹 테두리 위치 업데이트
+        group.UpdateGroupBorder();
     }
 
     void DisbandAndRegroup(PieceGroup group)
     {
         if (group.pieces.Count == 0) return;
+
+        // 기존 그룹의 테두리 제거 (중요: pieces.Clear() 전에 호출해야 함)
+        group.DestroyGroupBorder();
 
         List<DragController> allPieces = new List<DragController>(group.pieces);
         group.pieces.Clear();
@@ -1132,11 +1145,14 @@ public class PuzzleBoardSetup : MonoBehaviour
             if (colOffset == -1) { piece.RemovePadding(2); neighbor.RemovePadding(3); } // My Left, Their Right
             if (colOffset == 1)  { piece.RemovePadding(3); neighbor.RemovePadding(2); } // My Right, Their Left
 
-            // 테두리도 함께 숨기기
+            // 테두리도 함께 숨기기 (개별 프레임용 - 그룹 테두리에서는 사용 안 함)
             if (rowOffset == -1) { piece.HideBorder(0); neighbor.HideBorder(1); }
             if (rowOffset == 1)  { piece.HideBorder(1); neighbor.HideBorder(0); }
             if (colOffset == -1) { piece.HideBorder(2); neighbor.HideBorder(3); }
             if (colOffset == 1)  { piece.HideBorder(3); neighbor.HideBorder(2); }
+
+            // 5. 그룹 테두리 업데이트 (CompositeCollider2D + LineRenderer 방식)
+            piece.group.UpdateGroupBorder();
         }
     }
 

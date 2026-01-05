@@ -102,6 +102,45 @@ public class DragController : MonoBehaviour
         _blackBorderThickness = blackRatio;
     }
 
+    /// <summary>
+    /// 테두리 두께를 World Space 크기로 반환합니다 (GroupBorder용).
+    /// 개별 카드의 프레임과 동일한 시각적 두께를 반환합니다.
+    /// - whiteWidth: 흰색 테두리의 시각적 두께 (= 전체 두께 - 검정 두께)
+    /// - blackWidth: 검정 테두리의 시각적 두께
+    /// </summary>
+    public void GetBorderThicknessWorldSpace(out float whiteWidth, out float blackWidth)
+    {
+        float baseSize = Mathf.Min(pieceWidth, pieceHeight);
+        if (baseSize <= 0) baseSize = 1f;
+
+        // 개별 카드 프레임의 시각적 두께와 일치하도록 계산
+        // WhiteFrame: _whiteBorderThickness + _blackBorderThickness (전체)
+        // BlackFrame: _blackBorderThickness (바깥쪽)
+        // 실제 보이는 흰색 = 전체 - 검정 = _whiteBorderThickness
+        float totalFrameThickness = _whiteBorderThickness + _blackBorderThickness;
+
+        // GroupBorder LineRenderer용 (World Space)
+        // - whiteWidth: 안쪽 흰색 선 두께 (시각적으로 보이는 흰색 영역)
+        // - blackWidth: 바깥쪽 검정 선 두께
+        whiteWidth = baseSize * totalFrameThickness;  // 전체 프레임 두께
+        blackWidth = baseSize * _blackBorderThickness;
+
+        Debug.Log($"[DragController] GetBorderThicknessWorldSpace - baseSize={baseSize:F3}, totalRatio={totalFrameThickness:F4}, blackRatio={_blackBorderThickness:F4}, whiteWidth={whiteWidth:F4}, blackWidth={blackWidth:F4}");
+    }
+
+    /// <summary>
+    /// 모서리 반경을 World Space 크기로 반환합니다 (GroupBorder용).
+    /// 병합 시 개별 모서리가 0으로 설정될 수 있으므로 기본값(_defaultCornerRadius)을 사용합니다.
+    /// </summary>
+    public float GetCornerRadiusWorldSpace()
+    {
+        float baseSize = Mathf.Min(pieceWidth, pieceHeight);
+        if (baseSize <= 0) baseSize = 1f;
+
+        // 기본 반경 사용 (병합 시에도 GroupBorder는 둥근 모서리 유지)
+        return baseSize * _defaultCornerRadius;
+    }
+
     private void OnMouseDown()
     {
         // 인트로 중에는 드래그 불가
@@ -405,6 +444,8 @@ public class DragController : MonoBehaviour
     // 그룹에서 강제로 탈퇴 (스왑 당할 때 등)
     public void BreakFromGroup()
     {
+        PieceGroup oldGroup = group;
+
         if (group != null)
         {
             group.RemovePiece(this);
@@ -413,6 +454,15 @@ public class DragController : MonoBehaviour
         // 새로운 단독 그룹 생성
         group = new PieceGroup();
         group.AddPiece(this);
+
+        // 이전 그룹의 테두리 업데이트 (조각이 빠졌으므로)
+        if (oldGroup != null)
+        {
+            oldGroup.UpdateGroupBorder();
+        }
+
+        // 새 그룹(단독)의 테두리 업데이트 - 개별 프레임 표시
+        group.UpdateGroupBorder();
 
         // 테두리 초기화 (다시 다 보여줌)
         UpdateVisuals();
@@ -1154,6 +1204,10 @@ public class PieceGroup
     private Dictionary<DragController, Vector3> _startPositions = new Dictionary<DragController, Vector3>();
     private Vector3 _mouseStartWorldPos;
 
+    // ====== 그룹 테두리 렌더러 (CompositeCollider2D + LineRenderer 방식) ======
+    private GameObject _borderContainer;
+    private GroupBorderRenderer _borderRenderer;
+
     public void AddPiece(DragController piece)
     {
         if (!pieces.Contains(piece))
@@ -1171,6 +1225,9 @@ public class PieceGroup
     {
         if (otherGroup == this) return;
 
+        // 이전 그룹의 테두리 제거
+        otherGroup.DestroyGroupBorder();
+
         // 카드 위치 이동 없이 그룹만 병합
         // EdgeCover 제거는 CheckNeighbor에서 처리됨
         foreach (var piece in otherGroup.pieces)
@@ -1184,6 +1241,9 @@ public class PieceGroup
     public void MergeGroup(PieceGroup otherGroup)
     {
         if (otherGroup == this) return;
+
+        // 이전 그룹의 테두리 제거
+        otherGroup.DestroyGroupBorder();
 
         foreach (var piece in otherGroup.pieces)
         {
@@ -1221,6 +1281,12 @@ public class PieceGroup
                 piece.SetPositionImmediate(_startPositions[piece] + delta);
             }
         }
+
+        // 그룹 테두리 위치도 업데이트
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.UpdatePosition();
+        }
     }
 
     public void SetSortingOrder(int order)
@@ -1236,22 +1302,119 @@ public class PieceGroup
                 piece.CardBackRenderer.sortingOrder = order + 10;
             }
 
-            // 프레임 테두리 (퍼즐 이미지 위, 오버레이 방식)
-            var allRenderers = piece.GetComponentsInChildren<SpriteRenderer>();
-            foreach (var sr in allRenderers)
+            // 그룹이 2개 이상이면 개별 프레임은 숨기고 그룹 테두리 사용
+            if (pieces.Count >= 2)
             {
-                // 자기 자신, 카드 뒷면 제외
-                if (sr.gameObject == piece.gameObject) continue;
-                if (piece.CardBackRenderer != null && sr == piece.CardBackRenderer) continue;
-
-                // 프레임 종류에 따라 다른 order 적용 (퍼즐 이미지 위에 오버레이)
-                if (sr.gameObject.name == "WhiteFrame")
-                    sr.sortingOrder = order + 1;  // 퍼즐 이미지 위
-                else if (sr.gameObject.name == "BlackFrame")
-                    sr.sortingOrder = order + 2;  // 하얀 프레임 위
-                else
-                    sr.sortingOrder = order + 1;
+                piece.ShowFrames(false);
             }
+            else
+            {
+                // 단독 조각이면 개별 프레임 표시
+                piece.ShowFrames(true);
+
+                // 프레임 테두리 (퍼즐 이미지 위, 오버레이 방식)
+                var allRenderers = piece.GetComponentsInChildren<SpriteRenderer>();
+                foreach (var sr in allRenderers)
+                {
+                    // 자기 자신, 카드 뒷면 제외
+                    if (sr.gameObject == piece.gameObject) continue;
+                    if (piece.CardBackRenderer != null && sr == piece.CardBackRenderer) continue;
+
+                    // 프레임 종류에 따라 다른 order 적용 (퍼즐 이미지 위에 오버레이)
+                    if (sr.gameObject.name == "WhiteFrame")
+                        sr.sortingOrder = order + 1;  // 퍼즐 이미지 위
+                    else if (sr.gameObject.name == "BlackFrame")
+                        sr.sortingOrder = order + 2;  // 하얀 프레임 위
+                    else
+                        sr.sortingOrder = order + 1;
+                }
+            }
+        }
+
+        // 그룹 테두리 sorting order 업데이트
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.SetSortingOrder(order + 1);
+        }
+    }
+
+    // ====== 그룹 테두리 메서드 ======
+
+    /// <summary>
+    /// 그룹 테두리를 업데이트합니다. 2개 이상 조각이 있으면 그룹 테두리 생성/업데이트.
+    /// </summary>
+    public void UpdateGroupBorder()
+    {
+        if (pieces.Count < 2)
+        {
+            // 단독 조각이면 그룹 테두리 제거하고 개별 프레임 표시
+            DestroyGroupBorder();
+            if (pieces.Count == 1)
+            {
+                pieces[0].ShowFrames(true);
+                pieces[0].ShowAllBorders();
+            }
+            return;
+        }
+
+        // 2개 이상: 개별 프레임 숨기고 그룹 테두리 생성/업데이트
+        foreach (var piece in pieces)
+        {
+            piece.ShowFrames(false);
+        }
+
+        CreateOrUpdateGroupBorder();
+    }
+
+    /// <summary>
+    /// 그룹 테두리를 생성하거나 업데이트합니다.
+    /// </summary>
+    private void CreateOrUpdateGroupBorder()
+    {
+        if (pieces.Count < 2) return;
+
+        // 컨테이너가 없으면 생성
+        if (_borderContainer == null)
+        {
+            _borderContainer = new GameObject("GroupBorder");
+            _borderRenderer = _borderContainer.AddComponent<GroupBorderRenderer>();
+
+            // 테두리 두께 및 모서리 반경 설정 (첫 번째 조각 기준 - 개별 카드와 동일한 값 사용)
+            var firstPiece = pieces[0];
+            float whiteWidth, blackWidth;
+            firstPiece.GetBorderThicknessWorldSpace(out whiteWidth, out blackWidth);
+            float cornerRadius = firstPiece.GetCornerRadiusWorldSpace();
+
+            _borderRenderer.SetBorderWidth(whiteWidth, blackWidth);
+            _borderRenderer.SetCornerRadius(cornerRadius);
+        }
+
+        // 조각 목록 전달 및 테두리 업데이트
+        _borderRenderer.SetPieces(pieces);
+    }
+
+    /// <summary>
+    /// 그룹 테두리 위치만 업데이트합니다 (애니메이션 중 호출용).
+    /// UpdateGroupBorder()와 달리 조각 목록을 다시 설정하지 않고 위치만 갱신합니다.
+    /// </summary>
+    public void UpdateGroupBorderPosition()
+    {
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.UpdatePosition();
+        }
+    }
+
+    /// <summary>
+    /// 그룹 테두리를 제거합니다.
+    /// </summary>
+    public void DestroyGroupBorder()
+    {
+        if (_borderContainer != null)
+        {
+            Object.Destroy(_borderContainer);
+            _borderContainer = null;
+            _borderRenderer = null;
         }
     }
 }
