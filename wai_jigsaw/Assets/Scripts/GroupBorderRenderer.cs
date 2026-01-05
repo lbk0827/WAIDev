@@ -309,6 +309,11 @@ public class GroupBorderRenderer : MonoBehaviour
             return result;
         }
 
+        // 다각형의 방향 확인 (시계/반시계)
+        // Signed area가 양수면 반시계방향, 음수면 시계방향
+        float signedArea = CalculateSignedArea(points);
+        bool isClockwise = signedArea < 0;
+
         int segmentsPerCorner = 4;  // 각 모서리당 세그먼트 수
 
         for (int i = 0; i < points.Length; i++)
@@ -321,15 +326,17 @@ public class GroupBorderRenderer : MonoBehaviour
             Vector2 toNext = (next - curr).normalized;
 
             // 모서리가 볼록(Convex)인지 오목(Concave)인지 판단
-            // Cross product: 양수면 반시계방향(볼록), 음수면 시계방향(오목)
-            // 다각형이 시계방향이면 부호가 반대
             Vector2 edge1 = curr - prev;
             Vector2 edge2 = next - curr;
             float cross = edge1.x * edge2.y - edge1.y * edge2.x;
 
+            // 다각형 방향에 따라 볼록/오목 판단이 반대
+            // 시계방향: cross < 0 이면 오목 (내부로 들어감)
+            // 반시계방향: cross > 0 이면 오목
+            bool isConcave = isClockwise ? (cross < 0) : (cross > 0);
+
             // 오목한 모서리(내각 > 180도)는 직각 유지
-            // cross < 0 이면 시계방향 회전 = 오목한 모서리 (ㄱ자의 안쪽)
-            if (cross < 0)
+            if (isConcave)
             {
                 result.Add(new Vector3(curr.x, curr.y, 0));
                 continue;
@@ -370,44 +377,143 @@ public class GroupBorderRenderer : MonoBehaviour
     }
 
     /// <summary>
-    /// 다각형을 안쪽으로 수축시킵니다 (각 변을 내부로 이동).
+    /// 다각형의 Signed Area를 계산합니다.
+    /// 양수면 반시계방향, 음수면 시계방향.
+    /// </summary>
+    private float CalculateSignedArea(Vector2[] points)
+    {
+        float area = 0f;
+        int n = points.Length;
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 curr = points[i];
+            Vector2 next = points[(i + 1) % n];
+            area += (next.x - curr.x) * (next.y + curr.y);
+        }
+        return area / 2f;
+    }
+
+    /// <summary>
+    /// 다각형을 안쪽으로 수축시킵니다 (각 변을 내부로 평행 이동 후 교차점 계산).
+    /// 오목한 모서리와 인접한 변은 이동하지 않습니다.
     /// </summary>
     private Vector2[] ShrinkPolygon(Vector2[] points, float offset)
     {
         if (points.Length < 3 || offset <= 0) return points;
 
-        Vector2[] result = new Vector2[points.Length];
+        // 내부 방향 결정을 위해 다각형 중심 계산
+        Vector2 center = CalculatePolygonCenter(points);
 
-        for (int i = 0; i < points.Length; i++)
+        // 다각형 방향 확인 (시계/반시계)
+        float signedArea = CalculateSignedArea(points);
+        bool isClockwise = signedArea < 0;
+
+        int n = points.Length;
+
+        // 먼저 각 모서리가 오목한지 판단
+        bool[] isConcaveCorner = new bool[n];
+        for (int i = 0; i < n; i++)
         {
-            Vector2 prev = points[(i - 1 + points.Length) % points.Length];
+            Vector2 prev = points[(i - 1 + n) % n];
             Vector2 curr = points[i];
-            Vector2 next = points[(i + 1) % points.Length];
+            Vector2 next = points[(i + 1) % n];
 
-            // 두 변의 방향 벡터
-            Vector2 edge1 = (curr - prev).normalized;
-            Vector2 edge2 = (next - curr).normalized;
+            Vector2 edge1 = curr - prev;
+            Vector2 edge2 = next - curr;
+            float cross = edge1.x * edge2.y - edge1.y * edge2.x;
+            isConcaveCorner[i] = isClockwise ? (cross < 0) : (cross > 0);
+        }
 
-            // 각 변의 내부 법선 벡터 (시계방향 가정, 반시계면 반대)
-            Vector2 normal1 = new Vector2(edge1.y, -edge1.x);
-            Vector2 normal2 = new Vector2(edge2.y, -edge2.x);
+        // 각 변(edge)을 내부로 평행 이동
+        // 단, 오목한 모서리에 연결된 변은 이동하지 않음
+        Vector2[] offsetEdgeStart = new Vector2[n];
+        Vector2[] offsetEdgeEnd = new Vector2[n];
 
-            // 평균 법선 (모서리에서의 이동 방향)
-            Vector2 avgNormal = (normal1 + normal2).normalized;
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 p1 = points[i];
+            Vector2 p2 = points[(i + 1) % n];
 
-            // 법선이 내부를 향하는지 확인 (다각형이 반시계방향이면 반전 필요)
-            // 중심을 향하는지 확인
-            Vector2 toCenter = CalculatePolygonCenter(points) - curr;
-            if (Vector2.Dot(avgNormal, toCenter) < 0)
+            // 이 변의 시작점(i)이나 끝점((i+1)%n)이 오목한 모서리면 이동하지 않음
+            int endIdx = (i + 1) % n;
+            if (isConcaveCorner[i] || isConcaveCorner[endIdx])
             {
-                avgNormal = -avgNormal;
+                // 오목한 모서리에 연결된 변은 원래 위치 유지
+                offsetEdgeStart[i] = p1;
+                offsetEdgeEnd[i] = p2;
+                continue;
             }
 
-            // 일정한 수축량 적용 (angleFactor 제거 - 모서리에서 과도한 수축 방지)
-            result[i] = curr + avgNormal * offset;
+            Vector2 edgeDir = (p2 - p1).normalized;
+            // 법선 벡터 (오른쪽 방향)
+            Vector2 normal = new Vector2(edgeDir.y, -edgeDir.x);
+
+            // 법선이 내부(중심)를 향하도록 조정
+            Vector2 edgeMid = (p1 + p2) * 0.5f;
+            if (Vector2.Dot(normal, center - edgeMid) < 0)
+            {
+                normal = -normal;
+            }
+
+            // 변을 내부 방향으로 offset만큼 이동
+            offsetEdgeStart[i] = p1 + normal * offset;
+            offsetEdgeEnd[i] = p2 + normal * offset;
+        }
+
+        // 인접한 두 변의 교차점을 새 꼭짓점으로 사용
+        Vector2[] result = new Vector2[n];
+        for (int i = 0; i < n; i++)
+        {
+            // 오목한 모서리는 원래 점 유지
+            if (isConcaveCorner[i])
+            {
+                result[i] = points[i];
+                continue;
+            }
+
+            int prevIdx = (i - 1 + n) % n;
+
+            // 이전 변: offsetEdgeStart[prevIdx] -> offsetEdgeEnd[prevIdx]
+            // 현재 변: offsetEdgeStart[i] -> offsetEdgeEnd[i]
+            if (LineLineIntersection(
+                offsetEdgeStart[prevIdx], offsetEdgeEnd[prevIdx],
+                offsetEdgeStart[i], offsetEdgeEnd[i],
+                out Vector2 intersection))
+            {
+                result[i] = intersection;
+            }
+            else
+            {
+                // 평행한 경우 (거의 발생하지 않음) 원래 점 사용
+                result[i] = points[i];
+            }
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 두 직선의 교차점을 계산합니다.
+    /// </summary>
+    private bool LineLineIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out Vector2 intersection)
+    {
+        intersection = Vector2.zero;
+
+        float d = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+        if (Mathf.Abs(d) < 0.0001f)
+        {
+            // 평행한 선
+            return false;
+        }
+
+        float t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / d;
+
+        intersection = new Vector2(
+            p1.x + t * (p2.x - p1.x),
+            p1.y + t * (p2.y - p1.y)
+        );
+
+        return true;
     }
 
     /// <summary>
@@ -424,41 +530,99 @@ public class GroupBorderRenderer : MonoBehaviour
     }
 
     /// <summary>
-    /// 다각형을 바깥쪽으로 확장시킵니다 (ShrinkPolygon의 반대).
+    /// 다각형을 바깥쪽으로 확장시킵니다 (각 변을 외부로 평행 이동 후 교차점 계산).
+    /// 오목한 모서리와 인접한 변은 이동하지 않습니다.
     /// </summary>
     private Vector2[] ExpandPolygon(Vector2[] points, float offset)
     {
         if (points.Length < 3 || offset <= 0) return points;
 
-        Vector2[] result = new Vector2[points.Length];
+        // 외부 방향 결정을 위해 다각형 중심 계산
+        Vector2 center = CalculatePolygonCenter(points);
 
-        for (int i = 0; i < points.Length; i++)
+        // 다각형 방향 확인 (시계/반시계)
+        float signedArea = CalculateSignedArea(points);
+        bool isClockwise = signedArea < 0;
+
+        int n = points.Length;
+
+        // 먼저 각 모서리가 오목한지 판단
+        bool[] isConcaveCorner = new bool[n];
+        for (int i = 0; i < n; i++)
         {
-            Vector2 prev = points[(i - 1 + points.Length) % points.Length];
+            Vector2 prev = points[(i - 1 + n) % n];
             Vector2 curr = points[i];
-            Vector2 next = points[(i + 1) % points.Length];
+            Vector2 next = points[(i + 1) % n];
 
-            // 두 변의 방향 벡터
-            Vector2 edge1 = (curr - prev).normalized;
-            Vector2 edge2 = (next - curr).normalized;
+            Vector2 edge1 = curr - prev;
+            Vector2 edge2 = next - curr;
+            float cross = edge1.x * edge2.y - edge1.y * edge2.x;
+            isConcaveCorner[i] = isClockwise ? (cross < 0) : (cross > 0);
+        }
 
-            // 각 변의 외부 법선 벡터 (시계방향 가정, 반시계면 반대)
-            Vector2 normal1 = new Vector2(edge1.y, -edge1.x);
-            Vector2 normal2 = new Vector2(edge2.y, -edge2.x);
+        // 각 변(edge)을 외부로 평행 이동
+        // 단, 오목한 모서리에 연결된 변은 이동하지 않음
+        Vector2[] offsetEdgeStart = new Vector2[n];
+        Vector2[] offsetEdgeEnd = new Vector2[n];
 
-            // 평균 법선 (모서리에서의 이동 방향)
-            Vector2 avgNormal = (normal1 + normal2).normalized;
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 p1 = points[i];
+            Vector2 p2 = points[(i + 1) % n];
 
-            // 법선이 외부를 향하는지 확인 (중심 반대 방향)
-            Vector2 toCenter = CalculatePolygonCenter(points) - curr;
-            if (Vector2.Dot(avgNormal, toCenter) > 0)
+            // 이 변의 시작점(i)이나 끝점((i+1)%n)이 오목한 모서리면 이동하지 않음
+            int endIdx = (i + 1) % n;
+            if (isConcaveCorner[i] || isConcaveCorner[endIdx])
             {
-                // 중심 방향이면 반전 (외부로 향하게)
-                avgNormal = -avgNormal;
+                // 오목한 모서리에 연결된 변은 원래 위치 유지
+                offsetEdgeStart[i] = p1;
+                offsetEdgeEnd[i] = p2;
+                continue;
             }
 
-            // 일정한 확장량 적용
-            result[i] = curr + avgNormal * offset;
+            Vector2 edgeDir = (p2 - p1).normalized;
+            // 법선 벡터 (오른쪽 방향)
+            Vector2 normal = new Vector2(edgeDir.y, -edgeDir.x);
+
+            // 법선이 외부(중심 반대)를 향하도록 조정
+            Vector2 edgeMid = (p1 + p2) * 0.5f;
+            if (Vector2.Dot(normal, center - edgeMid) > 0)
+            {
+                normal = -normal;
+            }
+
+            // 변을 외부 방향으로 offset만큼 이동
+            offsetEdgeStart[i] = p1 + normal * offset;
+            offsetEdgeEnd[i] = p2 + normal * offset;
+        }
+
+        // 인접한 두 변의 교차점을 새 꼭짓점으로 사용
+        Vector2[] result = new Vector2[n];
+        for (int i = 0; i < n; i++)
+        {
+            // 오목한 모서리는 원래 점 유지
+            if (isConcaveCorner[i])
+            {
+                result[i] = points[i];
+                continue;
+            }
+
+            int prevIdx = (i - 1 + n) % n;
+
+            // 이전 변: offsetEdgeStart[prevIdx] -> offsetEdgeEnd[prevIdx]
+            // 현재 변: offsetEdgeStart[i] -> offsetEdgeEnd[i]
+            if (LineLineIntersection(
+                offsetEdgeStart[prevIdx], offsetEdgeEnd[prevIdx],
+                offsetEdgeStart[i], offsetEdgeEnd[i],
+                out Vector2 intersection))
+            {
+                result[i] = intersection;
+            }
+            else
+            {
+                // 평행한 경우 (거의 발생하지 않음) 원래 점 사용
+                result[i] = points[i];
+            }
         }
 
         return result;
