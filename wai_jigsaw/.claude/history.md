@@ -265,6 +265,105 @@ float whiteFrameThicknessUV = _whiteBorderThickness + _blackBorderThickness + av
 
 ---
 
+## 2026-01-05
+
+### 빌드 환경에서의 렌더링 이슈 수정
+
+#### 1. GroupBorder 크기 문제 해결
+
+**문제 현상**
+- Unity Editor에서는 정상이지만, Windows 빌드에서 GroupBorder가 카드 영역을 벗어나 과도하게 크게 렌더링됨
+
+**원인 분석**
+- `overlapMargin` 값으로 콜라이더를 확장한 후 수축하는 과정에서 오차 발생
+- Editor와 Build 환경의 동작 차이
+
+**수정 내용** (`GroupBorderRenderer.cs`)
+```csharp
+// 기존: float overlapMargin = 0.1f; (10% 확장)
+// 변경: float overlapMargin = 0f;   (확장 없음)
+```
+- 인접 조각들이 이미 같은 위치에 있으므로 확장 없이도 콜라이더가 병합됨
+
+---
+
+#### 2. CardSlot 크기 문제 해결
+
+**문제 현상**
+- Unity Editor에서는 정상이지만, Windows 빌드에서 CardSlot이 카드보다 현저히 작게 표시됨
+
+**원인 분석**
+- `SpriteRenderer.bounds.size`가 빌드 환경에서 `localScale`을 반영하지 않음
+- Editor에서는 정상 동작하지만 빌드에서는 스케일이 적용되지 않은 원본 크기 반환
+
+**수정 내용** (`PuzzleBoardSetup.cs`)
+```csharp
+// 기존: actualCardSize = sr.bounds.size (빌드에서 localScale 미반영)
+// 변경: actualCardSize = sprite.bounds.size × localScale (명시적 계산)
+Vector2 spriteSize = firstCardSR.sprite.bounds.size;
+Vector2 actualCardSize = new Vector2(spriteSize.x * cardScale.x, spriteSize.y * cardScale.y);
+```
+
+**슬롯 크기 미세 조정**
+```csharp
+// 슬롯끼리 맞닿는 느낌을 위해 pieceSpacing의 30%만 적용
+float slotSpacingFactor = 0.3f;
+float visiblePieceWidth = actualCardSize.x * (1f - pieceSpacing * slotSpacingFactor);
+float visiblePieceHeight = actualCardSize.y * (1f - pieceSpacing * slotSpacingFactor);
+```
+
+---
+
+#### 3. 드래그 카드 레이어 순서 문제 해결
+
+**문제 현상**
+- 드래그 중인 카드가 합쳐진 그룹의 GroupBorder 아래에 배치되어 가려짐
+
+**원인 분석**
+- `GroupBorderRenderer`의 `_baseSortingOrder` 기본값이 100으로 설정됨
+- 드래그 중인 카드의 sortingOrder도 100이라서 Z 위치에 따라 렌더링 순서 결정
+
+**수정 내용** (`GroupBorderRenderer.cs`)
+```csharp
+// 기존: [SerializeField] private int _baseSortingOrder = 100;
+// 변경: [SerializeField] private int _baseSortingOrder = 2;
+```
+- 드래그 시 `PieceGroup.SetSortingOrder(100)`으로 높여주므로, 기본값은 낮게 유지
+
+---
+
+#### 4. LineRenderer index out of bounds 오류 해결
+
+**문제 현상**
+- 펌핑 애니메이션 중 `LineRenderer.SetPosition index out of bounds!` 오류 발생
+
+**원인 분석**
+- `UpdatePositionWithScale()`에서 원본 배열의 길이와 현재 LineRenderer의 `positionCount`가 다를 때 발생
+- 펌핑 애니메이션 중에 `DelayedUpdateBorder`가 호출되어 테두리가 재생성되면서 `positionCount` 변경됨
+
+**수정 내용** (`GroupBorderRenderer.cs`)
+```csharp
+// positionCount와 원본 배열 길이가 다르면 스케일 적용 불가
+if (_whiteLineRenderer.positionCount != _originalWhiteLinePositions.Length ||
+    _blackLineRenderer.positionCount != _originalBlackLinePositions.Length)
+{
+    // 원본 데이터 무효화하고 리턴
+    _hasOriginalPositions = false;
+    return;
+}
+```
+
+---
+
+### 수정된 파일 요약
+
+| 파일 | 수정 내용 |
+|------|-----------|
+| `GroupBorderRenderer.cs` | overlapMargin=0, baseSortingOrder=2, positionCount 체크 추가 |
+| `PuzzleBoardSetup.cs` | sprite.bounds.size × localScale 계산, slotSpacingFactor 추가 |
+
+---
+
 ## 주요 파일 위치
 
 | 구분 | 경로 |
