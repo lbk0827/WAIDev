@@ -661,7 +661,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d75acd1478c3440a9337b2fdcf247d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  padding: 1
+  padding: 1.2
   pieceSpacing: 0.15
   cornerRadius: 0.05
   roundedCornerShader: {fileID: 0}

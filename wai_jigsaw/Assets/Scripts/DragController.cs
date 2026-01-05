@@ -706,17 +706,13 @@ public class DragController : MonoBehaviour
         // World space 크기 저장 (복원 시 재계산용)
         _defaultPaddingWorldSize = paddingWorldSize;
 
-        // World space에서 UV 비율로 변환
-        // pieceWidth/Height는 Unity unit 크기이고, UV는 0~1 범위
-        // padding 비율 = paddingWorldSize / pieceWidth (또는 Height)
-        float paddingRatioX = pieceWidth > 0 ? paddingWorldSize / pieceWidth : 0f;
-        float paddingRatioY = pieceHeight > 0 ? paddingWorldSize / pieceHeight : 0f;
-
-        // 4방향 패딩 설정 (Left, Right, Top, Bottom)
-        _padding = new Vector4(paddingRatioX, paddingRatioX, paddingRatioY, paddingRatioY);
+        // 이미지 패딩을 0으로 설정하여 이미지가 하얀 테두리 아래까지 채워지도록 함
+        // 하얀 테두리는 이미지 위에 오버레이되므로, 이미지는 테두리 영역까지 표시됨
+        // 카드 간 간격은 카드 배치 위치(슬롯)로 유지됨
+        _padding = Vector4.zero;
         ApplyPadding();
 
-        Debug.Log($"[DragController] Padding 설정: worldSize={paddingWorldSize}, ratioX={paddingRatioX}, ratioY={paddingRatioY}");
+        Debug.Log($"[DragController] Padding 설정: 0 (이미지가 테두리까지 채워짐)");
     }
 
     /// <summary>
@@ -784,36 +780,29 @@ public class DragController : MonoBehaviour
     }
 
     /// <summary>
-    /// 특정 방향의 패딩을 기본값으로 복원합니다.
+    /// 특정 방향의 패딩을 기본값(0)으로 복원합니다.
     /// direction: 0=Top, 1=Bottom, 2=Left, 3=Right (EdgeCover와 동일한 순서)
     /// </summary>
     public void RestorePadding(int direction)
     {
-        // World size에서 UV 비율 재계산
-        float paddingRatioX = pieceWidth > 0 ? _defaultPaddingWorldSize / pieceWidth : 0f;
-        float paddingRatioY = pieceHeight > 0 ? _defaultPaddingWorldSize / pieceHeight : 0f;
-
-        // EdgeCover 순서: 0=Top, 1=Bottom, 2=Left, 3=Right
+        // 패딩을 0으로 복원 (이미지가 테두리까지 채워짐)
         switch (direction)
         {
-            case 0: _padding.z = paddingRatioY; break; // Top
-            case 1: _padding.w = paddingRatioY; break; // Bottom
-            case 2: _padding.x = paddingRatioX; break; // Left
-            case 3: _padding.y = paddingRatioX; break; // Right
+            case 0: _padding.z = 0f; break; // Top
+            case 1: _padding.w = 0f; break; // Bottom
+            case 2: _padding.x = 0f; break; // Left
+            case 3: _padding.y = 0f; break; // Right
         }
         ApplyPadding();
     }
 
     /// <summary>
-    /// 모든 방향의 패딩을 기본값으로 복원합니다.
+    /// 모든 방향의 패딩을 기본값(0)으로 복원합니다.
     /// </summary>
     public void RestoreAllPadding()
     {
-        // World size에서 UV 비율 재계산
-        float paddingRatioX = pieceWidth > 0 ? _defaultPaddingWorldSize / pieceWidth : 0f;
-        float paddingRatioY = pieceHeight > 0 ? _defaultPaddingWorldSize / pieceHeight : 0f;
-
-        _padding = new Vector4(paddingRatioX, paddingRatioX, paddingRatioY, paddingRatioY);
+        // 패딩을 0으로 복원 (이미지가 테두리까지 채워짐)
+        _padding = Vector4.zero;
         ApplyPadding();
     }
 
