@@ -1210,6 +1210,19 @@ public class PuzzleBoardSetup : MonoBehaviour
     public void ClearBoard()
     {
         CancelInvoke(nameof(LevelComplete));
+
+        // 각 조각의 그룹 테두리 먼저 제거 (GroupBorder는 루트에 생성되므로 별도 처리 필요)
+        HashSet<PieceGroup> processedGroups = new HashSet<PieceGroup>();
+        foreach (var piece in _piecesOnBoard)
+        {
+            if (piece != null && piece.group != null && !processedGroups.Contains(piece.group))
+            {
+                piece.group.DestroyGroupBorder();
+                processedGroups.Add(piece.group);
+            }
+        }
+
+        // 퍼즐 조각 제거
         foreach (Transform child in transform) Destroy(child.gameObject);
         _piecesOnBoard.Clear();
         _slotPositions.Clear();
