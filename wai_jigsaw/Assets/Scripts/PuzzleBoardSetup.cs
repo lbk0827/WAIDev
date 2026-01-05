@@ -130,12 +130,7 @@ public class PuzzleBoardSetup : MonoBehaviour
         float deckPosY = startY - ((_rows - 1) * slotHeight);
         Vector3 deckPosition = new Vector3(deckPosX, deckPosY, 0);
 
-        // 1단계: 카드 슬롯 배경 생성 (카드보다 먼저 생성)
-        // 슬롯 크기 = 카드의 시각적 크기 (셰이더 패딩 적용 후)
-        // pieceSpacing/2 만큼 각 가장자리가 잘리므로, 시각적 크기 = 원래 크기 × (1 - pieceSpacing)
-        float visiblePieceWidth = _unitWidth * (1f - pieceSpacing);
-        float visiblePieceHeight = _unitHeight * (1f - pieceSpacing);
-        CreateCardSlots(startX, startY, slotWidth, slotHeight, visiblePieceWidth, visiblePieceHeight);
+        // 1단계: 카드 슬롯 배경 생성은 카드 생성 후로 이동 (카드의 실제 bounds 크기 참조 필요)
 
         int index = 0;
         for (int row = 0; row < _rows; row++)
@@ -216,6 +211,28 @@ public class PuzzleBoardSetup : MonoBehaviour
 
                 index++;
             }
+        }
+
+        // 카드 생성 완료 후 슬롯 생성 (카드의 실제 화면 크기 참조)
+        if (_piecesOnBoard.Count > 0)
+        {
+            SpriteRenderer firstCardSR = _piecesOnBoard[0].GetComponent<SpriteRenderer>();
+            Vector3 cardScale = _piecesOnBoard[0].transform.localScale;
+
+            // sr.bounds.size는 빌드에서 localScale을 반영하지 않을 수 있음
+            // 따라서 sprite.bounds.size × localScale로 실제 화면 크기 계산
+            Vector2 spriteSize = firstCardSR.sprite.bounds.size;
+            Vector2 actualCardSize = new Vector2(spriteSize.x * cardScale.x, spriteSize.y * cardScale.y);
+
+            // 슬롯 크기 계산 - 슬롯끼리 맞닿는 느낌으로 하기 위해 pieceSpacing의 절반만 적용
+            // 기존: (1f - pieceSpacing) → 변경: (1f - pieceSpacing * 0.3f)
+            float slotSpacingFactor = 0.3f;  // pieceSpacing의 30%만 적용 (슬롯을 더 크게)
+            float visiblePieceWidth = actualCardSize.x * (1f - pieceSpacing * slotSpacingFactor);
+            float visiblePieceHeight = actualCardSize.y * (1f - pieceSpacing * slotSpacingFactor);
+
+            Debug.Log($"[PuzzleBoardSetup] 슬롯 크기 계산 - spriteSize={spriteSize}, cardScale={cardScale}, actualCardSize={actualCardSize}, pieceSpacing={pieceSpacing}, visibleSize=({visiblePieceWidth}, {visiblePieceHeight})");
+
+            CreateCardSlots(startX, startY, slotWidth, slotHeight, visiblePieceWidth, visiblePieceHeight);
         }
     }
 
