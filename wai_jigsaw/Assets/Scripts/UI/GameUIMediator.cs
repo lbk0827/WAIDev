@@ -10,6 +10,7 @@ namespace WaiJigsaw.UI
     /// 게임 씬 전용 UI Mediator
     /// - PuzzlePanel 관리
     /// - ResultPanel 관리
+    /// - LevelClearSequence 연동
     /// </summary>
     public class GameUIMediator : MonoObject
     {
@@ -20,27 +21,44 @@ namespace WaiJigsaw.UI
         [Header("Puzzle Panel UI")]
         [SerializeField] private TMP_Text _currentLevelText;  // 현재 레벨 표시
         [SerializeField] private Button _settingsButton;      // 설정 버튼
+        [SerializeField] private GameObject _inGameButtonsContainer;  // 인게임 버튼 컨테이너
+
+        [Header("Coin Display")]
+        [SerializeField] private GameObject _coinDisplayObject;  // 코인 표시 UI (CoinDisplay)
 
         [Header("Popups")]
         [SerializeField] private SettingsPopup _settingsPopup;
 
-        [Header("Result Panel UI")]
+        [Header("Result Panel UI (기존 - ShowResultLegacy에서 사용)")]
         [SerializeField] private TMP_Text _resultLevelText;
         [SerializeField] private Button _resultNextButton;
 
-        [Header("Reward UI")]
+        [Header("Reward UI (기존)")]
         [SerializeField] private GameObject _rewardContainer;     // 보상 UI 컨테이너
         [SerializeField] private Image _coinIcon;                 // 코인 아이콘
         [SerializeField] private TMP_Text _rewardAmountText;      // 보상량 텍스트 (예: "+10")
 
+        [Header("Level Clear Sequence")]
+        [Tooltip("레벨 클리어 시퀀스 컴포넌트 (연출 담당)")]
+        [SerializeField] private LevelClearSequence _levelClearSequence;
+
+        [Header("Board")]
+        [Tooltip("퍼즐 보드 컨테이너 (클리어 시 이동 대상)")]
+        [SerializeField] private Transform _boardContainer;
+
         [Header("Puzzle Board")]
         [SerializeField] private PuzzleBoardSetup _puzzleBoardSetup;
+
+        [Header("Clear Sequence Settings")]
+        [Tooltip("클리어 시퀀스 사용 여부 (false면 기존 방식 사용)")]
+        [SerializeField] private bool _useClearSequence = true;
 
         #region MonoObject Lifecycle
 
         protected override void OnInitialize()
         {
             RegisterButtonEvents();
+            SetupLevelClearSequence();
         }
 
         protected override void Start()
@@ -60,6 +78,22 @@ namespace WaiJigsaw.UI
 
         #endregion
 
+        #region Setup
+
+        /// <summary>
+        /// LevelClearSequence 초기 설정
+        /// </summary>
+        private void SetupLevelClearSequence()
+        {
+            if (_levelClearSequence == null)
+            {
+                Debug.LogWarning("[GameUIMediator] LevelClearSequence가 할당되지 않았습니다. 기존 방식으로 동작합니다.");
+                _useClearSequence = false;
+            }
+        }
+
+        #endregion
+
         #region Button Events
 
         private void RegisterButtonEvents()
@@ -73,8 +107,12 @@ namespace WaiJigsaw.UI
 
         private void OnResultNextClicked()
         {
-            // LobbyScene으로 전환
-            GameManager.Instance.LoadLobbyScene();
+            // 클리어 시퀀스를 사용하는 경우, 시퀀스의 NEXT 버튼 핸들러가 처리
+            // 기존 방식 (ResultPanel)에서만 이 핸들러 사용
+            if (!_useClearSequence || _levelClearSequence == null)
+            {
+                GameManager.Instance.LoadLobbyScene();
+            }
         }
 
         private void OnSettingsClicked()
@@ -99,6 +137,12 @@ namespace WaiJigsaw.UI
         /// </summary>
         public void StartGame()
         {
+            // 클리어 시퀀스 리셋 (이전 상태 정리)
+            if (_levelClearSequence != null)
+            {
+                _levelClearSequence.ResetSequence();
+            }
+
             ShowPuzzle();
 
             int currentLevel = GameDataContainer.Instance.CurrentLevel;
@@ -136,9 +180,41 @@ namespace WaiJigsaw.UI
         }
 
         /// <summary>
-        /// 결과 화면 표시
+        /// 결과 화면 표시 (레벨 클리어 시 호출)
+        /// - 클리어 시퀀스 사용 시: 연출 재생
+        /// - 기존 방식: 즉시 ResultPanel 표시
         /// </summary>
         public void ShowResult()
+        {
+            // 클리어한 레벨 (현재 레벨 - 1, 이미 AdvanceToNextLevel이 호출된 후임)
+            int clearedLevel = GameDataContainer.Instance.CurrentLevel - 1;
+
+            if (_useClearSequence && _levelClearSequence != null)
+            {
+                // 클리어 시퀀스 재생
+                Debug.Log($"[GameUIMediator] 레벨 {clearedLevel} 클리어 시퀀스 시작");
+                _levelClearSequence.PlayClearSequence(clearedLevel, OnClearSequenceComplete);
+            }
+            else
+            {
+                // 기존 방식 사용
+                ShowResultLegacy(clearedLevel);
+            }
+        }
+
+        /// <summary>
+        /// 클리어 시퀀스 완료 콜백
+        /// </summary>
+        private void OnClearSequenceComplete()
+        {
+            Debug.Log("[GameUIMediator] 클리어 시퀀스 완료 - 로비로 이동");
+            GameManager.Instance.LoadLobbyScene();
+        }
+
+        /// <summary>
+        /// 기존 방식의 결과 화면 표시 (즉시 전환)
+        /// </summary>
+        private void ShowResultLegacy(int clearedLevel)
         {
             if (_puzzlePanel != null)
                 _puzzlePanel.SetActive(false);
@@ -146,8 +222,6 @@ namespace WaiJigsaw.UI
             if (_resultPanel != null)
                 _resultPanel.SetActive(true);
 
-            // 클리어한 레벨 (현재 레벨 - 1)
-            int clearedLevel = GameDataContainer.Instance.CurrentLevel - 1;
             UpdateResultLevelText(clearedLevel);
 
             // 코인 보상 표시 및 지급
@@ -155,7 +229,7 @@ namespace WaiJigsaw.UI
         }
 
         /// <summary>
-        /// 코인 보상 표시 및 지급
+        /// 코인 보상 표시 및 지급 (기존 방식)
         /// </summary>
         private void DisplayAndAwardCoinReward(int clearedLevel)
         {
@@ -206,6 +280,35 @@ namespace WaiJigsaw.UI
                 _resultLevelText.text = $"LEVEL {clearedLevel} COMPLETE";
             }
         }
+
+        #endregion
+
+        #region Public Accessors (for LevelClearSequence)
+
+        /// <summary>
+        /// 현재 레벨 텍스트 (클리어 시퀀스에서 페이드 아웃용)
+        /// </summary>
+        public TMP_Text CurrentLevelText => _currentLevelText;
+
+        /// <summary>
+        /// 설정 버튼 (클리어 시퀀스에서 페이드 아웃용)
+        /// </summary>
+        public Button SettingsButton => _settingsButton;
+
+        /// <summary>
+        /// 인게임 버튼 컨테이너 (클리어 시퀀스에서 페이드 아웃용)
+        /// </summary>
+        public GameObject InGameButtonsContainer => _inGameButtonsContainer;
+
+        /// <summary>
+        /// 코인 표시 오브젝트 (클리어 시퀀스에서 페이드 인용)
+        /// </summary>
+        public GameObject CoinDisplayObject => _coinDisplayObject;
+
+        /// <summary>
+        /// 보드 컨테이너 (클리어 시퀀스에서 이동용)
+        /// </summary>
+        public Transform BoardContainer => _boardContainer;
 
         #endregion
     }

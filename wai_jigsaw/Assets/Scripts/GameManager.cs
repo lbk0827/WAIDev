@@ -272,26 +272,27 @@ public class GameManager : MonoBehaviour
         GameDataContainer.Instance.AdvanceToNextLevel();
         SaveGameData();
 
-        if (puzzleBoard != null)
-        {
-            puzzleBoard.ClearBoard();
-        }
-
-        // 결과 화면 표시 (단일 씬 모드 또는 멀티 씬 모드)
+        // [중요] ClearBoard()는 클리어 시퀀스가 끝난 후 로비로 이동할 때 호출됨
+        // 클리어 시퀀스 중에는 보드가 화면에 유지되어야 함 (위로 이동 연출)
+        // 기존 방식(단일 씬 모드)에서는 즉시 ClearBoard() 호출
         if (uiMediator != null)
         {
-            // 단일 씬 모드 (SampleScene)
+            // 단일 씬 모드 (SampleScene) - 기존 방식
+            if (puzzleBoard != null)
+            {
+                puzzleBoard.ClearBoard();
+            }
             uiMediator.ShowResult();
-        }
-        else if (_gameUIMediator != null)
-        {
-            // 멀티 씬 모드 (GameScene)
-            _gameUIMediator.ShowResult();
         }
         else
         {
-            // GameUIMediator 자동 탐색
-            _gameUIMediator = FindObjectOfType<GameUIMediator>();
+            // 멀티 씬 모드 (GameScene) - 클리어 시퀀스 사용
+            // ClearBoard()는 LoadLobbyScene()에서 호출됨
+            if (_gameUIMediator == null)
+            {
+                _gameUIMediator = FindObjectOfType<GameUIMediator>();
+            }
+
             if (_gameUIMediator != null)
             {
                 _gameUIMediator.ShowResult();

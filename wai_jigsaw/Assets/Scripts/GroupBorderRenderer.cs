@@ -211,6 +211,7 @@ public class GroupBorderRenderer : MonoBehaviour
     /// <summary>
     /// 월드 위치 기반으로 외곽 변(인접 조각이 없는 변)을 찾습니다.
     /// 실제 화면 위치 간의 거리로 인접 여부를 판단합니다.
+    /// 각 변은 시계 방향으로 정의됩니다 (외곽선을 따라 시계 방향으로 순회).
     /// </summary>
     private List<Edge> FindOuterEdgesFromWorldPositions(List<Vector3> worldPositions)
     {
@@ -261,15 +262,26 @@ public class GroupBorderRenderer : MonoBehaviour
             }
 
             // 인접 조각이 없는 방향의 변을 외곽 변으로 추가
+            // 시계 방향으로 정의: Top(→), Right(↓), Bottom(←), Left(↑)
             if (!hasTop)
             {
+                // Top: 왼쪽에서 오른쪽으로
                 Vector2 start = new Vector2(cellCenter.x - halfW, cellCenter.y + halfH);
                 Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Top));
             }
 
+            if (!hasRight)
+            {
+                // Right: 위에서 아래로
+                Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
+                Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
+                edges.Add(new Edge(start, end, EdgeDirection.Right));
+            }
+
             if (!hasBottom)
             {
+                // Bottom: 오른쪽에서 왼쪽으로
                 Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
                 Vector2 end = new Vector2(cellCenter.x - halfW, cellCenter.y - halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Bottom));
@@ -277,16 +289,10 @@ public class GroupBorderRenderer : MonoBehaviour
 
             if (!hasLeft)
             {
+                // Left: 아래에서 위로
                 Vector2 start = new Vector2(cellCenter.x - halfW, cellCenter.y - halfH);
                 Vector2 end = new Vector2(cellCenter.x - halfW, cellCenter.y + halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Left));
-            }
-
-            if (!hasRight)
-            {
-                Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
-                Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
-                edges.Add(new Edge(start, end, EdgeDirection.Right));
             }
         }
 
@@ -295,29 +301,31 @@ public class GroupBorderRenderer : MonoBehaviour
 
     /// <summary>
     /// 외곽 변들을 연결하여 연속된 폐곡선 경로를 생성합니다.
+    /// 거리 기반 비교로 부동소수점 오차 문제 해결.
     /// </summary>
     private List<Vector2> ConnectEdgesToPath(List<Edge> edges)
     {
         if (edges.Count == 0) return new List<Vector2>();
 
+        // 거리 기반 비교를 위한 임계값
+        // 드래그/이동 중 조각 위치가 미세하게 어긋날 수 있으므로 조각 크기의 20%로 설정
+        float tolerance = Mathf.Min(_pieceWidth, _pieceHeight) * 0.2f;
+        if (tolerance < 0.01f) tolerance = 0.01f;
+
         List<Vector2> path = new List<Vector2>();
         HashSet<int> usedEdges = new HashSet<int>();
 
-        // 시작 변 선택
+        // 시작 변 선택: 첫 번째 변 사용
         Edge currentEdge = edges[0];
         usedEdges.Add(0);
         path.Add(currentEdge.Start);
         path.Add(currentEdge.End);
 
         Vector2 currentEnd = currentEdge.End;
-
-        // tolerance를 조각 크기에 비례하여 설정 (부동소수점 오차 허용)
-        // 조각 크기가 약 1.43일 때, 5%는 약 0.07로 충분한 여유
-        float tolerance = Mathf.Max(_pieceWidth, _pieceHeight) * 0.05f;
-        if (tolerance < 0.01f) tolerance = 0.01f;  // 최소값 보장
+        Vector2 pathStart = path[0];
 
         // 모든 변이 연결될 때까지 반복
-        int maxIterations = edges.Count * 2;  // 무한 루프 방지
+        int maxIterations = edges.Count * 2;
         int iterations = 0;
 
         while (usedEdges.Count < edges.Count && iterations < maxIterations)
@@ -325,10 +333,10 @@ public class GroupBorderRenderer : MonoBehaviour
             iterations++;
             bool foundNext = false;
             float bestDistance = float.MaxValue;
-            int bestIndex = -1;
-            bool useStart = true;  // true면 candidate.Start가 연결, false면 candidate.End가 연결
+            int bestEdgeIdx = -1;
+            bool bestUseStart = true; // true: candidate.Start와 연결, false: candidate.End와 연결
 
-            // 가장 가까운 연결점을 찾음 (greedy 방식)
+            // 현재 끝점과 가장 가까운 미사용 변 찾기
             for (int i = 0; i < edges.Count; i++)
             {
                 if (usedEdges.Contains(i)) continue;
@@ -341,38 +349,60 @@ public class GroupBorderRenderer : MonoBehaviour
                 if (distToStart < bestDistance && distToStart < tolerance)
                 {
                     bestDistance = distToStart;
-                    bestIndex = i;
-                    useStart = true;
+                    bestEdgeIdx = i;
+                    bestUseStart = true;
                 }
+
                 if (distToEnd < bestDistance && distToEnd < tolerance)
                 {
                     bestDistance = distToEnd;
-                    bestIndex = i;
-                    useStart = false;
+                    bestEdgeIdx = i;
+                    bestUseStart = false;
                 }
             }
 
-            if (bestIndex >= 0)
+            if (bestEdgeIdx >= 0)
             {
-                Edge candidate = edges[bestIndex];
-                if (useStart)
+                Edge nextEdge = edges[bestEdgeIdx];
+                if (bestUseStart)
                 {
-                    // 시작점이 연결됨
-                    path.Add(candidate.End);
-                    currentEnd = candidate.End;
+                    // candidate.Start가 currentEnd와 연결
+                    path.Add(nextEdge.End);
+                    currentEnd = nextEdge.End;
                 }
                 else
                 {
-                    // 끝점이 연결됨 (방향 반대)
-                    path.Add(candidate.Start);
-                    currentEnd = candidate.Start;
+                    // candidate.End가 currentEnd와 연결 (역방향)
+                    path.Add(nextEdge.Start);
+                    currentEnd = nextEdge.Start;
                 }
-                usedEdges.Add(bestIndex);
+                usedEdges.Add(bestEdgeIdx);
                 foundNext = true;
             }
 
             if (!foundNext)
             {
+                // 연결이 끊어진 경우: 시작점으로 돌아갈 수 있는지 확인
+                if (Vector2.Distance(currentEnd, pathStart) < tolerance)
+                {
+                    // 폐곡선 완성됨
+                    break;
+                }
+
+                // 디버그: 연결 실패 시 상세 정보 출력
+                Debug.LogWarning($"[GroupBorderRenderer] 경로 연결 실패. 사용된 변: {usedEdges.Count}/{edges.Count}");
+                Debug.LogWarning($"  현재 끝점: ({currentEnd.x:F2}, {currentEnd.y:F2}), tolerance: {tolerance:F4}");
+                Debug.LogWarning($"  조각 크기: width={_pieceWidth:F2}, height={_pieceHeight:F2}");
+
+                // 미사용 변들의 좌표 출력
+                for (int i = 0; i < edges.Count; i++)
+                {
+                    if (usedEdges.Contains(i)) continue;
+                    Edge e = edges[i];
+                    float d1 = Vector2.Distance(currentEnd, e.Start);
+                    float d2 = Vector2.Distance(currentEnd, e.End);
+                    Debug.LogWarning($"  미사용 변[{i}]: Start({e.Start.x:F2}, {e.Start.y:F2}) dist={d1:F4}, End({e.End.x:F2}, {e.End.y:F2}) dist={d2:F4}");
+                }
                 break;
             }
         }
@@ -384,6 +414,17 @@ public class GroupBorderRenderer : MonoBehaviour
         }
 
         return path;
+    }
+
+    /// <summary>
+    /// 좌표를 그리드 단위로 스냅합니다 (정수 좌표로 변환).
+    /// </summary>
+    private Vector2Int SnapToGrid(Vector2 point, float unit)
+    {
+        return new Vector2Int(
+            Mathf.RoundToInt(point.x / unit),
+            Mathf.RoundToInt(point.y / unit)
+        );
     }
 
     /// <summary>
@@ -660,6 +701,59 @@ public class GroupBorderRenderer : MonoBehaviour
             _whiteLineRenderer.enabled = visible;
         if (_blackLineRenderer != null)
             _blackLineRenderer.enabled = visible;
+    }
+
+    /// <summary>
+    /// LineRenderer의 모든 점을 지정된 오프셋만큼 이동합니다.
+    /// useWorldSpace=true일 때 Transform 이동으로는 점이 이동하지 않으므로 직접 이동 필요.
+    /// </summary>
+    public void MoveAllPoints(Vector3 offset)
+    {
+        bool moved = false;
+        int whiteCount = _whiteLineRenderer != null ? _whiteLineRenderer.positionCount : 0;
+        int blackCount = _blackLineRenderer != null ? _blackLineRenderer.positionCount : 0;
+
+        Debug.Log($"[GroupBorderRenderer] MoveAllPoints 시작: whiteCount={whiteCount}, blackCount={blackCount}, offset={offset}, gameObject={gameObject.name}");
+
+        if (_whiteLineRenderer != null && _whiteLineRenderer.positionCount > 0)
+        {
+            Vector3[] positions = new Vector3[_whiteLineRenderer.positionCount];
+            _whiteLineRenderer.GetPositions(positions);
+
+            // 이동 전 첫 번째 점 좌표
+            Vector3 beforeFirst = positions[0];
+
+            for (int i = 0; i < positions.Length; i++)
+            {
+                positions[i] += offset;
+            }
+            _whiteLineRenderer.SetPositions(positions);
+
+            // 이동 후 첫 번째 점 좌표 확인
+            Vector3[] afterPositions = new Vector3[_whiteLineRenderer.positionCount];
+            _whiteLineRenderer.GetPositions(afterPositions);
+
+            Debug.Log($"[GroupBorderRenderer] White 첫번째 점: 이전=({beforeFirst.x:F3}, {beforeFirst.y:F3}) → 이후=({afterPositions[0].x:F3}, {afterPositions[0].y:F3})");
+
+            moved = true;
+        }
+
+        if (_blackLineRenderer != null && _blackLineRenderer.positionCount > 0)
+        {
+            Vector3[] positions = new Vector3[_blackLineRenderer.positionCount];
+            _blackLineRenderer.GetPositions(positions);
+            for (int i = 0; i < positions.Length; i++)
+            {
+                positions[i] += offset;
+            }
+            _blackLineRenderer.SetPositions(positions);
+            moved = true;
+        }
+
+        if (!moved)
+        {
+            Debug.LogWarning($"[GroupBorderRenderer] MoveAllPoints: LineRenderer가 없거나 점이 없습니다. white={_whiteLineRenderer != null} (count={whiteCount}), black={_blackLineRenderer != null} (count={blackCount})");
+        }
     }
 
     // ====== Edge 구조체 ======

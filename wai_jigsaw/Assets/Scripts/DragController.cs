@@ -843,8 +843,8 @@ public class DragController : MonoBehaviour
         // 변환 필요
         //
         // 음수 패딩을 사용하여 이미지가 살짝 겹치게 함 (경계선 제거)
-        // -0.005 = 0.5% 확장으로 인접 카드와 겹침
-        const float overlapPadding = -0.005f;
+        // -0.015 = 1.5% 확장으로 인접 카드와 충분히 겹침 (빈틈 방지)
+        const float overlapPadding = -0.015f;
 
         switch (direction)
         {
@@ -1482,6 +1482,35 @@ public class PieceGroup
             Object.Destroy(_borderContainer);
             _borderContainer = null;
             _borderRenderer = null;
+        }
+    }
+
+    /// <summary>
+    /// 그룹 테두리 컨테이너의 Transform을 반환합니다.
+    /// 클리어 시퀀스에서 보드와 함께 이동시키기 위해 사용됩니다.
+    /// </summary>
+    public Transform GetBorderContainerTransform()
+    {
+        if (_borderContainer != null)
+        {
+            return _borderContainer.transform;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 그룹 테두리의 LineRenderer 점들을 지정된 오프셋만큼 이동합니다.
+    /// </summary>
+    public void MoveBorderPoints(Vector3 offset)
+    {
+        if (_borderRenderer != null)
+        {
+            Debug.Log($"[PieceGroup] MoveBorderPoints 실행: offset={offset}, borderRenderer={_borderRenderer.gameObject.name}, active={_borderRenderer.gameObject.activeInHierarchy}");
+            _borderRenderer.MoveAllPoints(offset);
+        }
+        else
+        {
+            Debug.LogWarning($"[PieceGroup] MoveBorderPoints: _borderRenderer가 null입니다. (조각 수: {pieces.Count})");
         }
     }
 }

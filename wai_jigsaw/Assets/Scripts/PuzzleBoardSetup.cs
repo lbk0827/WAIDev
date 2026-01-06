@@ -1221,33 +1221,67 @@ public class PuzzleBoardSetup : MonoBehaviour
         return closestIndex;
     }
     
+    // 퍼즐 완료 상태
+    private bool _isPuzzleCompleted = false;
+
+    /// <summary>
+    /// 퍼즐이 완료되었는지 여부
+    /// </summary>
+    public bool IsPuzzleCompleted => _isPuzzleCompleted;
+
     public void CheckCompletion()
     {
+        // 이미 완료된 상태면 스킵
+        if (_isPuzzleCompleted) return;
+
         // Check if all pieces form a SINGLE group
         if (_piecesOnBoard.Count == 0) return;
-        
+
         PieceGroup firstGroup = _piecesOnBoard[0].group;
         if (firstGroup.pieces.Count != _piecesOnBoard.Count) return;
 
         // Check if the group is in the correct internal order (already done by Merge logic essentially)
         // But we also need to check if the group is rotated? No, no rotation.
-        // Just check if the first piece is at a valid index? 
-        // Actually, if they are all one group, and we only merge correct neighbors, 
+        // Just check if the first piece is at a valid index?
+        // Actually, if they are all one group, and we only merge correct neighbors,
         // then the puzzle IS solved relative to itself.
         // But is it in the center? Doesn't matter for "Completion", but usually users want it centered.
         // The previous logic checked `correctSlotIndex`.
         // If we want "True Completion", every piece must be in `correctSlotIndex`.
         // If the user built the puzzle but it's shifted 1 tile to the right, is it solved?
         // Usually NO. It must be in the frame.
-        
+
         foreach (var piece in _piecesOnBoard)
         {
             int correctIndex = piece.originalGridY * _cols + piece.originalGridX;
             if (piece.currentSlotIndex != correctIndex) return;
         }
 
+        // 퍼즐 완료!
+        _isPuzzleCompleted = true;
+
         Debug.Log("🎉 레벨 클리어! 🎉");
-        Invoke(nameof(LevelComplete), 1.0f);
+
+        // 모든 퍼즐 조각의 드래그 비활성화
+        DisableAllPiecesDrag();
+
+        // 약간의 딜레이 후 레벨 완료 처리
+        Invoke(nameof(LevelComplete), 0.5f);
+    }
+
+    /// <summary>
+    /// 모든 퍼즐 조각의 드래그를 비활성화합니다.
+    /// </summary>
+    private void DisableAllPiecesDrag()
+    {
+        foreach (var piece in _piecesOnBoard)
+        {
+            if (piece != null)
+            {
+                piece.SetDraggable(false);
+            }
+        }
+        Debug.Log("[PuzzleBoardSetup] 모든 퍼즐 조각 드래그 비활성화");
     }
 
     public void LevelComplete()
@@ -1255,9 +1289,62 @@ public class PuzzleBoardSetup : MonoBehaviour
         GameManager.Instance.OnLevelComplete();
     }
 
+    /// <summary>
+    /// 완성된 퍼즐 그룹의 테두리 컨테이너를 반환합니다.
+    /// 클리어 시퀀스에서 보드와 함께 이동시키기 위해 사용됩니다.
+    /// </summary>
+    public Transform GetCompletedGroupBorderTransform()
+    {
+        if (_piecesOnBoard.Count == 0) return null;
+
+        // 첫 번째 조각의 그룹에서 테두리 컨테이너 가져오기
+        PieceGroup group = _piecesOnBoard[0].group;
+        if (group == null) return null;
+
+        return group.GetBorderContainerTransform();
+    }
+
+    /// <summary>
+    /// 첫 번째 퍼즐 조각의 Transform을 반환합니다.
+    /// 클리어 시퀀스에서 조각의 실제 월드 위치 변화를 추적하기 위해 사용됩니다.
+    /// </summary>
+    public Transform GetFirstPieceTransform()
+    {
+        if (_piecesOnBoard.Count == 0) return null;
+        return _piecesOnBoard[0].transform;
+    }
+
+    /// <summary>
+    /// 완성된 퍼즐 그룹의 테두리(LineRenderer)를 지정된 오프셋만큼 이동합니다.
+    /// useWorldSpace=true인 LineRenderer는 Transform 이동으로 점이 이동하지 않으므로 직접 이동 필요.
+    /// </summary>
+    public void MoveCompletedGroupBorder(Vector3 offset)
+    {
+        Debug.Log($"[PuzzleBoardSetup] MoveCompletedGroupBorder 호출됨. offset: {offset}");
+
+        if (_piecesOnBoard.Count == 0)
+        {
+            Debug.LogWarning("[PuzzleBoardSetup] MoveCompletedGroupBorder: 보드에 조각이 없습니다.");
+            return;
+        }
+
+        PieceGroup group = _piecesOnBoard[0].group;
+        if (group == null)
+        {
+            Debug.LogWarning("[PuzzleBoardSetup] MoveCompletedGroupBorder: 첫 번째 조각의 그룹이 null입니다.");
+            return;
+        }
+
+        Debug.Log($"[PuzzleBoardSetup] MoveBorderPoints 호출 전. group 조각 수: {group.pieces.Count}");
+        group.MoveBorderPoints(offset);
+    }
+
     public void ClearBoard()
     {
         CancelInvoke(nameof(LevelComplete));
+
+        // 퍼즐 완료 상태 리셋
+        _isPuzzleCompleted = false;
 
         // 각 조각의 그룹 테두리 먼저 제거 (GroupBorder는 루트에 생성되므로 별도 처리 필요)
         HashSet<PieceGroup> processedGroups = new HashSet<PieceGroup>();
