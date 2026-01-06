@@ -1298,6 +1298,12 @@ public class PieceGroup
         {
             _startPositions[piece] = piece.transform.position;
         }
+
+        // 드래그 기준 위치 초기화 (드래그 시작 시 새로운 기준점 설정을 위해)
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.ResetDragBasePositions();
+        }
     }
 
     public void OnDragUpdate(Vector3 currentMousePos)
@@ -1473,6 +1479,12 @@ public class PieceGroup
     {
         if (_borderContainer != null)
         {
+            // LineRenderer를 먼저 비활성화하여 즉시 화면에서 숨김
+            // (Object.Destroy는 프레임 끝에서 실행되므로)
+            if (_borderRenderer != null)
+            {
+                _borderRenderer.SetVisible(false);
+            }
             Object.Destroy(_borderContainer);
             _borderContainer = null;
             _borderRenderer = null;
