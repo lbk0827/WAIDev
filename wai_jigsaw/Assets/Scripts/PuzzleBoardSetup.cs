@@ -1053,6 +1053,7 @@ public class PuzzleBoardSetup : MonoBehaviour
             p.ShowAllBorders();      // 모든 테두리 복원
             p.RestoreAllPadding();   // 모든 Padding 복원
             p.RestoreAllCorners();   // 모든 모서리 복원
+            p.group.UpdateGroupBorder();  // 단독 그룹이므로 개별 프레임 표시
         }
 
         // 2. Try to reconnect them (연쇄 병합 적용)

@@ -147,6 +147,9 @@ public class GroupBorderRenderer : MonoBehaviour
         _updateVersion++;
         int currentVersion = _updateVersion;
 
+        // 드래그 기준 위치 초기화 (새로운 테두리가 생성되므로)
+        ResetDragBasePositions();
+
         _pieces.Clear();
         _pieces.AddRange(pieces);
 
@@ -238,11 +241,21 @@ public class GroupBorderRenderer : MonoBehaviour
         // 이 값으로 테두리를 그려야 조각 간격과 일치함
         Vector2 pieceSize = new Vector2(piece.pieceWidth, piece.pieceHeight);
 
+        // pieceWidth/pieceHeight가 0인 경우 SpriteRenderer에서 크기 계산
+        if (pieceSize.x <= 0 || pieceSize.y <= 0)
+        {
+            Vector2 spriteSize = sr.sprite.bounds.size;
+            Vector3 scale = piece.transform.localScale;
+            pieceSize = new Vector2(spriteSize.x * scale.x, spriteSize.y * scale.y);
+            Debug.LogWarning($"[GroupBorderRenderer] pieceWidth/Height가 0 - SpriteRenderer에서 계산: {pieceSize}");
+        }
+
         Debug.Log($"[GroupBorderRenderer] CreateColliderForPiece - pieceWidth={piece.pieceWidth}, pieceHeight={piece.pieceHeight}, pieceSize={pieceSize}, localScale={piece.transform.localScale}");
 
-        // 콜라이더 크기 확장 없음 - 인접 조각들이 이미 같은 위치에 있으므로 병합됨
-        // 확장하면 수축 과정에서 오차가 발생하여 테두리가 커짐
-        float overlapMargin = 0f;  // 확장 없음
+        // 콜라이더 크기를 약간 확장하여 인접 조각의 콜라이더가 겹치도록 함
+        // 로그 분석 결과: 조각 간 거리(1.44)가 pieceWidth(1.43)보다 0.01 커서 콜라이더가 병합되지 않음
+        // 1.5% 확장하면 충분한 겹침 확보 (1.43 * 1.015 = 1.451 > 1.44)
+        float overlapMargin = 0.015f;  // 1.5% 확장으로 콜라이더 병합 보장
 
         // 원본 pieceSize 저장 (수축 오프셋 계산용)
         Vector2 originalPieceSize = pieceSize;
@@ -747,43 +760,79 @@ public class GroupBorderRenderer : MonoBehaviour
 
     /// <summary>
     /// 위치를 업데이트합니다 (드래그 중 호출).
+    /// CompositeCollider2D를 재생성하지 않고, LineRenderer 점들을 직접 이동합니다.
     /// </summary>
     public void UpdatePosition()
     {
         if (_pieces.Count == 0) return;
+        if (_whiteLineRenderer == null || _blackLineRenderer == null) return;
 
-        // 조각 수와 콜라이더 수가 불일치하면 재생성 필요
-        // (타이밍 이슈로 콜라이더가 잘못된 상태일 수 있음)
-        if (_pieces.Count != _childColliders.Count)
+        // 현재 그룹 중심 계산
+        Vector3 currentGroupCenter = CalculateGroupCenter();
+
+        // 기준 위치가 없으면 현재 LineRenderer 상태를 기준으로 저장
+        if (!_hasDragBasePositions && _whiteLineRenderer.positionCount > 0)
         {
-            Debug.LogWarning($"[GroupBorderRenderer] UpdatePosition - 조각/콜라이더 불일치! pieces={_pieces.Count}, colliders={_childColliders.Count}. SetPieces 재호출.");
-            SetPieces(new List<DragController>(_pieces));
+            _dragBaseWhitePositions = new Vector3[_whiteLineRenderer.positionCount];
+            _dragBaseBlackPositions = new Vector3[_blackLineRenderer.positionCount];
+            _whiteLineRenderer.GetPositions(_dragBaseWhitePositions);
+            _blackLineRenderer.GetPositions(_dragBaseBlackPositions);
+            _dragBaseGroupCenter = currentGroupCenter;
+            _hasDragBasePositions = true;
+        }
+
+        if (!_hasDragBasePositions) return;
+
+        // positionCount가 변경되었으면 기준 데이터 무효화
+        if (_whiteLineRenderer.positionCount != _dragBaseWhitePositions.Length ||
+            _blackLineRenderer.positionCount != _dragBaseBlackPositions.Length)
+        {
+            _hasDragBasePositions = false;
             return;
         }
 
-        // 조각들의 콜라이더 위치 업데이트 (로컬 좌표로 설정)
-        for (int i = 0; i < _pieces.Count && i < _childColliders.Count; i++)
+        // 그룹 이동량 계산
+        Vector3 delta = currentGroupCenter - _dragBaseGroupCenter;
+
+        // LineRenderer 점들을 이동량만큼 이동 (CompositeCollider2D 재생성 없이)
+        for (int i = 0; i < _dragBaseWhitePositions.Length; i++)
         {
-            if (_childColliders[i] != null && _pieces[i] != null)
+            _whiteLineRenderer.SetPosition(i, _dragBaseWhitePositions[i] + delta);
+        }
+
+        for (int i = 0; i < _dragBaseBlackPositions.Length; i++)
+        {
+            _blackLineRenderer.SetPosition(i, _dragBaseBlackPositions[i] + delta);
+        }
+    }
+
+    /// <summary>
+    /// 그룹의 중심점을 계산합니다.
+    /// </summary>
+    private Vector3 CalculateGroupCenter()
+    {
+        if (_pieces.Count == 0) return Vector3.zero;
+
+        Vector3 sum = Vector3.zero;
+        foreach (var piece in _pieces)
+        {
+            if (piece != null)
             {
-                // GroupBorder 컨테이너의 월드 위치 기준으로 조각의 상대 위치 계산
-                Vector3 pieceWorldPos = _pieces[i].transform.position;
-                Vector3 localPos = transform.InverseTransformPoint(pieceWorldPos);
-                _childColliders[i].transform.localPosition = localPos;
+                sum += piece.transform.position;
             }
         }
+        return sum / _pieces.Count;
+    }
 
-        // 외곽선 업데이트
-        Physics2D.SyncTransforms();
-        _compositeCollider.GenerateGeometry();
-
-        // pathCount가 0이면 콜라이더가 제대로 병합되지 않은 것
-        if (_compositeCollider.pathCount == 0)
-        {
-            Debug.LogWarning($"[GroupBorderRenderer] UpdatePosition - pathCount가 0입니다. 조각 수: {_pieces.Count}");
-        }
-
-        UpdateBorderFromCollider();
+    /// <summary>
+    /// 드래그 기준 위치 데이터를 초기화합니다.
+    /// 드래그 시작 시 또는 드롭 후 호출해야 합니다.
+    /// </summary>
+    public void ResetDragBasePositions()
+    {
+        _hasDragBasePositions = false;
+        _dragBaseWhitePositions = null;
+        _dragBaseBlackPositions = null;
     }
 
     // 펌핑 애니메이션용 - 원본 LineRenderer 점들 저장
@@ -791,6 +840,12 @@ public class GroupBorderRenderer : MonoBehaviour
     private Vector3[] _originalBlackLinePositions;
     private Vector3 _originalCenter;
     private bool _hasOriginalPositions = false;
+
+    // 드래그용 - 기준 LineRenderer 점들 및 그룹 중심 저장
+    private Vector3[] _dragBaseWhitePositions;
+    private Vector3[] _dragBaseBlackPositions;
+    private Vector3 _dragBaseGroupCenter;
+    private bool _hasDragBasePositions = false;
 
     /// <summary>
     /// 펌핑 애니메이션용 - 그룹 중심 기준으로 스케일 적용
