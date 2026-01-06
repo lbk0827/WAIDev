@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// CompositeCollider2D + LineRenderer를 사용하여 그룹 외곽선을 그리는 컴포넌트.
+/// 그리드 기반 직접 계산 방식으로 그룹 외곽선을 그리는 컴포넌트.
+/// CompositeCollider2D 대신 조각들의 위치를 기반으로 외곽선을 직접 계산합니다.
 /// 불규칙한 형태(ㄱ자, T자 등)에서도 연속적인 외곽선을 그릴 수 있습니다.
 /// </summary>
 public class GroupBorderRenderer : MonoBehaviour
@@ -20,24 +21,17 @@ public class GroupBorderRenderer : MonoBehaviour
     [SerializeField] private int _baseSortingOrder = 2;  // 기본값은 낮게 (드래그 시 PieceGroup.SetSortingOrder에서 높여줌)
 
     // 컴포넌트 참조
-    private CompositeCollider2D _compositeCollider;
-    private Rigidbody2D _rigidbody;
     private LineRenderer _whiteLineRenderer;
     private LineRenderer _blackLineRenderer;
-
-    // 자식 BoxCollider2D 목록 (정리용)
-    private List<BoxCollider2D> _childColliders = new List<BoxCollider2D>();
 
     // 조각 정보
     private List<DragController> _pieces = new List<DragController>();
 
-    // 외곽선 수축 오프셋 (콜라이더 확장량 + 테두리 중심 보정)
-    private float _shrinkOffset = 0f;
+    // 조각 크기 (첫 번째 조각에서 가져옴)
+    private float _pieceWidth;
+    private float _pieceHeight;
 
-    // 코루틴 버전 관리 (오래된 코루틴이 결과를 덮어쓰지 않도록)
-    private int _updateVersion = 0;
-
-    // 테두리 중심 보정 오프셋 (LineRenderer가 중심선 기준으로 그리므로, 흰색 테두리 절반만큼 안쪽으로)
+    // 테두리 중심 보정 오프셋
     private float _borderCenterOffset = 0f;
 
     private void Awake()
@@ -52,43 +46,22 @@ public class GroupBorderRenderer : MonoBehaviour
     /// </summary>
     private void SetupComponents()
     {
-        // Rigidbody2D 설정 (CompositeCollider2D에 필요)
-        _rigidbody = GetComponent<Rigidbody2D>();
-        if (_rigidbody == null)
-        {
-            _rigidbody = gameObject.AddComponent<Rigidbody2D>();
-        }
-        _rigidbody.bodyType = RigidbodyType2D.Kinematic;  // 물리 시뮬레이션 비활성화
-
-        // CompositeCollider2D 설정
-        _compositeCollider = GetComponent<CompositeCollider2D>();
-        if (_compositeCollider == null)
-        {
-            _compositeCollider = gameObject.AddComponent<CompositeCollider2D>();
-        }
-        _compositeCollider.geometryType = CompositeCollider2D.GeometryType.Polygons;
-        _compositeCollider.isTrigger = true;  // 물리 충돌 비활성화
-
         // LineRenderer 생성 (검은색 - 바깥쪽, 먼저 그림)
         GameObject blackLineObj = new GameObject("BlackBorderLine");
         blackLineObj.transform.SetParent(transform, false);
-        // 명시적으로 transform 초기화 (빌드에서의 예기치 않은 동작 방지)
         blackLineObj.transform.localPosition = Vector3.zero;
         blackLineObj.transform.localRotation = Quaternion.identity;
         blackLineObj.transform.localScale = Vector3.one;
         _blackLineRenderer = blackLineObj.AddComponent<LineRenderer>();
-        // 초기 width는 0으로 설정 - SetBorderWidth에서 올바른 값으로 설정됨
         SetupLineRenderer(_blackLineRenderer, _blackColor, 0f, _baseSortingOrder);
 
         // LineRenderer 생성 (흰색 - 안쪽, 나중에 그림)
         GameObject whiteLineObj = new GameObject("WhiteBorderLine");
         whiteLineObj.transform.SetParent(transform, false);
-        // 명시적으로 transform 초기화 (빌드에서의 예기치 않은 동작 방지)
         whiteLineObj.transform.localPosition = Vector3.zero;
         whiteLineObj.transform.localRotation = Quaternion.identity;
         whiteLineObj.transform.localScale = Vector3.one;
         _whiteLineRenderer = whiteLineObj.AddComponent<LineRenderer>();
-        // 초기 width는 0으로 설정 - SetBorderWidth에서 올바른 값으로 설정됨
         SetupLineRenderer(_whiteLineRenderer, _whiteColor, 0f, _baseSortingOrder + 1);
     }
 
@@ -97,7 +70,6 @@ public class GroupBorderRenderer : MonoBehaviour
     /// </summary>
     private void SetupLineRenderer(LineRenderer lr, Color color, float width, int sortingOrder)
     {
-        // 월드 좌표 사용 - 로컬 좌표 모드에서 오프셋 문제 발생하여 월드 좌표로 복원
         lr.useWorldSpace = true;
         lr.loop = true;  // 닫힌 도형
         lr.startWidth = width;
@@ -105,8 +77,7 @@ public class GroupBorderRenderer : MonoBehaviour
         lr.numCornerVertices = 8;  // 모서리 둥글게
         lr.numCapVertices = 4;
 
-        // Material 설정 - 빌드에서 Shader.Find가 실패할 수 있으므로 기본 Material 사용
-        // Unity의 기본 Sprites-Default Material 복사본 사용
+        // Material 설정
         Material baseMaterial = Resources.Load<Material>("Materials/LineBorderMaterial");
         if (baseMaterial != null)
         {
@@ -114,7 +85,6 @@ public class GroupBorderRenderer : MonoBehaviour
         }
         else
         {
-            // 폴백: 새 Material 생성 시도
             Shader shader = Shader.Find("Sprites/Default");
             if (shader != null)
             {
@@ -122,7 +92,6 @@ public class GroupBorderRenderer : MonoBehaviour
             }
             else
             {
-                // 최후의 폴백: 기본 LineRenderer Material 사용
                 Debug.LogWarning("[GroupBorderRenderer] Sprites/Default 셰이더를 찾을 수 없습니다. 기본 Material을 사용합니다.");
                 lr.material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended"));
             }
@@ -130,9 +99,7 @@ public class GroupBorderRenderer : MonoBehaviour
         lr.startColor = color;
         lr.endColor = color;
         lr.sortingOrder = sortingOrder;
-        lr.sortingLayerName = "Default";  // 명시적으로 소팅 레이어 설정
-
-        Debug.Log($"[GroupBorderRenderer] LineRenderer 설정 완료 - color: {color}, width: {width}, sortingOrder: {sortingOrder}, material: {(lr.material != null ? lr.material.name : "null")}, localPos: {lr.transform.localPosition}, localScale: {lr.transform.localScale}");
+        lr.sortingLayerName = "Default";
     }
 
     /// <summary>
@@ -140,290 +107,315 @@ public class GroupBorderRenderer : MonoBehaviour
     /// </summary>
     public void SetPieces(List<DragController> pieces)
     {
-        // 기존 코루틴 중지 (중복 실행 방지)
-        StopAllCoroutines();
-
-        // 버전 증가 - 이전 코루틴이 오래된 데이터로 덮어쓰지 않도록
-        _updateVersion++;
-        int currentVersion = _updateVersion;
-
-        // 드래그 기준 위치 초기화 (새로운 테두리가 생성되므로)
+        // 드래그 기준 위치 초기화
         ResetDragBasePositions();
 
         _pieces.Clear();
         _pieces.AddRange(pieces);
 
-        Debug.Log($"[GroupBorderRenderer] SetPieces 호출 (v{currentVersion}) - 조각 수: {pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
+        Debug.Log($"[GroupBorderRenderer] SetPieces 호출 - 조각 수: {pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
 
-        // 기존 자식 콜라이더 정리
-        ClearChildColliders();
-
-        // 각 조각에 대해 BoxCollider2D 생성
-        foreach (var piece in pieces)
+        if (pieces.Count == 0)
         {
-            CreateColliderForPiece(piece);
-        }
-
-        Debug.Log($"[GroupBorderRenderer] SetPieces (v{currentVersion}) - 콜라이더 생성 완료. pieces={_pieces.Count}, colliders={_childColliders.Count}");
-
-        // 콜라이더 병합 후 외곽선 업데이트
-        // CompositeCollider2D는 자동으로 다음 프레임에 업데이트됨
-        // 즉시 업데이트가 필요하면 Physics2D.SyncTransforms() 호출
-        Physics2D.SyncTransforms();
-        _compositeCollider.GenerateGeometry();
-
-        // 즉시 테두리 업데이트 (에디터에서 정상 동작 확인용)
-        UpdateBorderFromCollider();
-
-        // 빌드에서 CompositeCollider2D 지오메트리 생성이 지연될 수 있으므로
-        // 코루틴을 사용하여 추가 업데이트 (안전장치)
-        StartCoroutine(DelayedUpdateBorder(currentVersion));
-    }
-
-    /// <summary>
-    /// 한 프레임 대기 후 테두리를 업데이트합니다.
-    /// 빌드에서 CompositeCollider2D 지오메트리 생성이 지연될 수 있음.
-    /// </summary>
-    private System.Collections.IEnumerator DelayedUpdateBorder(int version)
-    {
-        // 여러 프레임 대기하여 물리 엔진이 완전히 처리할 시간 확보
-        yield return new WaitForFixedUpdate();
-        yield return null;  // 추가 프레임 대기
-
-        // 버전 체크 - 새로운 SetPieces가 호출되었으면 이 코루틴은 무시
-        if (version != _updateVersion)
-        {
-            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder (v{version}) 건너뜀 - 현재 버전: v{_updateVersion}");
-            yield break;
-        }
-
-        // 지오메트리 재생성 확인
-        Physics2D.SyncTransforms();
-        _compositeCollider.GenerateGeometry();
-
-        Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder (v{version}) 호출 - pathCount={_compositeCollider.pathCount}, pieces={_pieces.Count}");
-
-        UpdateBorderFromCollider();
-
-        // 추가 안전장치: 한번 더 대기 후 업데이트
-        yield return new WaitForFixedUpdate();
-        yield return null;
-
-        // 버전 재확인
-        if (version != _updateVersion)
-        {
-            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 2차 (v{version}) 건너뜀 - 현재 버전: v{_updateVersion}");
-            yield break;
-        }
-
-        if (_compositeCollider.pathCount > 0)
-        {
-            int pointCount = _compositeCollider.GetPathPointCount(0);
-            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 2차 (v{version}) 확인 - pathCount={_compositeCollider.pathCount}, pointCount={pointCount}, pieces={_pieces.Count}");
-            UpdateBorderFromCollider();
-        }
-    }
-
-    /// <summary>
-    /// 조각에 대응하는 BoxCollider2D를 생성합니다.
-    /// </summary>
-    private void CreateColliderForPiece(DragController piece)
-    {
-        // 조각의 월드 크기 계산
-        SpriteRenderer sr = piece.GetComponent<SpriteRenderer>();
-        if (sr == null || sr.sprite == null)
-        {
-            Debug.LogError($"[GroupBorderRenderer] SpriteRenderer 또는 Sprite가 null: piece({piece.originalGridX},{piece.originalGridY})");
-            return;
-        }
-
-        // pieceWidth/pieceHeight 사용 (PuzzleBoardSetup에서 슬롯 간격 계산에 사용하는 값)
-        // 이 값으로 테두리를 그려야 조각 간격과 일치함
-        Vector2 pieceSize = new Vector2(piece.pieceWidth, piece.pieceHeight);
-
-        // pieceWidth/pieceHeight가 0인 경우 SpriteRenderer에서 크기 계산
-        if (pieceSize.x <= 0 || pieceSize.y <= 0)
-        {
-            Vector2 spriteSize = sr.sprite.bounds.size;
-            Vector3 scale = piece.transform.localScale;
-            pieceSize = new Vector2(spriteSize.x * scale.x, spriteSize.y * scale.y);
-            Debug.LogWarning($"[GroupBorderRenderer] pieceWidth/Height가 0 - SpriteRenderer에서 계산: {pieceSize}");
-        }
-
-        Debug.Log($"[GroupBorderRenderer] CreateColliderForPiece - pieceWidth={piece.pieceWidth}, pieceHeight={piece.pieceHeight}, pieceSize={pieceSize}, localScale={piece.transform.localScale}");
-
-        // 콜라이더 크기를 약간 확장하여 인접 조각의 콜라이더가 겹치도록 함
-        // 로그 분석 결과: 조각 간 거리(1.44)가 pieceWidth(1.43)보다 0.01 커서 콜라이더가 병합되지 않음
-        // 1.5% 확장하면 충분한 겹침 확보 (1.43 * 1.015 = 1.451 > 1.44)
-        float overlapMargin = 0.015f;  // 1.5% 확장으로 콜라이더 병합 보장
-
-        // 원본 pieceSize 저장 (수축 오프셋 계산용)
-        Vector2 originalPieceSize = pieceSize;
-
-        // 확장된 콜라이더 크기
-        pieceSize.x *= (1f + overlapMargin);
-        pieceSize.y *= (1f + overlapMargin);
-
-        // 수축 오프셋 계산
-        // 확장된 크기에서 원본 크기로 돌아가려면:
-        // 확장된 크기 - 원본 크기 = originalSize * margin
-        // 각 변에서 수축할 거리 = (확장된 크기 - 원본 크기) / 2 = originalSize * margin / 2
-        if (_shrinkOffset == 0f)
-        {
-            _shrinkOffset = Mathf.Min(originalPieceSize.x, originalPieceSize.y) * overlapMargin * 0.5f;
-            Debug.Log($"[GroupBorderRenderer] shrinkOffset 계산 - originalPieceSize={originalPieceSize}, margin={overlapMargin}, shrinkOffset={_shrinkOffset}");
-        }
-
-        // 자식 GameObject 생성 (BoxCollider2D 담을 용도)
-        GameObject colliderObj = new GameObject($"Collider_{piece.originalGridX}_{piece.originalGridY}");
-        colliderObj.layer = LayerMask.NameToLayer("Ignore Raycast");  // 마우스 입력 무시
-        colliderObj.transform.SetParent(transform, false);  // 로컬 좌표 사용
-
-        // GroupBorder 컨테이너의 월드 위치 기준으로 조각의 상대 위치 계산
-        // transform.position이 원점(0,0,0)이 아닐 수 있으므로 명시적으로 변환
-        Vector3 pieceWorldPos = piece.transform.position;
-        Vector3 localPos = transform.InverseTransformPoint(pieceWorldPos);
-        colliderObj.transform.localPosition = localPos;
-
-        // BoxCollider2D 추가
-        BoxCollider2D boxCollider = colliderObj.AddComponent<BoxCollider2D>();
-        boxCollider.size = pieceSize;
-        boxCollider.usedByComposite = true;  // CompositeCollider2D에 병합
-        boxCollider.isTrigger = true;  // 물리 충돌 방지
-
-        _childColliders.Add(boxCollider);
-
-        Debug.Log($"[GroupBorderRenderer] 콜라이더 생성 - piece({piece.originalGridX},{piece.originalGridY}), pieceWorldPos={pieceWorldPos}, localPos={localPos}, size={pieceSize}, shrinkOffset={_shrinkOffset}, borderPos={transform.position}");
-    }
-
-    /// <summary>
-    /// 기존 자식 콜라이더들을 정리합니다.
-    /// </summary>
-    private void ClearChildColliders()
-    {
-        foreach (var collider in _childColliders)
-        {
-            if (collider != null && collider.gameObject != null)
-            {
-                Destroy(collider.gameObject);
-            }
-        }
-        _childColliders.Clear();
-        _shrinkOffset = 0f;  // 수축 오프셋 초기화
-        // _borderCenterOffset은 SetBorderWidth에서 설정되므로 여기서 초기화하지 않음
-    }
-
-    /// <summary>
-    /// CompositeCollider2D에서 외곽선 데이터를 추출하여 LineRenderer에 적용합니다.
-    /// </summary>
-    private void UpdateBorderFromCollider()
-    {
-        if (_compositeCollider == null)
-        {
-            Debug.LogWarning("[GroupBorderRenderer] CompositeCollider2D가 null입니다.");
-            return;
-        }
-
-        if (_compositeCollider.pathCount == 0)
-        {
-            // 외곽선이 없으면 숨기기
-            Debug.Log($"[GroupBorderRenderer] pathCount = 0, 조각 수 = {_pieces.Count}");
             _whiteLineRenderer.positionCount = 0;
             _blackLineRenderer.positionCount = 0;
             return;
         }
 
-        // 가장 많은 점을 가진 Path 찾기 (가장 바깥쪽 외곽선)
-        int bestPathIndex = 0;
-        int maxPointCount = 0;
+        // 첫 번째 조각에서 크기 정보 가져오기
+        var firstPiece = pieces[0];
+        _pieceWidth = firstPiece.pieceWidth;
+        _pieceHeight = firstPiece.pieceHeight;
 
-        for (int p = 0; p < _compositeCollider.pathCount; p++)
+        // pieceWidth/pieceHeight가 0인 경우 SpriteRenderer에서 계산
+        if (_pieceWidth <= 0 || _pieceHeight <= 0)
         {
-            int count = _compositeCollider.GetPathPointCount(p);
-            if (count > maxPointCount)
+            SpriteRenderer sr = firstPiece.GetComponent<SpriteRenderer>();
+            if (sr != null && sr.sprite != null)
             {
-                maxPointCount = count;
-                bestPathIndex = p;
+                Vector2 spriteSize = sr.sprite.bounds.size;
+                Vector3 scale = firstPiece.transform.localScale;
+                _pieceWidth = spriteSize.x * scale.x;
+                _pieceHeight = spriteSize.y * scale.y;
+                Debug.LogWarning($"[GroupBorderRenderer] pieceWidth/Height가 0 - SpriteRenderer에서 계산: ({_pieceWidth}, {_pieceHeight})");
             }
         }
 
-        int pointCount = maxPointCount;
-        Debug.Log($"[GroupBorderRenderer] pathCount = {_compositeCollider.pathCount}, 선택된 pathIndex = {bestPathIndex}, pointCount = {pointCount}, borderTransform pos={transform.position}, scale={transform.localScale}");
+        // 외곽선 계산 및 적용
+        CalculateAndApplyOutline();
+    }
 
-        if (pointCount < 3) return;
-
-        Vector2[] points2D = new Vector2[pointCount];
-        _compositeCollider.GetPath(bestPathIndex, points2D);
-
-        // 디버그: CompositeCollider2D에서 가져온 원본 좌표의 범위 확인
-        if (points2D.Length > 0)
+    /// <summary>
+    /// 외곽선을 계산하고 LineRenderer에 적용합니다.
+    /// </summary>
+    private void CalculateAndApplyOutline()
+    {
+        if (_pieces.Count == 0 || _pieceWidth <= 0 || _pieceHeight <= 0)
         {
-            Vector2 minPoint = points2D[0];
-            Vector2 maxPoint = points2D[0];
-            for (int i = 1; i < points2D.Length; i++)
-            {
-                minPoint = Vector2.Min(minPoint, points2D[i]);
-                maxPoint = Vector2.Max(maxPoint, points2D[i]);
-            }
-            Debug.Log($"[GroupBorderRenderer] 원본 Path 범위 - min={minPoint}, max={maxPoint}, size={maxPoint - minPoint}");
+            _whiteLineRenderer.positionCount = 0;
+            _blackLineRenderer.positionCount = 0;
+            return;
         }
 
-        // 외곽선 조정 적용:
-        // 1. 콜라이더 확장량 (_shrinkOffset) - 병합을 위해 확장한 만큼 복원 (수축)
-        // 2. 테두리 중심 보정 (_borderCenterOffset) - 음수면 바깥으로 확장, 양수면 안쪽으로 수축
-        float totalOffset = _shrinkOffset + _borderCenterOffset;
-        Debug.Log($"[GroupBorderRenderer] 외곽선 조정 - shrinkOffset={_shrinkOffset:F4}, borderCenterOffset={_borderCenterOffset:F4}, total={totalOffset:F4}");
-        if (totalOffset > 0.001f)
+        // 1. 조각들의 월드 위치 수집 (실제 화면 위치 기반)
+        List<Vector3> worldPositions = new List<Vector3>();
+
+        foreach (var piece in _pieces)
         {
-            // 양수: 안쪽으로 수축
-            points2D = ShrinkPolygon(points2D, totalOffset);
-        }
-        else if (totalOffset < -0.001f)
-        {
-            // 음수: 바깥으로 확장 (ShrinkPolygon에 음수 offset 전달하면 확장됨)
-            points2D = ExpandPolygon(points2D, -totalOffset);
+            // null 체크 (조각이 파괴된 경우)
+            if (piece == null) continue;
+            worldPositions.Add(piece.transform.position);
         }
 
-        // 둥근 모서리 적용 (CompositeCollider2D의 점은 로컬 좌표)
-        Debug.Log($"[GroupBorderRenderer] ApplyRoundedCorners 호출 - cornerRadius={_cornerRadius:F4}, pointCount={points2D.Length}");
-        List<Vector3> smoothedPoints = ApplyRoundedCorners(points2D, _cornerRadius);
+        // 유효한 조각이 없으면 리턴
+        if (worldPositions.Count == 0)
+        {
+            _whiteLineRenderer.positionCount = 0;
+            _blackLineRenderer.positionCount = 0;
+            return;
+        }
 
-        // LineRenderer에 적용 (useWorldSpace=true이므로 월드 좌표로 변환)
+        // 2. 외곽 변(Edge) 찾기 - 월드 위치 기반으로 인접 판단
+        List<Edge> outerEdges = FindOuterEdgesFromWorldPositions(worldPositions);
+
+        if (outerEdges.Count == 0)
+        {
+            Debug.LogWarning("[GroupBorderRenderer] 외곽 변을 찾을 수 없습니다.");
+            _whiteLineRenderer.positionCount = 0;
+            _blackLineRenderer.positionCount = 0;
+            return;
+        }
+
+        // 3. 외곽 변들을 연결하여 폐곡선 생성
+        List<Vector2> outlinePoints = ConnectEdgesToPath(outerEdges);
+
+        if (outlinePoints.Count < 3)
+        {
+            Debug.LogWarning($"[GroupBorderRenderer] 외곽선 점이 부족합니다: {outlinePoints.Count}");
+            _whiteLineRenderer.positionCount = 0;
+            _blackLineRenderer.positionCount = 0;
+            return;
+        }
+
+        Debug.Log($"[GroupBorderRenderer] 외곽선 점 수: {outlinePoints.Count}");
+
+        // 4. 둥근 모서리 적용
+        List<Vector3> smoothedPoints = ApplyRoundedCorners(outlinePoints.ToArray(), _cornerRadius);
+
+        // 5. LineRenderer에 적용
         _whiteLineRenderer.positionCount = smoothedPoints.Count;
         _blackLineRenderer.positionCount = smoothedPoints.Count;
 
-        // 디버그: 첫 번째와 마지막 점 로그
-        if (smoothedPoints.Count > 0)
-        {
-            Vector3 firstLocal = smoothedPoints[0];
-            Vector3 firstWorld = transform.TransformPoint(firstLocal);
-            Vector3 lastLocal = smoothedPoints[smoothedPoints.Count - 1];
-            Vector3 lastWorld = transform.TransformPoint(lastLocal);
-            Debug.Log($"[GroupBorderRenderer] 첫 점 - 로컬: {firstLocal}, 월드: {firstWorld}");
-            Debug.Log($"[GroupBorderRenderer] 끝 점 - 로컬: {lastLocal}, 월드: {lastWorld}");
-            Debug.Log($"[GroupBorderRenderer] transform.position={transform.position}, transform.localScale={transform.localScale}");
-        }
-
         for (int i = 0; i < smoothedPoints.Count; i++)
         {
-            // CompositeCollider2D의 GetPath()는 로컬 좌표를 반환하므로 월드 좌표로 변환
-            Vector3 localPos = smoothedPoints[i];
-            Vector3 worldPos = transform.TransformPoint(localPos);
+            Vector3 worldPos = smoothedPoints[i];
             worldPos.z = 0f;
-
             _whiteLineRenderer.SetPosition(i, worldPos);
             _blackLineRenderer.SetPosition(i, worldPos);
         }
 
-        // 최종 LineRenderer 상태 로그
-        Debug.Log($"[GroupBorderRenderer] LineRenderer 포지션 설정 완료 - {smoothedPoints.Count}개 점 (월드 좌표 사용)");
-        Debug.Log($"[GroupBorderRenderer] WhiteLineRenderer - width={_whiteLineRenderer.startWidth:F4}, positionCount={_whiteLineRenderer.positionCount}, enabled={_whiteLineRenderer.enabled}");
-        Debug.Log($"[GroupBorderRenderer] BlackLineRenderer - width={_blackLineRenderer.startWidth:F4}, positionCount={_blackLineRenderer.positionCount}, enabled={_blackLineRenderer.enabled}");
+        Debug.Log($"[GroupBorderRenderer] LineRenderer 설정 완료 - {smoothedPoints.Count}개 점");
+    }
+
+    /// <summary>
+    /// 월드 위치 기반으로 외곽 변(인접 조각이 없는 변)을 찾습니다.
+    /// 실제 화면 위치 간의 거리로 인접 여부를 판단합니다.
+    /// </summary>
+    private List<Edge> FindOuterEdgesFromWorldPositions(List<Vector3> worldPositions)
+    {
+        List<Edge> edges = new List<Edge>();
+
+        float halfW = _pieceWidth / 2f;
+        float halfH = _pieceHeight / 2f;
+
+        // 인접 판단을 위한 거리 임계값 (조각 크기의 10% 오차 허용)
+        float toleranceX = _pieceWidth * 0.1f;
+        float toleranceY = _pieceHeight * 0.1f;
+
+        foreach (var cellCenter in worldPositions)
+        {
+            // 4방향에 인접 조각이 있는지 검사
+            bool hasTop = false;
+            bool hasBottom = false;
+            bool hasLeft = false;
+            bool hasRight = false;
+
+            foreach (var otherPos in worldPositions)
+            {
+                if (otherPos == cellCenter) continue;
+
+                float dx = otherPos.x - cellCenter.x;
+                float dy = otherPos.y - cellCenter.y;
+
+                // 위쪽 인접 (dy가 pieceHeight만큼 크고, dx는 거의 0)
+                if (Mathf.Abs(dy - _pieceHeight) < toleranceY && Mathf.Abs(dx) < toleranceX)
+                {
+                    hasTop = true;
+                }
+                // 아래쪽 인접
+                if (Mathf.Abs(dy + _pieceHeight) < toleranceY && Mathf.Abs(dx) < toleranceX)
+                {
+                    hasBottom = true;
+                }
+                // 오른쪽 인접
+                if (Mathf.Abs(dx - _pieceWidth) < toleranceX && Mathf.Abs(dy) < toleranceY)
+                {
+                    hasRight = true;
+                }
+                // 왼쪽 인접
+                if (Mathf.Abs(dx + _pieceWidth) < toleranceX && Mathf.Abs(dy) < toleranceY)
+                {
+                    hasLeft = true;
+                }
+            }
+
+            // 인접 조각이 없는 방향의 변을 외곽 변으로 추가
+            if (!hasTop)
+            {
+                Vector2 start = new Vector2(cellCenter.x - halfW, cellCenter.y + halfH);
+                Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
+                edges.Add(new Edge(start, end, EdgeDirection.Top));
+            }
+
+            if (!hasBottom)
+            {
+                Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
+                Vector2 end = new Vector2(cellCenter.x - halfW, cellCenter.y - halfH);
+                edges.Add(new Edge(start, end, EdgeDirection.Bottom));
+            }
+
+            if (!hasLeft)
+            {
+                Vector2 start = new Vector2(cellCenter.x - halfW, cellCenter.y - halfH);
+                Vector2 end = new Vector2(cellCenter.x - halfW, cellCenter.y + halfH);
+                edges.Add(new Edge(start, end, EdgeDirection.Left));
+            }
+
+            if (!hasRight)
+            {
+                Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
+                Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
+                edges.Add(new Edge(start, end, EdgeDirection.Right));
+            }
+        }
+
+        return edges;
+    }
+
+    /// <summary>
+    /// 외곽 변들을 연결하여 연속된 폐곡선 경로를 생성합니다.
+    /// </summary>
+    private List<Vector2> ConnectEdgesToPath(List<Edge> edges)
+    {
+        if (edges.Count == 0) return new List<Vector2>();
+
+        List<Vector2> path = new List<Vector2>();
+        HashSet<int> usedEdges = new HashSet<int>();
+
+        // 시작 변 선택
+        Edge currentEdge = edges[0];
+        usedEdges.Add(0);
+        path.Add(currentEdge.Start);
+        path.Add(currentEdge.End);
+
+        Vector2 currentEnd = currentEdge.End;
+
+        // tolerance를 조각 크기에 비례하여 설정 (부동소수점 오차 허용)
+        // 조각 크기가 약 1.43일 때, 5%는 약 0.07로 충분한 여유
+        float tolerance = Mathf.Max(_pieceWidth, _pieceHeight) * 0.05f;
+        if (tolerance < 0.01f) tolerance = 0.01f;  // 최소값 보장
+
+        // 모든 변이 연결될 때까지 반복
+        int maxIterations = edges.Count * 2;  // 무한 루프 방지
+        int iterations = 0;
+
+        while (usedEdges.Count < edges.Count && iterations < maxIterations)
+        {
+            iterations++;
+            bool foundNext = false;
+            float bestDistance = float.MaxValue;
+            int bestIndex = -1;
+            bool useStart = true;  // true면 candidate.Start가 연결, false면 candidate.End가 연결
+
+            // 가장 가까운 연결점을 찾음 (greedy 방식)
+            for (int i = 0; i < edges.Count; i++)
+            {
+                if (usedEdges.Contains(i)) continue;
+
+                Edge candidate = edges[i];
+
+                float distToStart = Vector2.Distance(currentEnd, candidate.Start);
+                float distToEnd = Vector2.Distance(currentEnd, candidate.End);
+
+                if (distToStart < bestDistance && distToStart < tolerance)
+                {
+                    bestDistance = distToStart;
+                    bestIndex = i;
+                    useStart = true;
+                }
+                if (distToEnd < bestDistance && distToEnd < tolerance)
+                {
+                    bestDistance = distToEnd;
+                    bestIndex = i;
+                    useStart = false;
+                }
+            }
+
+            if (bestIndex >= 0)
+            {
+                Edge candidate = edges[bestIndex];
+                if (useStart)
+                {
+                    // 시작점이 연결됨
+                    path.Add(candidate.End);
+                    currentEnd = candidate.End;
+                }
+                else
+                {
+                    // 끝점이 연결됨 (방향 반대)
+                    path.Add(candidate.Start);
+                    currentEnd = candidate.Start;
+                }
+                usedEdges.Add(bestIndex);
+                foundNext = true;
+            }
+
+            if (!foundNext)
+            {
+                // 연결되는 변을 찾지 못함 - 디버그 정보 출력
+                Debug.LogWarning($"[GroupBorderRenderer] 연결 실패 - 사용된 변: {usedEdges.Count}/{edges.Count}, 현재 끝점: {currentEnd}, tolerance: {tolerance}");
+
+                // 남은 변들의 거리 정보 출력
+                for (int i = 0; i < edges.Count; i++)
+                {
+                    if (!usedEdges.Contains(i))
+                    {
+                        Edge e = edges[i];
+                        Debug.LogWarning($"  미연결 변[{i}]: Start={e.Start}, End={e.End}, 거리(Start)={Vector2.Distance(currentEnd, e.Start):F4}, 거리(End)={Vector2.Distance(currentEnd, e.End):F4}");
+                    }
+                }
+                break;
+            }
+        }
+
+        // 시작점과 끝점이 같으면 마지막 점 제거 (LineRenderer.loop=true이므로)
+        if (path.Count > 1 && Vector2.Distance(path[0], path[path.Count - 1]) < tolerance)
+        {
+            path.RemoveAt(path.Count - 1);
+        }
+
+        // 모든 변이 연결되었는지 확인
+        if (usedEdges.Count < edges.Count)
+        {
+            Debug.LogWarning($"[GroupBorderRenderer] 일부 변이 연결되지 않음: {usedEdges.Count}/{edges.Count}개 사용됨");
+        }
+
+        return path;
     }
 
     /// <summary>
     /// 다각형의 모서리를 둥글게 처리합니다.
-    /// 볼록한 모서리(Convex, 외각)만 둥글게 하고, 오목한 모서리(Concave, 내각)는 직각 유지.
+    /// 볼록한 모서리(Convex)만 둥글게 하고, 오목한 모서리(Concave)는 직각 유지.
     /// </summary>
     private List<Vector3> ApplyRoundedCorners(Vector2[] points, float radius)
     {
@@ -431,7 +423,6 @@ public class GroupBorderRenderer : MonoBehaviour
 
         if (radius <= 0.001f || points.Length < 3)
         {
-            // 둥글게 처리 안 함
             foreach (var p in points)
             {
                 result.Add(new Vector3(p.x, p.y, 0));
@@ -440,11 +431,10 @@ public class GroupBorderRenderer : MonoBehaviour
         }
 
         // 다각형의 방향 확인 (시계/반시계)
-        // Signed area가 양수면 반시계방향, 음수면 시계방향
         float signedArea = CalculateSignedArea(points);
         bool isClockwise = signedArea < 0;
 
-        int segmentsPerCorner = 4;  // 각 모서리당 세그먼트 수
+        int segmentsPerCorner = 4;
 
         for (int i = 0; i < points.Length; i++)
         {
@@ -460,23 +450,18 @@ public class GroupBorderRenderer : MonoBehaviour
             Vector2 edge2 = next - curr;
             float cross = edge1.x * edge2.y - edge1.y * edge2.x;
 
-            // 다각형 방향에 따라 볼록/오목 판단이 반대
-            // 시계방향: cross < 0 이면 오목 (내부로 들어감)
-            // 반시계방향: cross > 0 이면 오목
             bool isConcave = isClockwise ? (cross < 0) : (cross > 0);
 
-            // 오목한 모서리(내각 > 180도)는 직각 유지
+            // 오목한 모서리는 직각 유지
             if (isConcave)
             {
                 result.Add(new Vector3(curr.x, curr.y, 0));
                 continue;
             }
 
-            // 두 변의 길이
             float distToPrev = Vector2.Distance(prev, curr);
             float distToNext = Vector2.Distance(curr, next);
 
-            // 적용 가능한 최대 반경 계산
             float maxRadius = Mathf.Min(distToPrev / 2f, distToNext / 2f, radius);
 
             if (maxRadius < 0.001f)
@@ -485,20 +470,15 @@ public class GroupBorderRenderer : MonoBehaviour
                 continue;
             }
 
-            // 모서리 시작점과 끝점
             Vector2 cornerStart = curr + toPrev * maxRadius;
             Vector2 cornerEnd = curr + toNext * maxRadius;
 
-            // 호를 따라 점 생성
             for (int j = 0; j <= segmentsPerCorner; j++)
             {
                 float t = (float)j / segmentsPerCorner;
-
-                // 베지어 커브로 더 부드럽게 (간단한 2차 베지어)
                 Vector2 q0 = Vector2.Lerp(cornerStart, curr, t);
                 Vector2 q1 = Vector2.Lerp(curr, cornerEnd, t);
                 Vector2 bezierPoint = Vector2.Lerp(q0, q1, t);
-
                 result.Add(new Vector3(bezierPoint.x, bezierPoint.y, 0));
             }
         }
@@ -508,7 +488,6 @@ public class GroupBorderRenderer : MonoBehaviour
 
     /// <summary>
     /// 다각형의 Signed Area를 계산합니다.
-    /// 양수면 반시계방향, 음수면 시계방향.
     /// </summary>
     private float CalculateSignedArea(Vector2[] points)
     {
@@ -524,253 +503,15 @@ public class GroupBorderRenderer : MonoBehaviour
     }
 
     /// <summary>
-    /// 다각형을 안쪽으로 수축시킵니다 (각 변을 내부로 평행 이동 후 교차점 계산).
-    /// 오목한 모서리와 인접한 변은 이동하지 않습니다.
-    /// </summary>
-    private Vector2[] ShrinkPolygon(Vector2[] points, float offset)
-    {
-        if (points.Length < 3 || offset <= 0) return points;
-
-        // 내부 방향 결정을 위해 다각형 중심 계산
-        Vector2 center = CalculatePolygonCenter(points);
-
-        // 다각형 방향 확인 (시계/반시계)
-        float signedArea = CalculateSignedArea(points);
-        bool isClockwise = signedArea < 0;
-
-        int n = points.Length;
-
-        // 먼저 각 모서리가 오목한지 판단
-        bool[] isConcaveCorner = new bool[n];
-        for (int i = 0; i < n; i++)
-        {
-            Vector2 prev = points[(i - 1 + n) % n];
-            Vector2 curr = points[i];
-            Vector2 next = points[(i + 1) % n];
-
-            Vector2 edge1 = curr - prev;
-            Vector2 edge2 = next - curr;
-            float cross = edge1.x * edge2.y - edge1.y * edge2.x;
-            isConcaveCorner[i] = isClockwise ? (cross < 0) : (cross > 0);
-        }
-
-        // 각 변(edge)을 내부로 평행 이동
-        // 단, 오목한 모서리에 연결된 변은 이동하지 않음
-        Vector2[] offsetEdgeStart = new Vector2[n];
-        Vector2[] offsetEdgeEnd = new Vector2[n];
-
-        for (int i = 0; i < n; i++)
-        {
-            Vector2 p1 = points[i];
-            Vector2 p2 = points[(i + 1) % n];
-
-            // 이 변의 시작점(i)이나 끝점((i+1)%n)이 오목한 모서리면 이동하지 않음
-            int endIdx = (i + 1) % n;
-            if (isConcaveCorner[i] || isConcaveCorner[endIdx])
-            {
-                // 오목한 모서리에 연결된 변은 원래 위치 유지
-                offsetEdgeStart[i] = p1;
-                offsetEdgeEnd[i] = p2;
-                continue;
-            }
-
-            Vector2 edgeDir = (p2 - p1).normalized;
-            // 법선 벡터 (오른쪽 방향)
-            Vector2 normal = new Vector2(edgeDir.y, -edgeDir.x);
-
-            // 법선이 내부(중심)를 향하도록 조정
-            Vector2 edgeMid = (p1 + p2) * 0.5f;
-            if (Vector2.Dot(normal, center - edgeMid) < 0)
-            {
-                normal = -normal;
-            }
-
-            // 변을 내부 방향으로 offset만큼 이동
-            offsetEdgeStart[i] = p1 + normal * offset;
-            offsetEdgeEnd[i] = p2 + normal * offset;
-        }
-
-        // 인접한 두 변의 교차점을 새 꼭짓점으로 사용
-        Vector2[] result = new Vector2[n];
-        for (int i = 0; i < n; i++)
-        {
-            // 오목한 모서리는 원래 점 유지
-            if (isConcaveCorner[i])
-            {
-                result[i] = points[i];
-                continue;
-            }
-
-            int prevIdx = (i - 1 + n) % n;
-
-            // 이전 변: offsetEdgeStart[prevIdx] -> offsetEdgeEnd[prevIdx]
-            // 현재 변: offsetEdgeStart[i] -> offsetEdgeEnd[i]
-            if (LineLineIntersection(
-                offsetEdgeStart[prevIdx], offsetEdgeEnd[prevIdx],
-                offsetEdgeStart[i], offsetEdgeEnd[i],
-                out Vector2 intersection))
-            {
-                result[i] = intersection;
-            }
-            else
-            {
-                // 평행한 경우 (거의 발생하지 않음) 원래 점 사용
-                result[i] = points[i];
-            }
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// 두 직선의 교차점을 계산합니다.
-    /// </summary>
-    private bool LineLineIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out Vector2 intersection)
-    {
-        intersection = Vector2.zero;
-
-        float d = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
-        if (Mathf.Abs(d) < 0.0001f)
-        {
-            // 평행한 선
-            return false;
-        }
-
-        float t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / d;
-
-        intersection = new Vector2(
-            p1.x + t * (p2.x - p1.x),
-            p1.y + t * (p2.y - p1.y)
-        );
-
-        return true;
-    }
-
-    /// <summary>
-    /// 다각형의 중심점을 계산합니다.
-    /// </summary>
-    private Vector2 CalculatePolygonCenter(Vector2[] points)
-    {
-        Vector2 center = Vector2.zero;
-        foreach (var p in points)
-        {
-            center += p;
-        }
-        return center / points.Length;
-    }
-
-    /// <summary>
-    /// 다각형을 바깥쪽으로 확장시킵니다 (각 변을 외부로 평행 이동 후 교차점 계산).
-    /// 오목한 모서리와 인접한 변은 이동하지 않습니다.
-    /// </summary>
-    private Vector2[] ExpandPolygon(Vector2[] points, float offset)
-    {
-        if (points.Length < 3 || offset <= 0) return points;
-
-        // 외부 방향 결정을 위해 다각형 중심 계산
-        Vector2 center = CalculatePolygonCenter(points);
-
-        // 다각형 방향 확인 (시계/반시계)
-        float signedArea = CalculateSignedArea(points);
-        bool isClockwise = signedArea < 0;
-
-        int n = points.Length;
-
-        // 먼저 각 모서리가 오목한지 판단
-        bool[] isConcaveCorner = new bool[n];
-        for (int i = 0; i < n; i++)
-        {
-            Vector2 prev = points[(i - 1 + n) % n];
-            Vector2 curr = points[i];
-            Vector2 next = points[(i + 1) % n];
-
-            Vector2 edge1 = curr - prev;
-            Vector2 edge2 = next - curr;
-            float cross = edge1.x * edge2.y - edge1.y * edge2.x;
-            isConcaveCorner[i] = isClockwise ? (cross < 0) : (cross > 0);
-        }
-
-        // 각 변(edge)을 외부로 평행 이동
-        // 단, 오목한 모서리에 연결된 변은 이동하지 않음
-        Vector2[] offsetEdgeStart = new Vector2[n];
-        Vector2[] offsetEdgeEnd = new Vector2[n];
-
-        for (int i = 0; i < n; i++)
-        {
-            Vector2 p1 = points[i];
-            Vector2 p2 = points[(i + 1) % n];
-
-            // 이 변의 시작점(i)이나 끝점((i+1)%n)이 오목한 모서리면 이동하지 않음
-            int endIdx = (i + 1) % n;
-            if (isConcaveCorner[i] || isConcaveCorner[endIdx])
-            {
-                // 오목한 모서리에 연결된 변은 원래 위치 유지
-                offsetEdgeStart[i] = p1;
-                offsetEdgeEnd[i] = p2;
-                continue;
-            }
-
-            Vector2 edgeDir = (p2 - p1).normalized;
-            // 법선 벡터 (오른쪽 방향)
-            Vector2 normal = new Vector2(edgeDir.y, -edgeDir.x);
-
-            // 법선이 외부(중심 반대)를 향하도록 조정
-            Vector2 edgeMid = (p1 + p2) * 0.5f;
-            if (Vector2.Dot(normal, center - edgeMid) > 0)
-            {
-                normal = -normal;
-            }
-
-            // 변을 외부 방향으로 offset만큼 이동
-            offsetEdgeStart[i] = p1 + normal * offset;
-            offsetEdgeEnd[i] = p2 + normal * offset;
-        }
-
-        // 인접한 두 변의 교차점을 새 꼭짓점으로 사용
-        Vector2[] result = new Vector2[n];
-        for (int i = 0; i < n; i++)
-        {
-            // 오목한 모서리는 원래 점 유지
-            if (isConcaveCorner[i])
-            {
-                result[i] = points[i];
-                continue;
-            }
-
-            int prevIdx = (i - 1 + n) % n;
-
-            // 이전 변: offsetEdgeStart[prevIdx] -> offsetEdgeEnd[prevIdx]
-            // 현재 변: offsetEdgeStart[i] -> offsetEdgeEnd[i]
-            if (LineLineIntersection(
-                offsetEdgeStart[prevIdx], offsetEdgeEnd[prevIdx],
-                offsetEdgeStart[i], offsetEdgeEnd[i],
-                out Vector2 intersection))
-            {
-                result[i] = intersection;
-            }
-            else
-            {
-                // 평행한 경우 (거의 발생하지 않음) 원래 점 사용
-                result[i] = points[i];
-            }
-        }
-
-        return result;
-    }
-
-    /// <summary>
     /// 위치를 업데이트합니다 (드래그 중 호출).
-    /// CompositeCollider2D를 재생성하지 않고, LineRenderer 점들을 직접 이동합니다.
     /// </summary>
     public void UpdatePosition()
     {
         if (_pieces.Count == 0) return;
         if (_whiteLineRenderer == null || _blackLineRenderer == null) return;
 
-        // 현재 그룹 중심 계산
         Vector3 currentGroupCenter = CalculateGroupCenter();
 
-        // 기준 위치가 없으면 현재 LineRenderer 상태를 기준으로 저장
         if (!_hasDragBasePositions && _whiteLineRenderer.positionCount > 0)
         {
             _dragBaseWhitePositions = new Vector3[_whiteLineRenderer.positionCount];
@@ -783,7 +524,6 @@ public class GroupBorderRenderer : MonoBehaviour
 
         if (!_hasDragBasePositions) return;
 
-        // positionCount가 변경되었으면 기준 데이터 무효화
         if (_whiteLineRenderer.positionCount != _dragBaseWhitePositions.Length ||
             _blackLineRenderer.positionCount != _dragBaseBlackPositions.Length)
         {
@@ -791,10 +531,8 @@ public class GroupBorderRenderer : MonoBehaviour
             return;
         }
 
-        // 그룹 이동량 계산
         Vector3 delta = currentGroupCenter - _dragBaseGroupCenter;
 
-        // LineRenderer 점들을 이동량만큼 이동 (CompositeCollider2D 재생성 없이)
         for (int i = 0; i < _dragBaseWhitePositions.Length; i++)
         {
             _whiteLineRenderer.SetPosition(i, _dragBaseWhitePositions[i] + delta);
@@ -826,7 +564,6 @@ public class GroupBorderRenderer : MonoBehaviour
 
     /// <summary>
     /// 드래그 기준 위치 데이터를 초기화합니다.
-    /// 드래그 시작 시 또는 드롭 후 호출해야 합니다.
     /// </summary>
     public void ResetDragBasePositions()
     {
@@ -854,7 +591,6 @@ public class GroupBorderRenderer : MonoBehaviour
     {
         if (_whiteLineRenderer == null || _blackLineRenderer == null) return;
 
-        // 원본 위치가 없으면 현재 위치를 원본으로 저장 (월드 좌표)
         if (!_hasOriginalPositions && _whiteLineRenderer.positionCount > 0)
         {
             _originalWhiteLinePositions = new Vector3[_whiteLineRenderer.positionCount];
@@ -867,17 +603,13 @@ public class GroupBorderRenderer : MonoBehaviour
 
         if (!_hasOriginalPositions) return;
 
-        // LineRenderer의 현재 positionCount와 원본 배열 길이가 다르면 스케일 적용 불가
-        // (테두리가 중간에 업데이트되어 positionCount가 변경된 경우)
         if (_whiteLineRenderer.positionCount != _originalWhiteLinePositions.Length ||
             _blackLineRenderer.positionCount != _originalBlackLinePositions.Length)
         {
-            // 원본 데이터 무효화하고 리턴
             _hasOriginalPositions = false;
             return;
         }
 
-        // 원본 위치를 기준으로 스케일 적용 (월드 좌표)
         for (int i = 0; i < _originalWhiteLinePositions.Length; i++)
         {
             Vector3 offset = _originalWhiteLinePositions[i] - _originalCenter;
@@ -923,14 +655,7 @@ public class GroupBorderRenderer : MonoBehaviour
         _whiteBorderWidth = whiteWidth;
         _blackBorderWidth = blackWidth;
 
-        // LineRenderer는 중심선 기준으로 양쪽으로 퍼져서 그려짐
-        // 개별 카드의 프레임은 이미지 위에 오버레이되므로, 그룹 테두리도 이미지 경계에 맞춰야 함
-        // _shrinkOffset으로 콜라이더 확장량만 수축하면 이미지 경계에 맞춰짐
-        // _borderCenterOffset = 0으로 설정하여 추가 확장/수축 없이 이미지 경계에 테두리 그리기
-        float totalBorderWidth = whiteWidth + blackWidth;
-        _borderCenterOffset = 0f;  // 이미지 경계에 맞춤 (개별 카드 프레임과 동일)
-
-        Debug.Log($"[GroupBorderRenderer] SetBorderWidth - white={whiteWidth:F4}, black={blackWidth:F4}, totalBorder={totalBorderWidth:F4}, borderCenterOffset={_borderCenterOffset:F4}");
+        _borderCenterOffset = 0f;
 
         if (_whiteLineRenderer != null)
         {
@@ -951,7 +676,6 @@ public class GroupBorderRenderer : MonoBehaviour
     public void SetCornerRadius(float radius)
     {
         _cornerRadius = radius;
-        Debug.Log($"[GroupBorderRenderer] SetCornerRadius - radius={radius:F4}");
     }
 
     /// <summary>
@@ -965,8 +689,27 @@ public class GroupBorderRenderer : MonoBehaviour
             _blackLineRenderer.enabled = visible;
     }
 
-    private void OnDestroy()
+    // ====== Edge 구조체 ======
+
+    private enum EdgeDirection
     {
-        ClearChildColliders();
+        Top,
+        Bottom,
+        Left,
+        Right
+    }
+
+    private struct Edge
+    {
+        public Vector2 Start;
+        public Vector2 End;
+        public EdgeDirection Direction;
+
+        public Edge(Vector2 start, Vector2 end, EdgeDirection direction)
+        {
+            Start = start;
+            End = end;
+            Direction = direction;
+        }
     }
 }
