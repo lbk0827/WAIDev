@@ -1374,6 +1374,8 @@ public class PieceGroup
     /// </summary>
     public void UpdateGroupBorder()
     {
+        Debug.Log($"[PieceGroup] UpdateGroupBorder 호출 - pieces.Count={pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
+
         if (pieces.Count < 2)
         {
             // 단독 조각이면 그룹 테두리 제거하고 개별 프레임 표시

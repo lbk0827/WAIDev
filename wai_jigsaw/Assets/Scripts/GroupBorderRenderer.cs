@@ -34,6 +34,9 @@ public class GroupBorderRenderer : MonoBehaviour
     // 외곽선 수축 오프셋 (콜라이더 확장량 + 테두리 중심 보정)
     private float _shrinkOffset = 0f;
 
+    // 코루틴 버전 관리 (오래된 코루틴이 결과를 덮어쓰지 않도록)
+    private int _updateVersion = 0;
+
     // 테두리 중심 보정 오프셋 (LineRenderer가 중심선 기준으로 그리므로, 흰색 테두리 절반만큼 안쪽으로)
     private float _borderCenterOffset = 0f;
 
@@ -137,8 +140,17 @@ public class GroupBorderRenderer : MonoBehaviour
     /// </summary>
     public void SetPieces(List<DragController> pieces)
     {
+        // 기존 코루틴 중지 (중복 실행 방지)
+        StopAllCoroutines();
+
+        // 버전 증가 - 이전 코루틴이 오래된 데이터로 덮어쓰지 않도록
+        _updateVersion++;
+        int currentVersion = _updateVersion;
+
         _pieces.Clear();
         _pieces.AddRange(pieces);
+
+        Debug.Log($"[GroupBorderRenderer] SetPieces 호출 (v{currentVersion}) - 조각 수: {pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
 
         // 기존 자식 콜라이더 정리
         ClearChildColliders();
@@ -148,6 +160,8 @@ public class GroupBorderRenderer : MonoBehaviour
         {
             CreateColliderForPiece(piece);
         }
+
+        Debug.Log($"[GroupBorderRenderer] SetPieces (v{currentVersion}) - 콜라이더 생성 완료. pieces={_pieces.Count}, colliders={_childColliders.Count}");
 
         // 콜라이더 병합 후 외곽선 업데이트
         // CompositeCollider2D는 자동으로 다음 프레임에 업데이트됨
@@ -160,24 +174,31 @@ public class GroupBorderRenderer : MonoBehaviour
 
         // 빌드에서 CompositeCollider2D 지오메트리 생성이 지연될 수 있으므로
         // 코루틴을 사용하여 추가 업데이트 (안전장치)
-        StartCoroutine(DelayedUpdateBorder());
+        StartCoroutine(DelayedUpdateBorder(currentVersion));
     }
 
     /// <summary>
     /// 한 프레임 대기 후 테두리를 업데이트합니다.
     /// 빌드에서 CompositeCollider2D 지오메트리 생성이 지연될 수 있음.
     /// </summary>
-    private System.Collections.IEnumerator DelayedUpdateBorder()
+    private System.Collections.IEnumerator DelayedUpdateBorder(int version)
     {
         // 여러 프레임 대기하여 물리 엔진이 완전히 처리할 시간 확보
         yield return new WaitForFixedUpdate();
         yield return null;  // 추가 프레임 대기
 
+        // 버전 체크 - 새로운 SetPieces가 호출되었으면 이 코루틴은 무시
+        if (version != _updateVersion)
+        {
+            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder (v{version}) 건너뜀 - 현재 버전: v{_updateVersion}");
+            yield break;
+        }
+
         // 지오메트리 재생성 확인
         Physics2D.SyncTransforms();
         _compositeCollider.GenerateGeometry();
 
-        Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 호출 - pathCount={_compositeCollider.pathCount}");
+        Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder (v{version}) 호출 - pathCount={_compositeCollider.pathCount}, pieces={_pieces.Count}");
 
         UpdateBorderFromCollider();
 
@@ -185,10 +206,17 @@ public class GroupBorderRenderer : MonoBehaviour
         yield return new WaitForFixedUpdate();
         yield return null;
 
+        // 버전 재확인
+        if (version != _updateVersion)
+        {
+            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 2차 (v{version}) 건너뜀 - 현재 버전: v{_updateVersion}");
+            yield break;
+        }
+
         if (_compositeCollider.pathCount > 0)
         {
             int pointCount = _compositeCollider.GetPathPointCount(0);
-            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 2차 확인 - pathCount={_compositeCollider.pathCount}, pointCount={pointCount}");
+            Debug.Log($"[GroupBorderRenderer] DelayedUpdateBorder 2차 (v{version}) 확인 - pathCount={_compositeCollider.pathCount}, pointCount={pointCount}, pieces={_pieces.Count}");
             UpdateBorderFromCollider();
         }
     }
@@ -723,6 +751,15 @@ public class GroupBorderRenderer : MonoBehaviour
     public void UpdatePosition()
     {
         if (_pieces.Count == 0) return;
+
+        // 조각 수와 콜라이더 수가 불일치하면 재생성 필요
+        // (타이밍 이슈로 콜라이더가 잘못된 상태일 수 있음)
+        if (_pieces.Count != _childColliders.Count)
+        {
+            Debug.LogWarning($"[GroupBorderRenderer] UpdatePosition - 조각/콜라이더 불일치! pieces={_pieces.Count}, colliders={_childColliders.Count}. SetPieces 재호출.");
+            SetPieces(new List<DragController>(_pieces));
+            return;
+        }
 
         // 조각들의 콜라이더 위치 업데이트 (로컬 좌표로 설정)
         for (int i = 0; i < _pieces.Count && i < _childColliders.Count; i++)

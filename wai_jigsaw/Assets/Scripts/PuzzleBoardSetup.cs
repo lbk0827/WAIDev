@@ -62,6 +62,9 @@ public class PuzzleBoardSetup : MonoBehaviour
     private List<DragController> _piecesOnBoard = new List<DragController>();
     private List<GameObject> _cardSlots = new List<GameObject>();  // 카드 슬롯 배경
 
+    // 그룹 테두리 업데이트 지연 플래그 (연쇄 병합 중에는 중간 업데이트 스킵)
+    private bool _deferGroupBorderUpdate = false;
+
     // Grid dimensions
     private int _rows;
     private int _cols;
@@ -1105,6 +1108,9 @@ public class PuzzleBoardSetup : MonoBehaviour
             toCheck.Enqueue(piece);
         }
 
+        // 테두리 업데이트 지연 플래그 설정
+        _deferGroupBorderUpdate = true;
+
         while (toCheck.Count > 0)
         {
             DragController piece = toCheck.Dequeue();
@@ -1133,6 +1139,13 @@ public class PuzzleBoardSetup : MonoBehaviour
                 }
             }
         }
+
+        // 테두리 업데이트 지연 플래그 해제 및 최종 업데이트
+        _deferGroupBorderUpdate = false;
+
+        // 연쇄 병합이 완료된 후 최종 그룹 테두리 업데이트
+        Debug.Log($"[PuzzleBoardSetup] CheckConnectionsRecursive 완료 - 최종 그룹 크기: {group.pieces.Count}");
+        group.UpdateGroupBorder();
     }
 
     void CheckNeighbor(DragController piece, int colOffset, int rowOffset)
@@ -1183,7 +1196,11 @@ public class PuzzleBoardSetup : MonoBehaviour
             if (colOffset == 1)  { piece.HideBorder(3); neighbor.HideBorder(2); }
 
             // 5. 그룹 테두리 업데이트 (CompositeCollider2D + LineRenderer 방식)
-            piece.group.UpdateGroupBorder();
+            // 연쇄 병합 중에는 중간 업데이트 스킵 (CheckConnectionsRecursive에서 최종 업데이트)
+            if (!_deferGroupBorderUpdate)
+            {
+                piece.group.UpdateGroupBorder();
+            }
         }
     }
 
