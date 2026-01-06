@@ -139,8 +139,6 @@ public class DragController : MonoBehaviour
         // - blackWidth: 바깥쪽 검정 선 두께
         whiteWidth = baseSize * totalFrameThickness;  // 전체 프레임 두께
         blackWidth = baseSize * _blackBorderThickness;
-
-        Debug.Log($"[DragController] GetBorderThicknessWorldSpace - baseSize={baseSize:F3}, totalRatio={totalFrameThickness:F4}, blackRatio={_blackBorderThickness:F4}, whiteWidth={whiteWidth:F4}, blackWidth={blackWidth:F4}");
     }
 
     /// <summary>
@@ -1380,8 +1378,6 @@ public class PieceGroup
     /// </summary>
     public void UpdateGroupBorder()
     {
-        Debug.Log($"[PieceGroup] UpdateGroupBorder 호출 - pieces.Count={pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
-
         if (pieces.Count < 2)
         {
             // 단독 조각이면 그룹 테두리 제거하고 개별 프레임 표시
@@ -1427,8 +1423,6 @@ public class PieceGroup
             float whiteWidth, blackWidth;
             firstPiece.GetBorderThicknessWorldSpace(out whiteWidth, out blackWidth);
             float cornerRadius = firstPiece.GetCornerRadiusWorldSpace();
-
-            Debug.Log($"[PieceGroup] CreateOrUpdateGroupBorder - pieceWidth={firstPiece.pieceWidth:F4}, pieceHeight={firstPiece.pieceHeight:F4}, whiteWidth={whiteWidth:F4}, blackWidth={blackWidth:F4}, cornerRadius={cornerRadius:F4}");
 
             _borderRenderer.SetBorderWidth(whiteWidth, blackWidth);
             _borderRenderer.SetCornerRadius(cornerRadius);

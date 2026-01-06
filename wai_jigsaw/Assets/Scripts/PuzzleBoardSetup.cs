@@ -1145,7 +1145,6 @@ public class PuzzleBoardSetup : MonoBehaviour
         _deferGroupBorderUpdate = false;
 
         // 연쇄 병합이 완료된 후 최종 그룹 테두리 업데이트
-        Debug.Log($"[PuzzleBoardSetup] CheckConnectionsRecursive 완료 - 최종 그룹 크기: {group.pieces.Count}");
         group.UpdateGroupBorder();
     }
 

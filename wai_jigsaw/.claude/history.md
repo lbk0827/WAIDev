@@ -364,6 +364,86 @@ if (_whiteLineRenderer.positionCount != _originalWhiteLinePositions.Length ||
 
 ---
 
+## 2026-01-06
+
+### GroupBorder 직접 계산 방식으로 전환
+
+#### 문제 현상
+- CompositeCollider2D 기반 방식에서 부동소수점 오차로 인해 테두리가 삼각형 모양으로 잘못 그려지는 버그 발생
+- pieceWidth(1.43)와 조각 간 거리(1.44)의 차이로 콜라이더 병합 실패
+
+#### 해결 방법
+- CompositeCollider2D 의존성 제거
+- 월드 위치 기반 직접 계산 방식으로 전환
+- `FindOuterEdgesFromWorldPositions()`: 실제 transform.position 간 거리로 인접 판단
+
+#### 핵심 알고리즘
+```csharp
+// 인접 판단: 두 조각의 월드 위치 차이가 pieceWidth/pieceHeight와 거의 같으면 인접
+float dx = otherPos.x - cellCenter.x;
+float dy = otherPos.y - cellCenter.y;
+
+// 위쪽 인접 (dy ≈ pieceHeight, dx ≈ 0)
+if (Mathf.Abs(dy - _pieceHeight) < toleranceY && Mathf.Abs(dx) < toleranceX)
+    hasTop = true;
+```
+
+---
+
+### GroupBorder 디버그 로그 (필요 시 복원용)
+
+아래 코드는 GroupBorder 문제 디버깅에 사용했던 로그입니다. 문제 발생 시 복원하여 사용하세요.
+
+#### GroupBorderRenderer.cs
+
+```csharp
+// SetPieces() 함수 내부
+Debug.Log($"[GroupBorderRenderer] SetPieces 호출 - 조각 수: {pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
+
+// pieceWidth/Height가 0일 때
+Debug.LogWarning($"[GroupBorderRenderer] pieceWidth/Height가 0 - SpriteRenderer에서 계산: ({_pieceWidth}, {_pieceHeight})");
+
+// CalculateAndApplyOutline() 함수 내부
+Debug.LogWarning("[GroupBorderRenderer] 외곽 변을 찾을 수 없습니다.");
+Debug.LogWarning($"[GroupBorderRenderer] 외곽선 점이 부족합니다: {outlinePoints.Count}");
+Debug.Log($"[GroupBorderRenderer] 외곽선 점 수: {outlinePoints.Count}");
+Debug.Log($"[GroupBorderRenderer] LineRenderer 설정 완료 - {smoothedPoints.Count}개 점");
+
+// ConnectEdgesToPath() 함수 내부 - 연결 실패 시
+Debug.LogWarning($"[GroupBorderRenderer] 연결 실패 - 사용된 변: {usedEdges.Count}/{edges.Count}, 현재 끝점: {currentEnd}, tolerance: {tolerance}");
+for (int i = 0; i < edges.Count; i++)
+{
+    if (!usedEdges.Contains(i))
+    {
+        Edge e = edges[i];
+        Debug.LogWarning($"  미연결 변[{i}]: Start={e.Start}, End={e.End}, 거리(Start)={Vector2.Distance(currentEnd, e.Start):F4}, 거리(End)={Vector2.Distance(currentEnd, e.End):F4}");
+    }
+}
+Debug.LogWarning($"[GroupBorderRenderer] 일부 변이 연결되지 않음: {usedEdges.Count}/{edges.Count}개 사용됨");
+```
+
+#### DragController.cs (PieceGroup 클래스)
+
+```csharp
+// UpdateGroupBorder() 함수 시작
+Debug.Log($"[PieceGroup] UpdateGroupBorder 호출 - pieces.Count={pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
+
+// CreateOrUpdateGroupBorder() 함수 내부
+Debug.Log($"[PieceGroup] CreateOrUpdateGroupBorder - pieceWidth={firstPiece.pieceWidth:F4}, pieceHeight={firstPiece.pieceHeight:F4}, whiteWidth={whiteWidth:F4}, blackWidth={blackWidth:F4}, cornerRadius={cornerRadius:F4}");
+
+// GetBorderThicknessWorldSpace() 함수 끝
+Debug.Log($"[DragController] GetBorderThicknessWorldSpace - baseSize={baseSize:F3}, totalRatio={totalFrameThickness:F4}, blackRatio={_blackBorderThickness:F4}, whiteWidth={whiteWidth:F4}, blackWidth={blackWidth:F4}");
+```
+
+#### PuzzleBoardSetup.cs
+
+```csharp
+// CheckConnectionsRecursive() 함수 끝
+Debug.Log($"[PuzzleBoardSetup] CheckConnectionsRecursive 완료 - 최종 그룹 크기: {group.pieces.Count}");
+```
+
+---
+
 ## 주요 파일 위치
 
 | 구분 | 경로 |

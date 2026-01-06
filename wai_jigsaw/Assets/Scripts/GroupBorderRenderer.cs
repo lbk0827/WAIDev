@@ -113,8 +113,6 @@ public class GroupBorderRenderer : MonoBehaviour
         _pieces.Clear();
         _pieces.AddRange(pieces);
 
-        Debug.Log($"[GroupBorderRenderer] SetPieces 호출 - 조각 수: {pieces.Count}, 조각 목록: {string.Join(", ", pieces.ConvertAll(p => $"({p.originalGridX},{p.originalGridY})"))}");
-
         if (pieces.Count == 0)
         {
             _whiteLineRenderer.positionCount = 0;
@@ -137,7 +135,6 @@ public class GroupBorderRenderer : MonoBehaviour
                 Vector3 scale = firstPiece.transform.localScale;
                 _pieceWidth = spriteSize.x * scale.x;
                 _pieceHeight = spriteSize.y * scale.y;
-                Debug.LogWarning($"[GroupBorderRenderer] pieceWidth/Height가 0 - SpriteRenderer에서 계산: ({_pieceWidth}, {_pieceHeight})");
             }
         }
 
@@ -180,7 +177,6 @@ public class GroupBorderRenderer : MonoBehaviour
 
         if (outerEdges.Count == 0)
         {
-            Debug.LogWarning("[GroupBorderRenderer] 외곽 변을 찾을 수 없습니다.");
             _whiteLineRenderer.positionCount = 0;
             _blackLineRenderer.positionCount = 0;
             return;
@@ -191,13 +187,10 @@ public class GroupBorderRenderer : MonoBehaviour
 
         if (outlinePoints.Count < 3)
         {
-            Debug.LogWarning($"[GroupBorderRenderer] 외곽선 점이 부족합니다: {outlinePoints.Count}");
             _whiteLineRenderer.positionCount = 0;
             _blackLineRenderer.positionCount = 0;
             return;
         }
-
-        Debug.Log($"[GroupBorderRenderer] 외곽선 점 수: {outlinePoints.Count}");
 
         // 4. 둥근 모서리 적용
         List<Vector3> smoothedPoints = ApplyRoundedCorners(outlinePoints.ToArray(), _cornerRadius);
@@ -213,8 +206,6 @@ public class GroupBorderRenderer : MonoBehaviour
             _whiteLineRenderer.SetPosition(i, worldPos);
             _blackLineRenderer.SetPosition(i, worldPos);
         }
-
-        Debug.Log($"[GroupBorderRenderer] LineRenderer 설정 완료 - {smoothedPoints.Count}개 점");
     }
 
     /// <summary>
@@ -382,18 +373,6 @@ public class GroupBorderRenderer : MonoBehaviour
 
             if (!foundNext)
             {
-                // 연결되는 변을 찾지 못함 - 디버그 정보 출력
-                Debug.LogWarning($"[GroupBorderRenderer] 연결 실패 - 사용된 변: {usedEdges.Count}/{edges.Count}, 현재 끝점: {currentEnd}, tolerance: {tolerance}");
-
-                // 남은 변들의 거리 정보 출력
-                for (int i = 0; i < edges.Count; i++)
-                {
-                    if (!usedEdges.Contains(i))
-                    {
-                        Edge e = edges[i];
-                        Debug.LogWarning($"  미연결 변[{i}]: Start={e.Start}, End={e.End}, 거리(Start)={Vector2.Distance(currentEnd, e.Start):F4}, 거리(End)={Vector2.Distance(currentEnd, e.End):F4}");
-                    }
-                }
                 break;
             }
         }
@@ -402,12 +381,6 @@ public class GroupBorderRenderer : MonoBehaviour
         if (path.Count > 1 && Vector2.Distance(path[0], path[path.Count - 1]) < tolerance)
         {
             path.RemoveAt(path.Count - 1);
-        }
-
-        // 모든 변이 연결되었는지 확인
-        if (usedEdges.Count < edges.Count)
-        {
-            Debug.LogWarning($"[GroupBorderRenderer] 일부 변이 연결되지 않음: {usedEdges.Count}/{edges.Count}개 사용됨");
         }
 
         return path;
