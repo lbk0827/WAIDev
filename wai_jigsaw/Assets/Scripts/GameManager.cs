@@ -2,6 +2,7 @@ using UnityEngine;
 using WaiJigsaw.Core;
 using WaiJigsaw.Data;
 using WaiJigsaw.UI;
+using DG.Tweening;
 
 /// <summary>
 /// 게임의 전반적인 상태와 흐름을 관리하는 중앙 관리자입니다.
@@ -56,8 +57,29 @@ public class GameManager : MonoBehaviour
         // 영속 매니저들 초기화
         EnsurePersistentManagers();
 
+        // DOTween 초기화
+        InitializeDOTween();
+
         // GameDataContainer 초기화 및 데이터 로드
         GameDataContainer.Instance.Load();
+    }
+
+    /// <summary>
+    /// DOTween 라이브러리를 초기화합니다.
+    /// </summary>
+    private void InitializeDOTween()
+    {
+        // DOTween 초기화 설정
+        // - recycleAllByDefault: 트윈 오브젝트 재사용으로 GC 최소화
+        // - useSafeMode: 타겟 오브젝트가 파괴되어도 에러 방지
+        DOTween.Init(recycleAllByDefault: true, useSafeMode: true, logBehaviour: LogBehaviour.ErrorsOnly);
+
+        // 기본 설정
+        DOTween.defaultAutoPlay = AutoPlay.All;        // 생성 즉시 재생
+        DOTween.defaultUpdateType = UpdateType.Normal; // Update에서 실행
+        DOTween.defaultTimeScaleIndependent = false;   // TimeScale 영향 받음
+
+        Debug.Log("[GameManager] DOTween 초기화 완료");
     }
 
     /// <summary>
