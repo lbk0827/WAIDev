@@ -169,7 +169,6 @@ Shader "Custom/RoundedSprite"
                 // 텍스처 샘플링
                 fixed4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
 
-                // Remap UV to visible area for rounded corner calculation
                 // 양수 패딩만 적용 (음수 패딩은 이미지 확장으로 처리됨)
                 float effectiveLeft = max(paddingLeft, 0.0);
                 float effectiveRight = max(paddingRight, 0.0);
@@ -196,21 +195,15 @@ Shader "Custom/RoundedSprite"
                     float selectedRadius;
                     float dist = roundedBoxSDF4(uv, size, _CornerRadii, selectedRadius);
 
-                    // Only apply anti-aliasing if this corner has radius > 0
+                    // Only apply rounding/clipping if this corner has radius > 0
+                    // 반경이 0인 모서리는 클리핑하지 않음 (정사각형 유지)
                     if (selectedRadius > 0.001)
                     {
                         float delta = fwidth(dist);
                         float alpha = 1.0 - smoothstep(-delta, delta, dist);
                         c.a *= alpha;
                     }
-                    else
-                    {
-                        // No rounding for this corner - hard edge (no anti-aliasing)
-                        if (dist > 0.0)
-                        {
-                            c.a = 0.0;
-                        }
-                    }
+                    // else: 반경 0인 모서리는 클리핑 없이 그대로 표시 (직선 가장자리)
                 }
                 // If all radii are 0, skip rounding entirely (full square)
 
