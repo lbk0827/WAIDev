@@ -57,9 +57,9 @@ namespace WaiJigsaw.UI
         [SerializeField] private Button _nextButton;
 
         [Header("====== Coin Fly Animation ======")]
-        [Tooltip("코인 프리팹 (날아가는 코인용)")]
+        [Tooltip("코인 프리팹 (날아가는 코인용) - 없으면 자동 생성")]
         [SerializeField] private GameObject _coinPrefab;
-        [Tooltip("코인이 날아갈 목적지 (보유 코인 UI)")]
+        [Tooltip("코인이 날아갈 목적지 (보유 코인 UI) - 없으면 CoinDisplay 자동 검색")]
         [SerializeField] private Transform _coinDestination;
         [Tooltip("날아가는 코인 개수")]
         [SerializeField] private int _flyingCoinCount = 8;
@@ -67,6 +67,10 @@ namespace WaiJigsaw.UI
         [SerializeField] private float _coinFlyDuration = 0.5f;
         [Tooltip("코인 생성 간격 (초)")]
         [SerializeField] private float _coinSpawnInterval = 0.05f;
+        [Tooltip("코인 크기 (UI Canvas 기준)")]
+        [SerializeField] private float _coinSize = 100f;
+        [Tooltip("시작 위치 분산 범위 (픽셀)")]
+        [SerializeField] private float _startSpreadRange = 30f;
 
         [Header("====== Animation Settings ======")]
         [Tooltip("UI 페이드 시간 (초)")]
@@ -436,72 +440,251 @@ namespace WaiJigsaw.UI
 
         #region Coin Fly Animation
 
+        // 코인 스프라이트 캐시 (런타임 생성용)
+        private Sprite _cachedCoinSprite;
+        private Canvas _parentCanvas;
+
         /// <summary>
         /// 코인 날아가기 애니메이션을 재생합니다.
         /// </summary>
         private void PlayCoinFlyAnimation(Action onComplete)
         {
-            if (_coinPrefab == null || _coinDestination == null || _rewardAmount <= 0)
+            if (_rewardAmount <= 0)
             {
-                Debug.Log("[LevelClearSequence] 코인 프리팹 또는 목적지가 없어서 스킵");
+                Debug.Log("[LevelClearSequence] 보상 코인이 없어서 스킵");
                 onComplete?.Invoke();
                 return;
             }
 
-            // 시작 위치 (획득 코인 UI 위치)
-            Vector3 startPos = _rewardContainer != null
-                ? _rewardContainer.transform.position
-                : transform.position;
+            // 목적지 자동 검색 (설정되지 않은 경우)
+            if (_coinDestination == null)
+            {
+                CoinDisplay coinDisplay = FindObjectOfType<CoinDisplay>();
+                if (coinDisplay != null)
+                {
+                    _coinDestination = coinDisplay.transform;
+                    Debug.Log("[LevelClearSequence] CoinDisplay를 자동으로 찾았습니다.");
+                }
+            }
 
-            // 목적지 위치
-            Vector3 endPos = _coinDestination.position;
+            if (_coinDestination == null)
+            {
+                Debug.LogWarning("[LevelClearSequence] 코인 목적지가 없어서 스킵");
+                onComplete?.Invoke();
+                return;
+            }
 
-            Debug.Log($"[LevelClearSequence] 코인 날아가기 시작: {_flyingCoinCount}개");
+            // rewardContainer가 속한 Canvas 찾기 (좌표 계산과 코인 생성에 동일한 Canvas 사용)
+            if (_rewardContainer != null)
+            {
+                _parentCanvas = _rewardContainer.GetComponentInParent<Canvas>();
+            }
+            if (_parentCanvas == null)
+            {
+                _parentCanvas = GetComponentInParent<Canvas>();
+            }
+            if (_parentCanvas == null)
+            {
+                _parentCanvas = FindObjectOfType<Canvas>();
+            }
+
+            // 코인 스프라이트 로드
+            if (_cachedCoinSprite == null)
+            {
+                _cachedCoinSprite = ItemTable.GetCoinIcon();
+                Debug.Log($"[LevelClearSequence] 코인 스프라이트 로드: {(_cachedCoinSprite != null ? _cachedCoinSprite.name : "null")}");
+            }
+
+            if (_cachedCoinSprite == null)
+            {
+                Debug.LogWarning("[LevelClearSequence] 코인 아이콘을 찾을 수 없어서 스킵");
+                onComplete?.Invoke();
+                return;
+            }
+
+            // RectTransform 좌표 계산을 위한 Canvas 참조 (_parentCanvas 직접 사용)
+            RectTransform canvasRect = _parentCanvas?.GetComponent<RectTransform>();
+
+            // Canvas 카메라 (Screen Space - Camera 또는 World Space인 경우 필요)
+            Camera canvasCamera = null;
+            if (_parentCanvas != null)
+            {
+                if (_parentCanvas.renderMode == RenderMode.ScreenSpaceCamera ||
+                    _parentCanvas.renderMode == RenderMode.WorldSpace)
+                {
+                    canvasCamera = _parentCanvas.worldCamera;
+                }
+            }
+
+            Debug.Log($"[LevelClearSequence] Canvas 정보: name={_parentCanvas?.name}, renderMode={_parentCanvas?.renderMode}, camera={canvasCamera?.name ?? "null"}, canvasRect={canvasRect?.sizeDelta}");
+
+            // 시작 위치 계산 (rewardContainer의 RectTransform에서 직접 가져오기)
+            Vector2 startAnchoredPos = Vector2.zero;
+            if (_rewardContainer != null)
+            {
+                RectTransform rewardRect = _rewardContainer.GetComponent<RectTransform>();
+                if (rewardRect != null && canvasRect != null)
+                {
+                    // rewardContainer의 월드 위치를 스크린 좌표로, 그리고 Canvas 로컬 좌표로 변환
+                    Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, rewardRect.position);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        canvasRect,
+                        screenPoint,
+                        canvasCamera,
+                        out startAnchoredPos
+                    );
+                    Debug.Log($"[LevelClearSequence] rewardContainer: worldPos={rewardRect.position}, screenPoint={screenPoint}, localPos={startAnchoredPos}");
+                }
+            }
+
+            // 목적지 위치 계산 (CoinDisplay의 RectTransform에서 직접 가져오기)
+            Vector2 endAnchoredPos = Vector2.zero;
+            if (_coinDestination != null && canvasRect != null)
+            {
+                RectTransform destRect = _coinDestination.GetComponent<RectTransform>();
+                if (destRect != null)
+                {
+                    Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, destRect.position);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        canvasRect,
+                        screenPoint,
+                        canvasCamera,
+                        out endAnchoredPos
+                    );
+                    Debug.Log($"[LevelClearSequence] coinDestination: worldPos={destRect.position}, screenPoint={screenPoint}, localPos={endAnchoredPos}");
+                }
+            }
+
+            Debug.Log($"[LevelClearSequence] 코인 날아가기 시작: {_flyingCoinCount}개, 시작={startAnchoredPos}, 목적지={endAnchoredPos}");
 
             // 코인 생성 및 애니메이션
             int completedCount = 0;
-            Sequence coinSequence = DOTween.Sequence();
+            int totalCoins = _flyingCoinCount;
 
-            for (int i = 0; i < _flyingCoinCount; i++)
+            // 좌표 캡처 (클로저에서 사용)
+            Vector2 capturedStart = startAnchoredPos;
+            Vector2 capturedEnd = endAnchoredPos;
+
+            // 각 코인을 순차적으로 생성하고 애니메이션
+            for (int i = 0; i < totalCoins; i++)
             {
-                float delay = i * _coinSpawnInterval;
+                // 코인 생성 딜레이 적용
+                float spawnDelay = i * _coinSpawnInterval;
 
-                coinSequence.InsertCallback(delay, () =>
+                // 캡처된 변수 문제 방지를 위해 로컬 복사
+                int coinIndex = i;
+
+                DOVirtual.DelayedCall(spawnDelay, () =>
                 {
-                    // 코인 생성
-                    GameObject coin = Instantiate(_coinPrefab, startPos, Quaternion.identity, transform);
-
                     // 랜덤 오프셋으로 시작 위치 분산
-                    Vector3 randomOffset = new Vector3(
-                        UnityEngine.Random.Range(-50f, 50f),
-                        UnityEngine.Random.Range(-50f, 50f),
-                        0
+                    Vector2 randomOffset = new Vector2(
+                        UnityEngine.Random.Range(-_startSpreadRange, _startSpreadRange),
+                        UnityEngine.Random.Range(-_startSpreadRange, _startSpreadRange)
                     );
-                    coin.transform.position = startPos + randomOffset;
 
-                    // 포물선 이동 애니메이션
-                    Sequence singleCoinSeq = DOTween.Sequence();
+                    Vector2 coinStartPos = capturedStart + randomOffset;
 
-                    // 위치 이동 (포물선 효과)
-                    singleCoinSeq.Append(coin.transform.DOMove(endPos, _coinFlyDuration).SetEase(Ease.InQuad));
+                    // 코인 GameObject 생성 (프리팹 또는 동적 생성)
+                    GameObject coin = CreateCoinObject(coinStartPos);
 
-                    // 스케일 축소
-                    singleCoinSeq.Join(coin.transform.DOScale(0.5f, _coinFlyDuration).SetEase(Ease.InQuad));
-
-                    // 완료 시 제거
-                    singleCoinSeq.OnComplete(() =>
+                    if (coin == null)
                     {
-                        Destroy(coin);
                         completedCount++;
-
-                        // 모든 코인 완료 체크
-                        if (completedCount >= _flyingCoinCount)
+                        if (completedCount >= totalCoins)
                         {
                             onComplete?.Invoke();
                         }
-                    });
+                        return;
+                    }
+
+                    RectTransform coinRect = coin.GetComponent<RectTransform>();
+
+                    if (coinRect != null)
+                    {
+                        // RectTransform용 이동 애니메이션 (DOAnchorPos)
+                        coinRect.DOAnchorPos(capturedEnd, _coinFlyDuration)
+                            .SetEase(Ease.InQuad);
+                    }
+
+                    // 스케일 축소 애니메이션
+                    coin.transform.DOScale(0.5f, _coinFlyDuration)
+                        .SetEase(Ease.InQuad)
+                        .OnComplete(() =>
+                        {
+                            Destroy(coin);
+                            completedCount++;
+
+                            Debug.Log($"[LevelClearSequence] 코인 {completedCount}/{totalCoins} 도착");
+
+                            // 모든 코인 완료 체크
+                            if (completedCount >= totalCoins)
+                            {
+                                Debug.Log("[LevelClearSequence] 모든 코인 애니메이션 완료");
+                                onComplete?.Invoke();
+                            }
+                        });
                 });
             }
+        }
+
+        /// <summary>
+        /// 코인 GameObject를 생성합니다. 프리팹이 있으면 사용하고, 없으면 동적으로 생성합니다.
+        /// </summary>
+        /// <param name="anchoredPosition">Canvas 로컬 좌표 (anchoredPosition)</param>
+        private GameObject CreateCoinObject(Vector2 anchoredPosition)
+        {
+            // 프리팹이 있으면 사용 (프리팹 사용시에는 월드좌표 변환 필요)
+            if (_coinPrefab != null)
+            {
+                GameObject prefabCoin = Instantiate(_coinPrefab, transform.parent);
+                RectTransform prefabRect = prefabCoin.GetComponent<RectTransform>();
+                if (prefabRect != null)
+                {
+                    prefabRect.anchoredPosition = anchoredPosition;
+                }
+                return prefabCoin;
+            }
+
+            // 동적으로 코인 UI 생성
+            GameObject coinObj = new GameObject("FlyingCoin");
+
+            // _parentCanvas에 직접 배치 (좌표 계산에 사용한 동일한 Canvas)
+            if (_parentCanvas != null)
+            {
+                coinObj.transform.SetParent(_parentCanvas.transform, false);
+            }
+            else
+            {
+                coinObj.transform.SetParent(transform.parent, false);
+            }
+
+            // RectTransform 설정 (UI 요소로 동작하도록)
+            RectTransform rectTransform = coinObj.AddComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(_coinSize, _coinSize);
+
+            // 앵커를 중앙으로 설정 (RectTransformUtility가 중앙 기준으로 계산)
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+
+            // anchoredPosition으로 위치 설정 (Canvas 로컬 좌표)
+            rectTransform.anchoredPosition = anchoredPosition;
+
+            // Image 컴포넌트 추가
+            Image coinImage = coinObj.AddComponent<Image>();
+            coinImage.sprite = _cachedCoinSprite;
+            coinImage.preserveAspect = true;
+            coinImage.raycastTarget = false;
+
+            // Canvas 오버라이드로 렌더링 순서 최상위 보장
+            Canvas overrideCanvas = coinObj.AddComponent<Canvas>();
+            overrideCanvas.overrideSorting = true;
+            overrideCanvas.sortingOrder = 1000;
+            coinObj.AddComponent<GraphicRaycaster>();
+
+            Debug.Log($"[LevelClearSequence] 코인 생성됨: anchoredPosition={anchoredPosition}, sprite={(_cachedCoinSprite != null ? _cachedCoinSprite.name : "null")}, parent={coinObj.transform.parent?.name}");
+
+            return coinObj;
         }
 
         #endregion
