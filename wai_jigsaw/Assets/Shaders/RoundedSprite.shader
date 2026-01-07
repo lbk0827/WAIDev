@@ -133,8 +133,6 @@ Shader "Custom/RoundedSprite"
 
             fixed4 SpriteFrag(v2f IN) : SV_Target
             {
-                fixed4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
-
                 // Normalize UV to local 0-1 range for this sprite piece
                 float2 uvRange = _UVRect.zw - _UVRect.xy;
                 float2 normalizedUV = (IN.texcoord - _UVRect.xy) / uvRange;
@@ -151,9 +149,9 @@ Shader "Custom/RoundedSprite"
                     return fixed4(normalizedUV.x, normalizedUV.y, 0, 1);
                 }
 
-                // Apply Padding (crop edges)
+                // Apply Padding (crop edges or extend image)
                 // 양수 패딩: 이미지 자르기 (간격 표현)
-                // 음수 패딩: 이미지 확장 (겹침 표현, 경계선 제거용)
+                // 음수 패딩: 이미지 확장 (겹침 표현, 경계선 제거용) - 가장자리 픽셀 반복
                 float paddingLeft = _Padding.x;
                 float paddingRight = _Padding.y;
                 float paddingTop = _Padding.z;
@@ -168,8 +166,11 @@ Shader "Custom/RoundedSprite"
                     return fixed4(0, 0, 0, 0);
                 }
 
+                // 텍스처 샘플링
+                fixed4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
+
                 // Remap UV to visible area for rounded corner calculation
-                // 음수 패딩은 0으로 처리하여 모서리 계산에 영향 없도록 함
+                // 양수 패딩만 적용 (음수 패딩은 이미지 확장으로 처리됨)
                 float effectiveLeft = max(paddingLeft, 0.0);
                 float effectiveRight = max(paddingRight, 0.0);
                 float effectiveTop = max(paddingTop, 0.0);

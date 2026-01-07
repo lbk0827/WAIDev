@@ -146,8 +146,6 @@ namespace WaiJigsaw.UI
                 _boardOriginalPosition = _boardContainer.position;
             }
 
-            Debug.Log($"[LevelClearSequence] 레벨 {clearedLevel} 클리어 시퀀스 시작 (보상: {_rewardAmount} 코인)");
-
             // DOTween 시퀀스 생성 및 실행
             CreateAndPlaySequence();
         }
@@ -210,8 +208,6 @@ namespace WaiJigsaw.UI
             _mainSequence = DOTween.Sequence();
 
             // ====== Step 1: 상단 UI 페이드 아웃 ======
-            _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] Step 1: 상단 UI 페이드 아웃"));
-
             // 레벨 텍스트 페이드 아웃
             if (_currentLevelText != null)
             {
@@ -246,7 +242,6 @@ namespace WaiJigsaw.UI
 
             // ====== Step 2: 코인 표시 UI 페이드 인 ======
             _mainSequence.AppendInterval(_stepDelay);
-            _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] Step 2: 코인 UI 페이드 인"));
 
             if (_coinDisplayObject != null)
             {
@@ -262,7 +257,6 @@ namespace WaiJigsaw.UI
 
             // ====== Step 3: 보드 위로 이동 ======
             _mainSequence.AppendInterval(_stepDelay);
-            _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] Step 3: 보드 위로 이동"));
 
             // 퍼즐 조각들은 월드 좌표를 직접 설정하므로 BoardContainer 이동이 전파되지 않음
             // 따라서 퍼즐 조각과 테두리를 직접 이동해야 함
@@ -274,7 +268,6 @@ namespace WaiJigsaw.UI
                 _mainSequence.AppendCallback(() =>
                 {
                     boardSetupRef.RecalculateCompletedGroupBorder();
-                    Debug.Log($"[LevelClearSequence] 퍼즐 이동 시작: 이동거리={_boardMoveDistance}");
                 });
 
                 // DOTween을 사용하여 부드럽게 이동
@@ -307,11 +300,6 @@ namespace WaiJigsaw.UI
                         _boardMoveDuration
                     ).SetEase(Ease.Linear) // 실제 Easing은 위에서 수동으로 적용
                 );
-
-                _mainSequence.AppendCallback(() =>
-                {
-                    Debug.Log($"[LevelClearSequence] 퍼즐 이동 완료: 총 이동량={totalMoved:F3}");
-                });
             }
             else
             {
@@ -319,13 +307,11 @@ namespace WaiJigsaw.UI
             }
 
             // ====== Step 4: 축하 연출 (TODO: 파티클) ======
-            _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] Step 4: 축하 연출 (TODO)"));
             // PlayCelebrationEffect(); // 추후 구현
 
             // ====== Step 5: 클리어 UI 등장 ======
             _mainSequence.AppendInterval(_stepDelay);
             _mainSequence.AppendCallback(() => SetupResultUI());
-            _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] Step 5: 클리어 UI 등장"));
 
             // 클리어 타이틀 등장 (스케일 애니메이션)
             if (_clearTitleText != null)
@@ -351,9 +337,6 @@ namespace WaiJigsaw.UI
                 _nextButton.interactable = true;
                 _mainSequence.Append(_nextButton.transform.DOScale(1f, _uiAppearDuration).SetEase(Ease.OutBack));
             }
-
-            // 시퀀스 완료 콜백
-            _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] 시퀀스 재생 완료 - NEXT 버튼 대기"));
         }
 
         #endregion
@@ -451,7 +434,6 @@ namespace WaiJigsaw.UI
         {
             if (_rewardAmount <= 0)
             {
-                Debug.Log("[LevelClearSequence] 보상 코인이 없어서 스킵");
                 onComplete?.Invoke();
                 return;
             }
@@ -463,7 +445,6 @@ namespace WaiJigsaw.UI
                 if (coinDisplay != null)
                 {
                     _coinDestination = coinDisplay.transform;
-                    Debug.Log("[LevelClearSequence] CoinDisplay를 자동으로 찾았습니다.");
                 }
             }
 
@@ -492,7 +473,6 @@ namespace WaiJigsaw.UI
             if (_cachedCoinSprite == null)
             {
                 _cachedCoinSprite = ItemTable.GetCoinIcon();
-                Debug.Log($"[LevelClearSequence] 코인 스프라이트 로드: {(_cachedCoinSprite != null ? _cachedCoinSprite.name : "null")}");
             }
 
             if (_cachedCoinSprite == null)
@@ -516,8 +496,6 @@ namespace WaiJigsaw.UI
                 }
             }
 
-            Debug.Log($"[LevelClearSequence] Canvas 정보: name={_parentCanvas?.name}, renderMode={_parentCanvas?.renderMode}, camera={canvasCamera?.name ?? "null"}, canvasRect={canvasRect?.sizeDelta}");
-
             // 시작 위치 계산 (rewardContainer의 RectTransform에서 직접 가져오기)
             Vector2 startAnchoredPos = Vector2.zero;
             if (_rewardContainer != null)
@@ -533,7 +511,6 @@ namespace WaiJigsaw.UI
                         canvasCamera,
                         out startAnchoredPos
                     );
-                    Debug.Log($"[LevelClearSequence] rewardContainer: worldPos={rewardRect.position}, screenPoint={screenPoint}, localPos={startAnchoredPos}");
                 }
             }
 
@@ -551,11 +528,8 @@ namespace WaiJigsaw.UI
                         canvasCamera,
                         out endAnchoredPos
                     );
-                    Debug.Log($"[LevelClearSequence] coinDestination: worldPos={destRect.position}, screenPoint={screenPoint}, localPos={endAnchoredPos}");
                 }
             }
-
-            Debug.Log($"[LevelClearSequence] 코인 날아가기 시작: {_flyingCoinCount}개, 시작={startAnchoredPos}, 목적지={endAnchoredPos}");
 
             // 코인 생성 및 애니메이션
             int completedCount = 0;
@@ -614,12 +588,9 @@ namespace WaiJigsaw.UI
                             Destroy(coin);
                             completedCount++;
 
-                            Debug.Log($"[LevelClearSequence] 코인 {completedCount}/{totalCoins} 도착");
-
                             // 모든 코인 완료 체크
                             if (completedCount >= totalCoins)
                             {
-                                Debug.Log("[LevelClearSequence] 모든 코인 애니메이션 완료");
                                 onComplete?.Invoke();
                             }
                         });
@@ -682,8 +653,6 @@ namespace WaiJigsaw.UI
             overrideCanvas.sortingOrder = 1000;
             coinObj.AddComponent<GraphicRaycaster>();
 
-            Debug.Log($"[LevelClearSequence] 코인 생성됨: anchoredPosition={anchoredPosition}, sprite={(_cachedCoinSprite != null ? _cachedCoinSprite.name : "null")}, parent={coinObj.transform.parent?.name}");
-
             return coinObj;
         }
 
@@ -699,7 +668,6 @@ namespace WaiJigsaw.UI
             // TODO: 파티클 시스템 구현
             // - 폭죽 효과
             // - 색종이 효과
-            Debug.Log("[LevelClearSequence] 축하 연출 재생 (TODO: 파티클 구현)");
         }
 
         #endregion

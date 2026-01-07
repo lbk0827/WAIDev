@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 필수 참조 문서
+
+다음 문서를 반드시 참조할 것:
+
+| 문서 | 경로 | 설명 |
+|------|------|------|
+| 프로젝트 구조 | `.claude/rules/project-structure.md` | 디렉토리/클래스 구조 |
+| 멘토 역할 | `.claude/rules/mentor-role.md` | 비개발자 지원 가이드 |
+| 리팩토링 규칙 | `.claude/rules/refactoring-rule.md` | 코드 분리/정리 기준 |
+| 작업 히스토리 | `.claude/rules/history.md` | 전체 프로젝트 변경 이력 |
+
+---
+
 ## Project Overview
 
 Unity 2D jigsaw puzzle game (wai_jigsaw). Players solve puzzles by dragging and connecting puzzle pieces. Written primarily in Korean.
@@ -11,31 +24,11 @@ Unity 2D jigsaw puzzle game (wai_jigsaw). Players solve puzzles by dragging and 
 - **Engine**: Unity 2022.3 LTS (2D Template)
 - **Language**: C# (.NET Standard 2.1)
 - **Rendering**: Unity 2D with SpriteRenderer, Orthographic Camera
-- **UI**: Unity UI (uGUI) with legacy Text/Image/Button components
+- **UI**: Unity UI (uGUI) + TextMeshPro
+- **Animation**: DOTween
 - **Physics**: 2D Colliders (BoxCollider2D) for mouse input detection
 - **Data Storage**: PlayerPrefs (level progress), ScriptableObject (level/puzzle configs)
 - **Input**: Legacy Input System (Input.mousePosition, OnMouseDown/Drag/Up)
-
-## Project Structure
-
-```
-Assets/
-├── Scenes/
-│   └── SampleScene.unity      # Main game scene
-├── Scripts/
-│   ├── GameManager.cs         # Singleton, game state & flow
-│   ├── UIManager.cs           # UI panel management
-│   ├── PuzzleBoardSetup.cs    # Puzzle creation & logic
-│   ├── DragController.cs      # Piece drag & group system
-│   ├── LevelDatabase.cs       # ScriptableObject for levels
-│   └── PuzzleData.cs          # ScriptableObject for puzzle images
-├── Resources/
-│   ├── MainLevelDB.asset      # LevelDatabase instance
-│   ├── Data_GrandCanyon.asset # PuzzleData instances
-│   └── Data_Pepe.asset
-├── Sprites/                   # Source images for puzzles
-└── UIManager.prefab           # UI prefab
-```
 
 ## Coding Conventions
 
@@ -68,51 +61,6 @@ public int CurrentLevel { get; private set; }
 public UIManager uiManager;
 ```
 
-## Architecture
-
-### Core Components (Singleton Pattern)
-
-**GameManager** (`Assets/Scripts/GameManager.cs`)
-- Central game state manager with `DontDestroyOnLoad`
-- Manages level progression via `CurrentLevel` (persisted with PlayerPrefs)
-- Coordinates transitions: Home -> LevelIntro -> Puzzle -> Result
-- References: UIManager, PuzzleBoardSetup, LevelDatabase
-
-### Puzzle System
-
-**PuzzleBoardSetup** (`Assets/Scripts/PuzzleBoardSetup.cs`)
-- Creates puzzle pieces dynamically by slicing a Texture2D into grid cells
-- Manages slot positions (`_slotPositions`) and piece tracking (`_piecesOnBoard`)
-- Handles piece drop logic with group-aware swapping (transaction-based)
-- Completion check: all pieces in single group AND at correct slot indices
-
-**DragController** (`Assets/Scripts/DragController.cs`)
-- Attached to each puzzle piece GameObject
-- Tracks: `currentSlotIndex` (current board position), `originalGridX/Y` (correct position)
-- Contains `PieceGroup` reference for group-based movement
-- Creates border visuals (4 child GameObjects) that hide when pieces connect
-
-**PieceGroup** (defined in DragController.cs)
-- Runtime grouping system for connected pieces
-- All pieces in a group move together during drag
-- Groups merge when correct neighbors are placed adjacent
-
-### Data Layer
-
-**LevelDatabase** (ScriptableObject)
-- Contains list of `LevelConfig` structs
-- Each config: levelNumber, PuzzleData reference, rows, cols
-
-**PuzzleData** (ScriptableObject)
-- imageId (string identifier)
-- sourceImage (Texture2D used to generate puzzle pieces)
-
-### UI System
-
-**UIManager** (`Assets/Scripts/UIManager.cs`)
-- Manages 4 panels: homePanel, levelIntroPanel, puzzlePanel, resultPanel
-- Button handlers call back to GameManager for state transitions
-
 ## Key Algorithms
 
 ### Piece Swapping (OnPieceDropped)
@@ -131,9 +79,13 @@ public UIManager uiManager;
 
 ## Korean Terminology
 
-- 조각 (jogak) = puzzle piece
-- 레벨 (level) = level
-- 퍼즐 (puzzle) = puzzle
-- 그룹 (group) = group of connected pieces
-- 슬롯 (slot) = grid position
-- 보드 (board) = puzzle board
+| 한국어 | English | 설명 |
+|--------|---------|------|
+| 조각 (jogak) | piece | 퍼즐 조각 |
+| 레벨 (level) | level | 게임 레벨 |
+| 퍼즐 (puzzle) | puzzle | 퍼즐 |
+| 그룹 (group) | group | 연결된 조각들 |
+| 슬롯 (slot) | slot | 그리드 위치 |
+| 보드 (board) | board | 퍼즐 보드 |
+| 테두리 (teturi) | border | 조각/그룹 테두리 |
+| 병합 (byeonghap) | merge | 그룹 합치기 |

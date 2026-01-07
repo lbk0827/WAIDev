@@ -30,11 +30,6 @@ public class DragController : MonoBehaviour
     private float _whiteBorderThickness = 0.025f;  // 조각 크기 대비 비율
     private float _blackBorderThickness = 0.008f;  // 조각 크기 대비 비율
 
-    // ====== EdgeCover 시스템 (spacing 영역 가리기) ======
-    // 0:Top, 1:Bottom, 2:Left, 3:Right
-    private GameObject[] _edgeCovers = new GameObject[4];
-    private float _coverSize = 0f;  // spacing/2 크기
-
     // ====== 카드 시스템 ======
     private SpriteRenderer _cardBackRenderer;   // 카드 뒷면
     private bool _isFlipped = false;            // true = 앞면(퍼즐), false = 뒷면
@@ -248,7 +243,7 @@ public class DragController : MonoBehaviour
         _whiteFrame.transform.localPosition = Vector3.zero;
 
         _whiteFrameRenderer = _whiteFrame.AddComponent<SpriteRenderer>();
-        _whiteFrameRenderer.sprite = CreateUnitSprite();
+        _whiteFrameRenderer.sprite = CreatePixelSprite(1f);  // PPU=1 for frame
         _whiteFrameRenderer.color = Color.white;
         _whiteFrameRenderer.sortingOrder = 2;  // 퍼즐 이미지(1) 위
 
@@ -261,7 +256,7 @@ public class DragController : MonoBehaviour
         _blackFrame.transform.localPosition = Vector3.zero;
 
         _blackFrameRenderer = _blackFrame.AddComponent<SpriteRenderer>();
-        _blackFrameRenderer.sprite = CreateUnitSprite();
+        _blackFrameRenderer.sprite = CreatePixelSprite(1f);  // PPU=1 for frame
         _blackFrameRenderer.color = new Color(0.15f, 0.15f, 0.15f, 1f);
         _blackFrameRenderer.sortingOrder = 3;  // 하얀 프레임 위
 
@@ -322,12 +317,16 @@ public class DragController : MonoBehaviour
         _blackFrameRenderer.SetPropertyBlock(_blackFramePropertyBlock);
     }
 
-    Sprite CreatePixelSprite()
+    /// <summary>
+    /// 1x1 픽셀 스프라이트를 생성합니다.
+    /// </summary>
+    /// <param name="pixelsPerUnit">PPU 값 (기본 100, 프레임용은 1)</param>
+    Sprite CreatePixelSprite(float pixelsPerUnit = 100f)
     {
         Texture2D texture = new Texture2D(1, 1);
         texture.SetPixel(0, 0, Color.white);
         texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+        return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), pixelsPerUnit);
     }
 
     // 인접한 짝과 결합되었을 때 테두리 숨기기
@@ -500,44 +499,6 @@ public class DragController : MonoBehaviour
 
         // 둥근 모서리 복원 (4개 모두 둥글게)
         RestoreAllCorners();
-    }
-
-    // ====== EdgeCover 제어 메서드 ======
-
-    /// <summary>
-    /// 특정 방향의 EdgeCover를 제거합니다 (병합 시 호출).
-    /// </summary>
-    public void RemoveEdgeCover(int direction)
-    {
-        if (direction >= 0 && direction < 4 && _edgeCovers[direction] != null)
-        {
-            _edgeCovers[direction].SetActive(false);
-        }
-    }
-
-    /// <summary>
-    /// 특정 방향의 EdgeCover를 복원합니다 (그룹 분리 시 호출).
-    /// </summary>
-    public void RestoreEdgeCover(int direction)
-    {
-        if (direction >= 0 && direction < 4 && _edgeCovers[direction] != null)
-        {
-            _edgeCovers[direction].SetActive(true);
-        }
-    }
-
-    /// <summary>
-    /// 모든 EdgeCover를 복원합니다 (그룹 완전 분리 시 호출).
-    /// </summary>
-    public void RestoreAllEdgeCovers()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            if (_edgeCovers[i] != null)
-            {
-                _edgeCovers[i].SetActive(true);
-            }
-        }
     }
 
     private Vector3 GetMouseWorldPos()
@@ -929,97 +890,6 @@ public class DragController : MonoBehaviour
 
         // 기존 테두리 숨기기 (뒷면 상태에서는 보이지 않음)
         ShowFrames(false);
-
-        // [Deprecated] EdgeCover는 더 이상 사용하지 않음 - Padding 셰이더로 대체
-        // CreateEdgeCovers();
-        // Padding은 ApplyRoundedCornerShader 호출 후 SetDefaultPadding으로 설정됨
-    }
-
-    /// <summary>
-    /// 커버 크기를 설정합니다 (spacing/2).
-    /// </summary>
-    public void SetCoverSize(float size)
-    {
-        _coverSize = size;
-    }
-
-    /// <summary>
-    /// EdgeCover를 생성합니다 (각 방향의 spacing 영역을 가리는 불투명 커버).
-    /// </summary>
-    void CreateEdgeCovers()
-    {
-        Debug.Log($"[EdgeCover] CreateEdgeCovers 호출됨. _coverSize={_coverSize}, pieceWidth={pieceWidth}, pieceHeight={pieceHeight}");
-
-        if (_coverSize <= 0)
-        {
-            Debug.LogWarning("[EdgeCover] _coverSize가 0 이하입니다. EdgeCover 생성 안됨.");
-            return;
-        }
-
-        float width = pieceWidth;
-        float height = pieceHeight;
-
-        // 커버 색상 (Main Camera 배경색과 자동 동기화)
-        Color coverColor = Camera.main.backgroundColor;
-        coverColor.a = 1f; // 알파값 강제 1 (배경색 알파가 0일 수 있음)
-        Debug.Log($"[EdgeCover] Camera backgroundColor: R={coverColor.r}, G={coverColor.g}, B={coverColor.b}, A={coverColor.a}");
-
-        // 각 방향별 위치와 크기
-        // 0:Top, 1:Bottom, 2:Left, 3:Right
-        // EdgeCover는 이미지 가장자리에 위치하여 spacing/2 만큼 덮음
-        // buffer: 렌더링 틈새 방지를 위한 여유 (0.02f로 증가)
-        float buffer = 0.02f;
-        float coverSizeWithBuffer = _coverSize + buffer;
-
-        // 위치 계산: 커버가 퍼즐 이미지 가장자리를 완전히 덮도록 조정
-        Vector3[] positions = new Vector3[]
-        {
-            new Vector3(0, (height / 2) - (coverSizeWithBuffer / 2) + buffer, 0),   // Top: 상단 가장자리
-            new Vector3(0, -(height / 2) + (coverSizeWithBuffer / 2) - buffer, 0),  // Bottom: 하단 가장자리
-            new Vector3(-(width / 2) + (coverSizeWithBuffer / 2) - buffer, 0, 0),   // Left: 좌측 가장자리
-            new Vector3((width / 2) - (coverSizeWithBuffer / 2) + buffer, 0, 0)     // Right: 우측 가장자리
-        };
-
-        Vector3[] scales = new Vector3[]
-        {
-            new Vector3(width + buffer * 2, coverSizeWithBuffer, 1),      // Top (가로로 긴 막대)
-            new Vector3(width + buffer * 2, coverSizeWithBuffer, 1),      // Bottom
-            new Vector3(coverSizeWithBuffer, height + buffer * 2, 1),     // Left (세로로 긴 막대)
-            new Vector3(coverSizeWithBuffer, height + buffer * 2, 1)      // Right
-        };
-
-        string[] names = new string[] { "EdgeCover_Top", "EdgeCover_Bottom", "EdgeCover_Left", "EdgeCover_Right" };
-
-        for (int i = 0; i < 4; i++)
-        {
-            GameObject cover = new GameObject(names[i]);
-            cover.transform.SetParent(transform, false);
-            cover.transform.localPosition = positions[i];
-
-            SpriteRenderer sr = cover.AddComponent<SpriteRenderer>();
-            // PPU=1인 스프라이트 생성 (스케일이 Unity 단위와 1:1 매칭되도록)
-            sr.sprite = CreateUnitSprite();
-            sr.color = coverColor;
-            sr.sortingOrder = 2; // 퍼즐 이미지(1) 위, 카드뒷면(3) 아래
-
-            // 스케일 적용 (PPU=1이므로 스케일 = 실제 Unity 크기)
-            cover.transform.localScale = scales[i];
-
-            _edgeCovers[i] = cover;
-
-            Debug.Log($"[EdgeCover] {names[i]} 생성됨. 위치={positions[i]}, 크기={scales[i]}");
-        }
-    }
-
-    /// <summary>
-    /// PPU=1인 1x1 픽셀 스프라이트를 생성합니다 (EdgeCover용).
-    /// </summary>
-    Sprite CreateUnitSprite()
-    {
-        Texture2D texture = new Texture2D(1, 1);
-        texture.SetPixel(0, 0, Color.white);
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f); // PPU = 1
     }
 
     /// <summary>
@@ -1221,318 +1091,5 @@ public class DragController : MonoBehaviour
         float radiusBR = (hasBottom || hasRight) ? 0f : _defaultCornerRadius;
 
         SetCornerRadii(radiusTL, radiusTR, radiusBL, radiusBR);
-    }
-}
-
-// ====== 그룹 클래스 ======
-public class PieceGroup
-{
-    public List<DragController> pieces = new List<DragController>();
-    private Dictionary<DragController, Vector3> _startPositions = new Dictionary<DragController, Vector3>();
-    private Vector3 _mouseStartWorldPos;
-
-    // ====== 그룹 테두리 렌더러 (CompositeCollider2D + LineRenderer 방식) ======
-    private GameObject _borderContainer;
-    private GroupBorderRenderer _borderRenderer;
-
-    public void AddPiece(DragController piece)
-    {
-        if (!pieces.Contains(piece))
-        {
-            pieces.Add(piece);
-            piece.group = this;
-        }
-    }
-
-    /// <summary>
-    /// 두 그룹을 병합합니다 (카드 이동 없음 - EdgeCover 제거로 이미지 연결).
-    /// 카드들은 슬롯 위치에 그대로 유지되고, EdgeCover만 제거되어 이미지가 연결됩니다.
-    /// </summary>
-    public void MergeGroupWithSnap(PieceGroup otherGroup, DragController anchorPiece, DragController connectingPiece)
-    {
-        if (otherGroup == this) return;
-
-        // 이전 그룹의 테두리 제거
-        otherGroup.DestroyGroupBorder();
-
-        // 카드 위치 이동 없이 그룹만 병합
-        // EdgeCover 제거는 CheckNeighbor에서 처리됨
-        foreach (var piece in otherGroup.pieces)
-        {
-            piece.group = this;
-            pieces.Add(piece);
-        }
-        otherGroup.pieces.Clear();
-    }
-
-    public void MergeGroup(PieceGroup otherGroup)
-    {
-        if (otherGroup == this) return;
-
-        // 이전 그룹의 테두리 제거
-        otherGroup.DestroyGroupBorder();
-
-        foreach (var piece in otherGroup.pieces)
-        {
-            piece.group = this;
-            pieces.Add(piece);
-        }
-        otherGroup.pieces.Clear();
-    }
-
-    public void RemovePiece(DragController piece)
-    {
-        if (pieces.Contains(piece))
-        {
-            pieces.Remove(piece);
-        }
-    }
-
-    public void OnDragStart(Vector3 mousePos)
-    {
-        _mouseStartWorldPos = mousePos;
-        _startPositions.Clear();
-        foreach (var piece in pieces)
-        {
-            _startPositions[piece] = piece.transform.position;
-        }
-
-        // 드래그 기준 위치 초기화 (드래그 시작 시 새로운 기준점 설정을 위해)
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.ResetDragBasePositions();
-        }
-    }
-
-    public void OnDragUpdate(Vector3 currentMousePos)
-    {
-        Vector3 delta = currentMousePos - _mouseStartWorldPos;
-        foreach (var piece in pieces)
-        {
-            if (_startPositions.ContainsKey(piece))
-            {
-                piece.SetPositionImmediate(_startPositions[piece] + delta);
-            }
-        }
-
-        // 그룹 테두리 위치도 업데이트
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.UpdatePosition();
-        }
-    }
-
-    public void SetSortingOrder(int order)
-    {
-        foreach (var piece in pieces)
-        {
-            // 메인 퍼즐 이미지
-            piece.GetComponent<SpriteRenderer>().sortingOrder = order;
-
-            // 카드 뒷면 (맨 위)
-            if (piece.CardBackRenderer != null)
-            {
-                piece.CardBackRenderer.sortingOrder = order + 10;
-            }
-
-            // 그룹이 2개 이상이면 개별 프레임은 숨기고 그룹 테두리 사용
-            if (pieces.Count >= 2)
-            {
-                piece.ShowFrames(false);
-            }
-            else
-            {
-                // 단독 조각이면 개별 프레임 표시
-                piece.ShowFrames(true);
-
-                // 프레임 테두리 (퍼즐 이미지 위, 오버레이 방식)
-                var allRenderers = piece.GetComponentsInChildren<SpriteRenderer>();
-                foreach (var sr in allRenderers)
-                {
-                    // 자기 자신, 카드 뒷면 제외
-                    if (sr.gameObject == piece.gameObject) continue;
-                    if (piece.CardBackRenderer != null && sr == piece.CardBackRenderer) continue;
-
-                    // 프레임 종류에 따라 다른 order 적용 (퍼즐 이미지 위에 오버레이)
-                    if (sr.gameObject.name == "WhiteFrame")
-                        sr.sortingOrder = order + 1;  // 퍼즐 이미지 위
-                    else if (sr.gameObject.name == "BlackFrame")
-                        sr.sortingOrder = order + 2;  // 하얀 프레임 위
-                    else
-                        sr.sortingOrder = order + 1;
-                }
-            }
-        }
-
-        // 그룹 테두리 sorting order 업데이트
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.SetSortingOrder(order + 1);
-        }
-    }
-
-    // ====== 그룹 테두리 메서드 ======
-
-    /// <summary>
-    /// 그룹 테두리를 업데이트합니다. 2개 이상 조각이 있으면 그룹 테두리 생성/업데이트.
-    /// </summary>
-    public void UpdateGroupBorder()
-    {
-        if (pieces.Count < 2)
-        {
-            // 단독 조각이면 그룹 테두리 제거하고 개별 프레임 표시
-            DestroyGroupBorder();
-            if (pieces.Count == 1)
-            {
-                pieces[0].ShowFrames(true);
-                pieces[0].ShowAllBorders();
-            }
-            return;
-        }
-
-        // 2개 이상: 개별 프레임 숨기고 그룹 테두리 생성/업데이트
-        foreach (var piece in pieces)
-        {
-            piece.ShowFrames(false);
-        }
-
-        CreateOrUpdateGroupBorder();
-    }
-
-    /// <summary>
-    /// 그룹 테두리를 생성하거나 업데이트합니다.
-    /// </summary>
-    private void CreateOrUpdateGroupBorder()
-    {
-        if (pieces.Count < 2) return;
-
-        // 컨테이너가 없으면 생성
-        if (_borderContainer == null)
-        {
-            _borderContainer = new GameObject("GroupBorder");
-
-            // 명시적으로 원점에 배치하고 스케일 1로 설정 (좌표 계산의 기준점)
-            _borderContainer.transform.position = Vector3.zero;
-            _borderContainer.transform.rotation = Quaternion.identity;
-            _borderContainer.transform.localScale = Vector3.one;
-
-            _borderRenderer = _borderContainer.AddComponent<GroupBorderRenderer>();
-
-            // 테두리 두께 및 모서리 반경 설정 (첫 번째 조각 기준)
-            var firstPiece = pieces[0];
-            float whiteWidth, blackWidth;
-            firstPiece.GetBorderThicknessWorldSpace(out whiteWidth, out blackWidth);
-            float cornerRadius = firstPiece.GetCornerRadiusWorldSpace();
-
-            _borderRenderer.SetBorderWidth(whiteWidth, blackWidth);
-            _borderRenderer.SetCornerRadius(cornerRadius);
-        }
-
-        // 조각 목록 전달 및 테두리 업데이트
-        _borderRenderer.SetPieces(pieces);
-    }
-
-    /// <summary>
-    /// 그룹 테두리 위치만 업데이트합니다 (애니메이션 중 호출용).
-    /// UpdateGroupBorder()와 달리 조각 목록을 다시 설정하지 않고 위치만 갱신합니다.
-    /// </summary>
-    public void UpdateGroupBorderPosition()
-    {
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.UpdatePosition();
-        }
-    }
-
-    /// <summary>
-    /// 펌핑 애니메이션용 - 그룹 테두리를 중심 기준으로 스케일 적용
-    /// </summary>
-    public void UpdateGroupBorderWithScale(Vector3 groupCenter, float scale)
-    {
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.UpdatePositionWithScale(groupCenter, scale);
-        }
-    }
-
-    /// <summary>
-    /// 펌핑 애니메이션 완료 후 테두리 스케일 데이터 초기화
-    /// </summary>
-    public void ResetGroupBorderScaleData()
-    {
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.ResetScaleData();
-        }
-    }
-
-    /// <summary>
-    /// 그룹 테두리를 제거합니다.
-    /// </summary>
-    public void DestroyGroupBorder()
-    {
-        if (_borderContainer != null)
-        {
-            // LineRenderer를 먼저 비활성화하여 즉시 화면에서 숨김
-            // (Object.Destroy는 프레임 끝에서 실행되므로)
-            if (_borderRenderer != null)
-            {
-                _borderRenderer.SetVisible(false);
-            }
-            Object.Destroy(_borderContainer);
-            _borderContainer = null;
-            _borderRenderer = null;
-        }
-    }
-
-    /// <summary>
-    /// 그룹 테두리 컨테이너의 Transform을 반환합니다.
-    /// 클리어 시퀀스에서 보드와 함께 이동시키기 위해 사용됩니다.
-    /// </summary>
-    public Transform GetBorderContainerTransform()
-    {
-        if (_borderContainer != null)
-        {
-            return _borderContainer.transform;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// 그룹 테두리의 LineRenderer 점들을 지정된 오프셋만큼 이동합니다.
-    /// </summary>
-    public void MoveBorderPoints(Vector3 offset)
-    {
-        if (_borderRenderer != null)
-        {
-            Debug.Log($"[PieceGroup] MoveBorderPoints 실행: offset={offset}, borderRenderer={_borderRenderer.gameObject.name}, active={_borderRenderer.gameObject.activeInHierarchy}");
-            _borderRenderer.MoveAllPoints(offset);
-        }
-        else
-        {
-            Debug.LogWarning($"[PieceGroup] MoveBorderPoints: _borderRenderer가 null입니다. (조각 수: {pieces.Count})");
-        }
-    }
-
-    /// <summary>
-    /// 그룹 테두리를 조각들의 중심에 맞춰 보정합니다.
-    /// </summary>
-    public void AlignBorderToPieces()
-    {
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.AlignBorderToPieces();
-        }
-    }
-
-    /// <summary>
-    /// 그룹 테두리를 지정된 중심 위치에 맞춰 보정합니다.
-    /// </summary>
-    public void AlignBorderToCenter(Vector3 targetCenter)
-    {
-        if (_borderRenderer != null)
-        {
-            _borderRenderer.AlignBorderToCenter(targetCenter);
-        }
     }
 }

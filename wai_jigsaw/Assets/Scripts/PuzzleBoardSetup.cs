@@ -60,7 +60,7 @@ public class PuzzleBoardSetup : MonoBehaviour
 
     private List<Vector3> _slotPositions = new List<Vector3>();
     private List<DragController> _piecesOnBoard = new List<DragController>();
-    private List<GameObject> _cardSlots = new List<GameObject>();  // 카드 슬롯 배경
+    private List<GameObject> _cardSlots = new List<GameObject>();
 
     // 그룹 테두리 업데이트 지연 플래그 (연쇄 병합 중에는 중간 업데이트 스킵)
     private bool _deferGroupBorderUpdate = false;
@@ -75,9 +75,6 @@ public class PuzzleBoardSetup : MonoBehaviour
 
     // 카드 뒷면 스프라이트
     private Sprite _cardBackSprite;
-
-    // 인트로 애니메이션 상태
-    private bool _isPlayingIntro = false;
 
     public void SetupCurrentLevel(int levelNumber)
     {
@@ -395,8 +392,6 @@ public class PuzzleBoardSetup : MonoBehaviour
     /// </summary>
     private IEnumerator PlayIntroAnimation()
     {
-        _isPlayingIntro = true;
-
         int totalCards = _piecesOnBoard.Count;
 
         // 0단계: 먼저 셔플 순서 결정 (실제 위치 이동 없이 데이터만 셔플)
@@ -460,9 +455,6 @@ public class PuzzleBoardSetup : MonoBehaviour
         {
             piece.SetDraggable(true);
         }
-
-        _isPlayingIntro = false;
-        Debug.Log("인트로 애니메이션 완료. 게임 시작!");
     }
 
     /// <summary>
@@ -603,30 +595,6 @@ public class PuzzleBoardSetup : MonoBehaviour
 
         // 그룹 테두리 위치 업데이트
         group.UpdateGroupBorder();
-    }
-
-    void ShufflePieces()
-    {
-        // Simple shuffle of contents
-        int n = _piecesOnBoard.Count;
-        while (n > 1)
-        {
-            n--;
-            int k = Random.Range(0, n + 1);
-            DragController temp = _piecesOnBoard[k];
-            _piecesOnBoard[k] = _piecesOnBoard[n];
-            _piecesOnBoard[n] = temp;
-        }
-
-        // Apply positions
-        for (int i = 0; i < _piecesOnBoard.Count; i++)
-        {
-            _piecesOnBoard[i].currentSlotIndex = i;
-            _piecesOnBoard[i].UpdatePosition(_slotPositions[i]);
-        }
-
-        // [중요] 셔플 후 이미 인접한 정답 조각들을 그룹화
-        CheckInitialConnections();
     }
 
     /// <summary>
@@ -1074,24 +1042,6 @@ public class PuzzleBoardSetup : MonoBehaviour
         foreach (var p in allPieces)
         {
             p.UpdateCornersBasedOnGroup();
-        }
-    }
-
-    void CheckConnections(PieceGroup group)
-    {
-        // Iterate through all pieces in the group
-        // Check their Neighbors (Up, Down, Left, Right)
-        // If Neighbor is the Correct Neighbor (based on OriginalGrid coordinates), Merge.
-
-        // We use a copy of the list because the group will grow during iteration
-        List<DragController> piecesToCheck = new List<DragController>(group.pieces);
-
-        foreach (var piece in piecesToCheck)
-        {
-            CheckNeighbor(piece, 0, -1); // Top (Row -1)
-            CheckNeighbor(piece, 0, 1);  // Bottom (Row +1)
-            CheckNeighbor(piece, -1, 0); // Left (Col -1)
-            CheckNeighbor(piece, 1, 0);  // Right (Col +1)
         }
     }
 

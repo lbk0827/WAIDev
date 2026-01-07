@@ -444,6 +444,40 @@ Debug.Log($"[PuzzleBoardSetup] CheckConnectionsRecursive 완료 - 최종 그룹 
 
 ---
 
+## 2026-01-07
+
+### 병합된 카드 사이 투명 틈 이슈 수정 시도 (롤백됨)
+
+#### 문제 현상
+- 병합된 ㄴ 모양(1x2) 카드에서 두 카드 사이에 투명한 틈이 보임
+- 2026-01-02에 시도했던 이슈와 동일
+
+#### 시도한 해결 방법 (실패 → 롤백)
+
+**1. RoundedSprite.shader - UV 재매핑 방식**
+```glsl
+// 음수 패딩 방향으로 UV 범위 조정
+float uvMinX = -leftExpand;
+float uvMaxX = 1.0 + rightExpand;
+textureUV.x = uvMinX + normalizedUV.x * (uvMaxX - uvMinX);
+```
+- **문제**: UV 전체가 재매핑되어 음수 패딩이 없는 방향도 영향 받음
+- **결과**: 이미지가 압축/늘어나서 합쳐진 카드에서 이미지가 어긋나 보임
+
+**2. DragController.cs - WhiteFrame 두께 보정**
+```csharp
+const float antiAliasingCompensation = 0.005f;
+float whiteFrameThicknessUV = _whiteBorderThickness + _blackBorderThickness + antiAliasingCompensation;
+```
+- **문제**: 프레임이 두꺼워져서 이미지 일부가 가려짐
+
+#### 결론
+- 모든 수정 사항 롤백
+- 셰이더에서 UV 조작 방식은 부작용이 크므로 적합하지 않음
+- 틈 문제는 현재 상태로 유지 (추후 다른 접근법 검토 필요)
+
+---
+
 ## 주요 파일 위치
 
 | 구분 | 경로 |
