@@ -478,6 +478,95 @@ float whiteFrameThicknessUV = _whiteBorderThickness + _blackBorderThickness + an
 
 ---
 
+## 2026-01-07 (오후)
+
+### 퍼즐 클리어 축하 연출 구현
+
+#### CelebrationController.cs 생성
+- **파일**: `Assets/Scripts/UI/CelebrationController.cs`
+- 레벨 클리어 시 파티클 연출 관리
+- 연출 구성:
+  1. 하단 좌우 폭발 (Burst) - 화면 양쪽에서 색종이가 중앙으로 뿌려짐 (1회성)
+  2. 상단 낙하 (Falling) - 화면 상단에서 색종이가 비처럼 떨어짐 (Loop)
+- `Play()`, `Stop()` 메서드로 연출 제어
+- Inspector 설정: `_fallingStartDelay` (하단 폭발 후 상단 낙하 시작까지 딜레이)
+
+#### LevelClearSequence.cs 수정
+- `_celebrationController` 필드 추가 (Inspector 할당)
+- Step 4에서 `PlayCelebrationEffect()` 호출
+- NEXT 버튼 클릭 시 `StopCelebrationEffect()` 호출
+
+#### 파티클 시스템 설정 가이드
+
+**Burst 파티클 (폭죽 효과)**
+- Shape: Cone, Angle=15~30
+- Rotation: Z=-45 (왼쪽), Z=225 (오른쪽)
+- Gravity Modifier: 0.3~0.5 (포물선 궤적)
+- Start Speed: 8~12
+- Play On Awake: 체크 해제 (중요!)
+
+**Falling 파티클 (비처럼 떨어지는 효과)**
+- Shape: Box, Scale X=화면 너비
+- Looping: 체크
+- Gravity Modifier: 0.5~1.0
+- Play On Awake: 체크 해제
+
+**Texture Sheet Animation**
+- Mode: Sprites
+- 여러 색종이 스프라이트를 추가하여 랜덤 선택
+
+---
+
+### 병합 카드 틈 이슈 분석 및 수정
+
+#### 문제 현상
+- 병합된 카드 사이에 투명한 틈이 보임
+- 디버그 로그에서 Gap 값: 0.000119 ~ 0.000363 (매우 작은 부동소수점 오차)
+
+#### 원인 분석
+1. 슬롯 간격(`slotWidth`, `slotHeight`)은 `pieceSpacing` 없이 배치됨 (물리적 간격 없음)
+2. `RemovePadding()`에서 음수 패딩(-0.015) 설정하지만 셰이더에서 효과 없음
+3. **핵심 원인**: `roundedBoxSDF4`에서 반경이 0인 모서리에서도 `dist > 0.0`인 픽셀이 투명 처리됨
+
+#### RoundedSprite.shader 수정
+```glsl
+// 기존: 반경 0인 모서리에서 dist > 0.0이면 알파 0 설정
+if (selectedRadius > 0.001) {
+    // 안티앨리어싱 적용
+} else {
+    if (dist > 0.0) { c.a = 0.0; }  // ← 이 부분이 틈의 원인
+}
+
+// 변경: 반경 0인 모서리는 클리핑 없이 그대로 표시
+if (selectedRadius > 0.001) {
+    float delta = fwidth(dist);
+    float alpha = 1.0 - smoothstep(-delta, delta, dist);
+    c.a *= alpha;
+}
+// else: 반경 0인 모서리는 클리핑 없이 직선 가장자리 유지
+```
+
+#### 변경된 파일
+- `Assets/Shaders/RoundedSprite.shader`: 반경 0인 모서리 클리핑 비활성화
+
+---
+
+### 코드 정리 (디버그 로그 제거)
+
+#### GroupBorderRenderer.cs
+- 디버그 로그 제거
+- 925줄 → 836줄 (89줄 감소)
+
+#### LevelClearSequence.cs
+- 디버그 로그 제거
+- 707줄 → 675줄 (32줄 감소)
+
+#### 유지된 로그
+- `Debug.LogWarning` (경고 메시지) - 문제 진단에 필요
+- `CelebrationController.cs`의 디버그 로그 - 파티클 설정 확인용 (향후 제거 예정)
+
+---
+
 ## 주요 파일 위치
 
 | 구분 | 경로 |
