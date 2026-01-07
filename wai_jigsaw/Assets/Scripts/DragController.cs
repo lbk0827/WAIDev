@@ -763,6 +763,13 @@ public class DragController : MonoBehaviour
         {
             _propertyBlock.SetVector(PADDING_PROPERTY, _padding);
             _spriteRenderer.SetPropertyBlock(_propertyBlock);
+
+            // [DEBUG] 셰이더에 전달되는 패딩값 로깅 (틈 이슈 디버깅용)
+            Vector4 uvRect = _propertyBlock.GetVector("_UVRect");
+            Debug.Log($"[MergeDebug] ApplyPadding - Grid({originalGridX},{originalGridY}) " +
+                      $"Padding(LRTB): ({_padding.x:F4}, {_padding.y:F4}, {_padding.z:F4}, {_padding.w:F4}), " +
+                      $"UVRect: {uvRect}, " +
+                      $"SpriteSize: {_spriteRenderer.bounds.size}");
         }
         else
         {
@@ -807,6 +814,9 @@ public class DragController : MonoBehaviour
         // -0.015 = 1.5% 확장으로 인접 카드와 충분히 겹침 (빈틈 방지)
         const float overlapPadding = -0.015f;
 
+        string[] dirNames = { "Top", "Bottom", "Left", "Right" };
+        Vector4 oldPadding = _padding;
+
         switch (direction)
         {
             case 0: _padding.z = overlapPadding; break; // Top
@@ -814,6 +824,13 @@ public class DragController : MonoBehaviour
             case 2: _padding.x = overlapPadding; break; // Left
             case 3: _padding.y = overlapPadding; break; // Right
         }
+
+        // [DEBUG] 패딩 변경 로깅 (틈 이슈 디버깅용)
+        Debug.Log($"[MergeDebug] RemovePadding - Grid({originalGridX},{originalGridY}) " +
+                  $"Direction: {dirNames[direction]}, " +
+                  $"OldPadding: {oldPadding}, NewPadding: {_padding}, " +
+                  $"OverlapValue: {overlapPadding}");
+
         ApplyPadding();
     }
 

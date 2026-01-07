@@ -72,6 +72,10 @@ namespace WaiJigsaw.UI
         [Tooltip("시작 위치 분산 범위 (픽셀)")]
         [SerializeField] private float _startSpreadRange = 30f;
 
+        [Header("====== Celebration Effect ======")]
+        [Tooltip("축하 연출 컨트롤러 (파티클 시스템)")]
+        [SerializeField] private CelebrationController _celebrationController;
+
         [Header("====== Animation Settings ======")]
         [Tooltip("UI 페이드 시간 (초)")]
         [SerializeField] private float _uiFadeDuration = 0.3f;
@@ -160,6 +164,9 @@ namespace WaiJigsaw.UI
                 _nextButton.interactable = false;
             }
 
+            // 축하 연출 중지
+            StopCelebrationEffect();
+
             // 코인 획득 연출 재생
             PlayCoinFlyAnimation(() =>
             {
@@ -183,6 +190,9 @@ namespace WaiJigsaw.UI
         {
             _mainSequence?.Kill();
             _isPlaying = false;
+
+            // 축하 연출 중지
+            StopCelebrationEffect();
 
             // 보드 위치 복원
             if (_boardContainer != null && _boardOriginalPosition != Vector3.zero)
@@ -306,8 +316,8 @@ namespace WaiJigsaw.UI
                 Debug.LogWarning("[LevelClearSequence] _puzzleBoardSetup이 할당되지 않았습니다! Inspector에서 설정해주세요.");
             }
 
-            // ====== Step 4: 축하 연출 (TODO: 파티클) ======
-            // PlayCelebrationEffect(); // 추후 구현
+            // ====== Step 4: 축하 연출 (파티클) ======
+            _mainSequence.AppendCallback(() => PlayCelebrationEffect());
 
             // ====== Step 5: 클리어 UI 등장 ======
             _mainSequence.AppendInterval(_stepDelay);
@@ -658,16 +668,28 @@ namespace WaiJigsaw.UI
 
         #endregion
 
-        #region Celebration Effect (TODO)
+        #region Celebration Effect
 
         /// <summary>
         /// 축하 연출을 재생합니다. (파티클 시스템)
         /// </summary>
         private void PlayCelebrationEffect()
         {
-            // TODO: 파티클 시스템 구현
-            // - 폭죽 효과
-            // - 색종이 효과
+            if (_celebrationController != null)
+            {
+                _celebrationController.Play();
+            }
+        }
+
+        /// <summary>
+        /// 축하 연출을 중지합니다.
+        /// </summary>
+        private void StopCelebrationEffect()
+        {
+            if (_celebrationController != null)
+            {
+                _celebrationController.Stop();
+            }
         }
 
         #endregion

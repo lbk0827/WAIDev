@@ -1121,6 +1121,26 @@ public class PuzzleBoardSetup : MonoBehaviour
         {
             // They are correct neighbors!
 
+            // [DEBUG] 병합 시 카드 정보 로깅 (틈 이슈 디버깅용)
+            string direction = rowOffset == -1 ? "Top" : rowOffset == 1 ? "Bottom" : colOffset == -1 ? "Left" : "Right";
+            Debug.Log($"[MergeDebug] === 카드 병합 시작 ({direction}) ===");
+            Debug.Log($"[MergeDebug] Piece: Grid({piece.originalGridX},{piece.originalGridY}) -> Slot[{piece.currentSlotIndex}]");
+            Debug.Log($"[MergeDebug] Neighbor: Grid({neighbor.originalGridX},{neighbor.originalGridY}) -> Slot[{neighbor.currentSlotIndex}]");
+            Debug.Log($"[MergeDebug] Piece Position: {piece.transform.position}");
+            Debug.Log($"[MergeDebug] Neighbor Position: {neighbor.transform.position}");
+            Debug.Log($"[MergeDebug] Piece Size: ({piece.pieceWidth}, {piece.pieceHeight})");
+            Debug.Log($"[MergeDebug] Unit Size: ({_unitWidth}, {_unitHeight})");
+
+            // 실제 거리 계산
+            Vector3 posDiff = neighbor.transform.position - piece.transform.position;
+            float expectedDistX = Mathf.Abs(colOffset) * _unitWidth;
+            float expectedDistY = Mathf.Abs(rowOffset) * _unitHeight;
+            Debug.Log($"[MergeDebug] Position Diff: ({posDiff.x:F6}, {posDiff.y:F6})");
+            Debug.Log($"[MergeDebug] Expected Diff: ({expectedDistX:F6}, {expectedDistY:F6})");
+            Debug.Log($"[MergeDebug] Gap: ({Mathf.Abs(posDiff.x) - expectedDistX:F6}, {Mathf.Abs(posDiff.y) - expectedDistY:F6})");
+            Debug.Log($"[MergeDebug] Slot Positions: Piece={_slotPositions[piece.currentSlotIndex]}, Neighbor={_slotPositions[neighbor.currentSlotIndex]}");
+            Debug.Log($"[MergeDebug] ================================");
+
             // 3. Merge Groups (스냅하여 spacing 제거)
             if (piece.group != neighbor.group)
             {
