@@ -148,6 +148,7 @@ public class GroupBorderRenderer : MonoBehaviour
 
     /// <summary>
     /// 외곽선을 계산하고 LineRenderer에 적용합니다.
+    /// 그리드 인덱스(originalGridX/Y) 기반으로 인접 판단하여 부동소수점 오차 문제 해결.
     /// </summary>
     private void CalculateAndApplyOutline()
     {
@@ -159,26 +160,30 @@ public class GroupBorderRenderer : MonoBehaviour
             return;
         }
 
-        // 1. 조각들의 월드 위치 수집 (실제 화면 위치 기반)
-        List<Vector3> worldPositions = new List<Vector3>();
+        // 1. 조각들의 그리드 인덱스와 월드 위치를 함께 수집
+        List<PieceGridInfo> pieceInfos = new List<PieceGridInfo>();
 
         foreach (var piece in _pieces)
         {
             // null 체크 (조각이 파괴된 경우)
             if (piece == null) continue;
-            worldPositions.Add(piece.transform.position);
+            pieceInfos.Add(new PieceGridInfo(
+                piece.originalGridX,
+                piece.originalGridY,
+                piece.transform.position
+            ));
         }
 
         // 유효한 조각이 없으면 리턴
-        if (worldPositions.Count == 0)
+        if (pieceInfos.Count == 0)
         {
             _whiteLineRenderer.positionCount = 0;
             _blackLineRenderer.positionCount = 0;
             return;
         }
 
-        // 2. 외곽 변(Edge) 찾기 - 월드 위치 기반으로 인접 판단
-        List<Edge> outerEdges = FindOuterEdgesFromWorldPositions(worldPositions);
+        // 2. 외곽 변(Edge) 찾기 - 그리드 인덱스 기반으로 인접 판단 (부동소수점 오차 없음)
+        List<Edge> outerEdges = FindOuterEdgesFromGridIndices(pieceInfos);
 
         if (outerEdges.Count == 0)
         {
@@ -245,89 +250,85 @@ public class GroupBorderRenderer : MonoBehaviour
     }
 
     /// <summary>
-    /// 월드 위치 기반으로 외곽 변(인접 조각이 없는 변)을 찾습니다.
-    /// 실제 화면 위치 간의 거리로 인접 여부를 판단합니다.
+    /// 그리드 인덱스 기반으로 외곽 변(인접 조각이 없는 변)을 찾습니다.
+    /// 정수 인덱스 비교로 부동소수점 오차 문제를 완전히 제거합니다.
     /// 각 변은 시계 방향으로 정의됩니다 (외곽선을 따라 시계 방향으로 순회).
+    ///
+    /// [중요] Edge 좌표는 그리드 기준 좌표로 계산합니다.
+    /// 그룹 중심(anchor)을 기준으로 각 조각의 상대 위치를 그리드 인덱스로 계산하여
+    /// Edge 끝점이 정확히 일치하도록 합니다 (L자 형태에서도 연결 보장).
     /// </summary>
-    private List<Edge> FindOuterEdgesFromWorldPositions(List<Vector3> worldPositions)
+    private List<Edge> FindOuterEdgesFromGridIndices(List<PieceGridInfo> pieceInfos)
     {
         List<Edge> edges = new List<Edge>();
+
+        if (pieceInfos.Count == 0) return edges;
 
         float halfW = _pieceWidth / 2f;
         float halfH = _pieceHeight / 2f;
 
-        // 인접 판단을 위한 거리 임계값 (조각 크기의 10% 오차 허용)
-        float toleranceX = _pieceWidth * 0.1f;
-        float toleranceY = _pieceHeight * 0.1f;
-
-        foreach (var cellCenter in worldPositions)
+        // 빠른 조회를 위해 그리드 인덱스 HashSet 생성
+        HashSet<Vector2Int> gridPositions = new HashSet<Vector2Int>();
+        foreach (var info in pieceInfos)
         {
-            // 4방향에 인접 조각이 있는지 검사
-            bool hasTop = false;
-            bool hasBottom = false;
-            bool hasLeft = false;
-            bool hasRight = false;
+            gridPositions.Add(new Vector2Int(info.gridX, info.gridY));
+        }
 
-            foreach (var otherPos in worldPositions)
-            {
-                if (otherPos == cellCenter) continue;
+        // 그룹의 anchor 조각 (첫 번째 조각)의 그리드 인덱스와 월드 위치를 기준으로 삼음
+        var anchor = pieceInfos[0];
+        int anchorGx = anchor.gridX;
+        int anchorGy = anchor.gridY;
+        Vector3 anchorWorldPos = anchor.worldPosition;
 
-                float dx = otherPos.x - cellCenter.x;
-                float dy = otherPos.y - cellCenter.y;
+        foreach (var pieceInfo in pieceInfos)
+        {
+            int gx = pieceInfo.gridX;
+            int gy = pieceInfo.gridY;
 
-                // 위쪽 인접 (dy가 pieceHeight만큼 크고, dx는 거의 0)
-                if (Mathf.Abs(dy - _pieceHeight) < toleranceY && Mathf.Abs(dx) < toleranceX)
-                {
-                    hasTop = true;
-                }
-                // 아래쪽 인접
-                if (Mathf.Abs(dy + _pieceHeight) < toleranceY && Mathf.Abs(dx) < toleranceX)
-                {
-                    hasBottom = true;
-                }
-                // 오른쪽 인접
-                if (Mathf.Abs(dx - _pieceWidth) < toleranceX && Mathf.Abs(dy) < toleranceY)
-                {
-                    hasRight = true;
-                }
-                // 왼쪽 인접
-                if (Mathf.Abs(dx + _pieceWidth) < toleranceX && Mathf.Abs(dy) < toleranceY)
-                {
-                    hasLeft = true;
-                }
-            }
+            // [핵심] anchor 기준 상대 그리드 인덱스로 월드 좌표 계산
+            // 이렇게 하면 같은 그리드 위치는 항상 동일한 월드 좌표를 가짐
+            int relGx = gx - anchorGx;
+            int relGy = gy - anchorGy;
+            float worldX = anchorWorldPos.x + (relGx * _pieceWidth);
+            float worldY = anchorWorldPos.y - (relGy * _pieceHeight);  // Y는 그리드 인덱스가 증가할수록 아래로
+
+            // 4방향에 인접 조각이 있는지 검사 (정수 비교 - 오차 없음)
+            bool hasTop = gridPositions.Contains(new Vector2Int(gx, gy - 1));    // Y 감소 = 위
+            bool hasBottom = gridPositions.Contains(new Vector2Int(gx, gy + 1)); // Y 증가 = 아래
+            bool hasLeft = gridPositions.Contains(new Vector2Int(gx - 1, gy));
+            bool hasRight = gridPositions.Contains(new Vector2Int(gx + 1, gy));
 
             // 인접 조각이 없는 방향의 변을 외곽 변으로 추가
             // 시계 방향으로 정의: Top(→), Right(↓), Bottom(←), Left(↑)
             if (!hasTop)
             {
                 // Top: 왼쪽에서 오른쪽으로
-                Vector2 start = new Vector2(cellCenter.x - halfW, cellCenter.y + halfH);
-                Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
+                Vector2 start = new Vector2(worldX - halfW, worldY + halfH);
+                Vector2 end = new Vector2(worldX + halfW, worldY + halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Top));
             }
 
             if (!hasRight)
             {
                 // Right: 위에서 아래로
-                Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y + halfH);
-                Vector2 end = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
+                Vector2 start = new Vector2(worldX + halfW, worldY + halfH);
+                Vector2 end = new Vector2(worldX + halfW, worldY - halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Right));
             }
 
             if (!hasBottom)
             {
                 // Bottom: 오른쪽에서 왼쪽으로
-                Vector2 start = new Vector2(cellCenter.x + halfW, cellCenter.y - halfH);
-                Vector2 end = new Vector2(cellCenter.x - halfW, cellCenter.y - halfH);
+                Vector2 start = new Vector2(worldX + halfW, worldY - halfH);
+                Vector2 end = new Vector2(worldX - halfW, worldY - halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Bottom));
             }
 
             if (!hasLeft)
             {
                 // Left: 아래에서 위로
-                Vector2 start = new Vector2(cellCenter.x - halfW, cellCenter.y - halfH);
-                Vector2 end = new Vector2(cellCenter.x - halfW, cellCenter.y + halfH);
+                Vector2 start = new Vector2(worldX - halfW, worldY - halfH);
+                Vector2 end = new Vector2(worldX - halfW, worldY + halfH);
                 edges.Add(new Edge(start, end, EdgeDirection.Left));
             }
         }
@@ -337,16 +338,16 @@ public class GroupBorderRenderer : MonoBehaviour
 
     /// <summary>
     /// 외곽 변들을 연결하여 연속된 폐곡선 경로를 생성합니다.
-    /// 거리 기반 비교로 부동소수점 오차 문제 해결.
+    /// 그리드 기반 Edge 생성으로 인해 이론적으로 Edge 끝점들은 정확히 일치해야 합니다.
+    /// 단, 드래그 중 미세한 부동소수점 오차가 있을 수 있으므로 작은 tolerance 사용.
     /// </summary>
     private List<Vector2> ConnectEdgesToPath(List<Edge> edges)
     {
         if (edges.Count == 0) return new List<Vector2>();
 
-        // 거리 기반 비교를 위한 임계값
-        // 드래그/이동 중 조각 위치가 미세하게 어긋날 수 있으므로 조각 크기의 20%로 설정
-        float tolerance = Mathf.Min(_pieceWidth, _pieceHeight) * 0.2f;
-        if (tolerance < 0.01f) tolerance = 0.01f;
+        // 그리드 기반이므로 Edge 끝점들이 거의 정확히 일치함
+        // 부동소수점 연산 오차만 허용하면 됨 (조각 크기의 1% 또는 최소 0.001)
+        float tolerance = Mathf.Max(Mathf.Min(_pieceWidth, _pieceHeight) * 0.01f, 0.001f);
 
         List<Vector2> path = new List<Vector2>();
         HashSet<int> usedEdges = new HashSet<int>();
@@ -880,7 +881,25 @@ public class GroupBorderRenderer : MonoBehaviour
         }
     }
 
-    // ====== Edge 구조체 ======
+    // ====== 내부 구조체 정의 ======
+
+    /// <summary>
+    /// 조각의 그리드 인덱스와 월드 위치를 함께 저장하는 구조체.
+    /// 인접 판단은 그리드 인덱스로, Edge 좌표 계산은 월드 위치로 수행.
+    /// </summary>
+    private struct PieceGridInfo
+    {
+        public int gridX;
+        public int gridY;
+        public Vector3 worldPosition;
+
+        public PieceGridInfo(int gx, int gy, Vector3 worldPos)
+        {
+            gridX = gx;
+            gridY = gy;
+            worldPosition = worldPos;
+        }
+    }
 
     private enum EdgeDirection
     {
