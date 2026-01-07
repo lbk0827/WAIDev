@@ -125,6 +125,9 @@ public class GroupBorderRenderer : MonoBehaviour
         _pieceWidth = firstPiece.pieceWidth;
         _pieceHeight = firstPiece.pieceHeight;
 
+        // 디버그: 전달받은 조각들의 위치 확인
+        Debug.Log($"[GroupBorderRenderer] SetPieces 호출: 조각수={pieces.Count}, 첫조각={firstPiece.name}, 첫조각위치=({firstPiece.transform.position.x:F3}, {firstPiece.transform.position.y:F3}), pieceWidth={_pieceWidth:F3}, pieceHeight={_pieceHeight:F3}");
+
         // pieceWidth/pieceHeight가 0인 경우 SpriteRenderer에서 계산
         if (_pieceWidth <= 0 || _pieceHeight <= 0)
         {
@@ -135,6 +138,7 @@ public class GroupBorderRenderer : MonoBehaviour
                 Vector3 scale = firstPiece.transform.localScale;
                 _pieceWidth = spriteSize.x * scale.x;
                 _pieceHeight = spriteSize.y * scale.y;
+                Debug.Log($"[GroupBorderRenderer] SpriteRenderer에서 크기 계산: pieceWidth={_pieceWidth:F3}, pieceHeight={_pieceHeight:F3}");
             }
         }
 
@@ -151,6 +155,7 @@ public class GroupBorderRenderer : MonoBehaviour
         {
             _whiteLineRenderer.positionCount = 0;
             _blackLineRenderer.positionCount = 0;
+            Debug.LogWarning($"[GroupBorderRenderer] CalculateAndApplyOutline 중단: pieceCount={_pieces.Count}, pieceWidth={_pieceWidth}, pieceHeight={_pieceHeight}");
             return;
         }
 
@@ -205,6 +210,37 @@ public class GroupBorderRenderer : MonoBehaviour
             worldPos.z = 0f;
             _whiteLineRenderer.SetPosition(i, worldPos);
             _blackLineRenderer.SetPosition(i, worldPos);
+        }
+
+        // 디버그: 테두리 중심과 조각 중심 비교
+        if (_pieces.Count > 0 && _pieces[0] != null && smoothedPoints.Count > 0)
+        {
+            // 조각들의 바운딩 박스 중심 계산
+            Vector3 piecesMin = _pieces[0].transform.position;
+            Vector3 piecesMax = _pieces[0].transform.position;
+            foreach (var piece in _pieces)
+            {
+                if (piece == null) continue;
+                Vector3 pos = piece.transform.position;
+                piecesMin = Vector3.Min(piecesMin, pos);
+                piecesMax = Vector3.Max(piecesMax, pos);
+            }
+            Vector3 piecesCenter = (piecesMin + piecesMax) / 2f;
+
+            // 테두리의 바운딩 박스 중심 계산
+            Vector3 borderMin = smoothedPoints[0];
+            Vector3 borderMax = smoothedPoints[0];
+            foreach (var pt in smoothedPoints)
+            {
+                borderMin = Vector3.Min(borderMin, pt);
+                borderMax = Vector3.Max(borderMax, pt);
+            }
+            Vector3 borderCenter = (borderMin + borderMax) / 2f;
+
+            Vector3 offset = piecesCenter - borderCenter;
+            Debug.Log($"[GroupBorderRenderer] CalculateAndApplyOutline 완료: pieceWidth={_pieceWidth:F3}, pieceHeight={_pieceHeight:F3}, " +
+                      $"조각중심=({piecesCenter.x:F3}, {piecesCenter.y:F3}), 테두리중심=({borderCenter.x:F3}, {borderCenter.y:F3}), " +
+                      $"오프셋=({offset.x:F3}, {offset.y:F3})");
         }
     }
 
@@ -753,6 +789,94 @@ public class GroupBorderRenderer : MonoBehaviour
         if (!moved)
         {
             Debug.LogWarning($"[GroupBorderRenderer] MoveAllPoints: LineRenderer가 없거나 점이 없습니다. white={_whiteLineRenderer != null} (count={whiteCount}), black={_blackLineRenderer != null} (count={blackCount})");
+        }
+    }
+
+    /// <summary>
+    /// 테두리의 바운딩 박스 중심을 반환합니다.
+    /// </summary>
+    public Vector3 GetBorderCenter()
+    {
+        if (_whiteLineRenderer == null || _whiteLineRenderer.positionCount == 0)
+            return Vector3.zero;
+
+        Vector3[] positions = new Vector3[_whiteLineRenderer.positionCount];
+        _whiteLineRenderer.GetPositions(positions);
+
+        Vector3 min = positions[0];
+        Vector3 max = positions[0];
+
+        for (int i = 1; i < positions.Length; i++)
+        {
+            min = Vector3.Min(min, positions[i]);
+            max = Vector3.Max(max, positions[i]);
+        }
+
+        return (min + max) / 2f;
+    }
+
+    /// <summary>
+    /// 조각들의 바운딩 박스 중심을 반환합니다.
+    /// </summary>
+    public Vector3 GetPiecesCenter()
+    {
+        if (_pieces == null || _pieces.Count == 0)
+            return Vector3.zero;
+
+        Vector3 min = _pieces[0].transform.position;
+        Vector3 max = _pieces[0].transform.position;
+
+        foreach (var piece in _pieces)
+        {
+            if (piece == null) continue;
+            Vector3 pos = piece.transform.position;
+            min = Vector3.Min(min, pos);
+            max = Vector3.Max(max, pos);
+        }
+
+        return (min + max) / 2f;
+    }
+
+    /// <summary>
+    /// 테두리를 조각들의 중심에 맞춰 보정합니다.
+    /// </summary>
+    public void AlignBorderToPieces()
+    {
+        Vector3 borderCenter = GetBorderCenter();
+        Vector3 piecesCenter = GetPiecesCenter();
+        Vector3 offset = piecesCenter - borderCenter;
+
+        Debug.Log($"[GroupBorderRenderer] AlignBorderToPieces 호출: 테두리중심=({borderCenter.x:F3}, {borderCenter.y:F3}), 조각중심=({piecesCenter.x:F3}, {piecesCenter.y:F3}), 오프셋=({offset.x:F3}, {offset.y:F3})");
+
+        if (offset.sqrMagnitude > 0.001f)
+        {
+            Debug.Log($"[GroupBorderRenderer] AlignBorderToPieces: 테두리 이동 적용");
+            MoveAllPoints(offset);
+        }
+        else
+        {
+            Debug.Log($"[GroupBorderRenderer] AlignBorderToPieces: 오프셋이 너무 작아 이동 생략 (sqrMag={offset.sqrMagnitude:F6})");
+        }
+    }
+
+    /// <summary>
+    /// 테두리를 지정된 중심 위치에 맞춰 보정합니다.
+    /// </summary>
+    public void AlignBorderToCenter(Vector3 targetCenter)
+    {
+        Vector3 borderCenter = GetBorderCenter();
+        Vector3 offset = targetCenter - borderCenter;
+
+        Debug.Log($"[GroupBorderRenderer] AlignBorderToCenter 호출: 테두리중심=({borderCenter.x:F3}, {borderCenter.y:F3}), 목표중심=({targetCenter.x:F3}, {targetCenter.y:F3}), 오프셋=({offset.x:F3}, {offset.y:F3})");
+
+        if (offset.sqrMagnitude > 0.0001f)
+        {
+            Debug.Log($"[GroupBorderRenderer] AlignBorderToCenter: 테두리 이동 적용");
+            MoveAllPoints(offset);
+        }
+        else
+        {
+            Debug.Log($"[GroupBorderRenderer] AlignBorderToCenter: 오프셋이 너무 작아 이동 생략 (sqrMag={offset.sqrMagnitude:F6})");
         }
     }
 

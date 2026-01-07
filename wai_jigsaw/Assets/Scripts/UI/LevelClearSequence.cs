@@ -27,7 +27,7 @@ namespace WaiJigsaw.UI
         [SerializeField] private Transform _boardContainer;
         [Tooltip("퍼즐 보드 셋업 (그룹 테두리 접근용)")]
         [SerializeField] private PuzzleBoardSetup _puzzleBoardSetup;
-        [Tooltip("보드 이동 거리 (Y축, 월드 유닛)")]
+        [Tooltip("보드 이동 거리 (Y축)")]
         [SerializeField] private float _boardMoveDistance = 1.5f;
         [Tooltip("보드 이동 시간 (초)")]
         [SerializeField] private float _boardMoveDuration = 0.6f;
@@ -260,52 +260,58 @@ namespace WaiJigsaw.UI
             _mainSequence.AppendInterval(_stepDelay);
             _mainSequence.AppendCallback(() => Debug.Log("[LevelClearSequence] Step 3: 보드 위로 이동"));
 
-            if (_boardContainer != null)
+            // 퍼즐 조각들은 월드 좌표를 직접 설정하므로 BoardContainer 이동이 전파되지 않음
+            // 따라서 퍼즐 조각과 테두리를 직접 이동해야 함
+            if (_puzzleBoardSetup != null)
             {
-                Vector3 targetPos = _boardOriginalPosition + new Vector3(0, _boardMoveDistance, 0);
-
-                // _puzzleBoardSetup 참조 확인
-                if (_puzzleBoardSetup == null)
-                {
-                    Debug.LogWarning("[LevelClearSequence] _puzzleBoardSetup이 할당되지 않았습니다! Inspector에서 설정해주세요.");
-                }
-
-                // 보드 이동 + 그룹 테두리 동기화 (LineRenderer는 useWorldSpace=true라서 직접 점 이동 필요)
-                // 퍼즐 조각의 실제 월드 위치 변화를 추적하여 GroupBorder 이동
                 PuzzleBoardSetup boardSetupRef = _puzzleBoardSetup;
-                Transform boardRef = _boardContainer;
-                Vector3 totalDelta = Vector3.zero;
 
-                // 첫 번째 퍼즐 조각의 월드 위치를 기준으로 이동량 계산
-                Transform firstPieceTransform = boardSetupRef != null ? boardSetupRef.GetFirstPieceTransform() : null;
-                Vector3 lastPieceWorldPos = firstPieceTransform != null ? firstPieceTransform.position : Vector3.zero;
+                // 이동 시작 전 테두리 재계산
+                _mainSequence.AppendCallback(() =>
+                {
+                    boardSetupRef.RecalculateCompletedGroupBorder();
+                    Debug.Log($"[LevelClearSequence] 퍼즐 이동 시작: 이동거리={_boardMoveDistance}");
+                });
 
-                Debug.Log($"[LevelClearSequence] 보드 이동 시작: 원래위치={_boardOriginalPosition}, 목표위치={targetPos}, 첫조각위치={lastPieceWorldPos}");
+                // DOTween을 사용하여 부드럽게 이동
+                float elapsedTime = 0f;
+                float totalMoved = 0f;
 
                 _mainSequence.Append(
-                    _boardContainer.DOMove(targetPos, _boardMoveDuration)
-                        .SetEase(Ease.OutCubic)
-                        .OnUpdate(() =>
+                    DOTween.To(
+                        () => elapsedTime,
+                        x =>
                         {
-                            if (boardRef == null || firstPieceTransform == null) return;
+                            float newElapsed = x;
+                            float deltaTime = newElapsed - elapsedTime;
+                            elapsedTime = newElapsed;
 
-                            // 퍼즐 조각의 실제 월드 위치 변화량 계산
-                            Vector3 currentPieceWorldPos = firstPieceTransform.position;
-                            Vector3 worldDelta = currentPieceWorldPos - lastPieceWorldPos;
-                            lastPieceWorldPos = currentPieceWorldPos;
-                            totalDelta += worldDelta;
+                            // 이번 프레임에 이동할 거리 계산 (Ease 적용)
+                            float targetProgress = newElapsed / _boardMoveDuration;
+                            float easedProgress = DOVirtual.EasedValue(0f, 1f, targetProgress, Ease.OutCubic);
+                            float targetMoved = _boardMoveDistance * easedProgress;
+                            float frameDelta = targetMoved - totalMoved;
+                            totalMoved = targetMoved;
 
-                            // 실제 월드 이동량을 GroupBorder에 적용
-                            if (boardSetupRef != null && worldDelta.sqrMagnitude > 0.00001f)
+                            // 퍼즐 조각과 테두리를 함께 이동
+                            if (frameDelta > 0.0001f)
                             {
-                                boardSetupRef.MoveCompletedGroupBorder(worldDelta);
+                                boardSetupRef.MoveAllPiecesAndBorder(new Vector3(0, frameDelta, 0));
                             }
-                        })
-                        .OnComplete(() =>
-                        {
-                            Debug.Log($"[LevelClearSequence] 보드 이동 완료: 총 월드 이동량=({totalDelta.x:F3}, {totalDelta.y:F3}, {totalDelta.z:F3})");
-                        })
+                        },
+                        _boardMoveDuration,
+                        _boardMoveDuration
+                    ).SetEase(Ease.Linear) // 실제 Easing은 위에서 수동으로 적용
                 );
+
+                _mainSequence.AppendCallback(() =>
+                {
+                    Debug.Log($"[LevelClearSequence] 퍼즐 이동 완료: 총 이동량={totalMoved:F3}");
+                });
+            }
+            else
+            {
+                Debug.LogWarning("[LevelClearSequence] _puzzleBoardSetup이 할당되지 않았습니다! Inspector에서 설정해주세요.");
             }
 
             // ====== Step 4: 축하 연출 (TODO: 파티클) ======
@@ -511,18 +517,6 @@ namespace WaiJigsaw.UI
             // - 폭죽 효과
             // - 색종이 효과
             Debug.Log("[LevelClearSequence] 축하 연출 재생 (TODO: 파티클 구현)");
-        }
-
-        #endregion
-
-        #region Helper Classes
-
-        /// <summary>
-        /// 람다 클로저에서 Vector3 값을 안전하게 추적하기 위한 래퍼 클래스
-        /// </summary>
-        private class PositionTracker
-        {
-            public Vector3 lastPosition;
         }
 
         #endregion

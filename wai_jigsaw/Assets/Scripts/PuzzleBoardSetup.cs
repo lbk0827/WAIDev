@@ -1315,6 +1315,47 @@ public class PuzzleBoardSetup : MonoBehaviour
     }
 
     /// <summary>
+    /// 완성된 그룹의 테두리를 현재 조각 위치에 맞춰 재계산합니다.
+    /// 클리어 시퀀스 시작 전 호출하여 테두리가 조각과 정확히 일치하도록 합니다.
+    /// </summary>
+    public void RecalculateCompletedGroupBorder()
+    {
+        if (_piecesOnBoard.Count == 0)
+        {
+            Debug.LogWarning("[PuzzleBoardSetup] RecalculateCompletedGroupBorder: 보드에 조각이 없습니다.");
+            return;
+        }
+
+        PieceGroup group = _piecesOnBoard[0].group;
+        if (group == null)
+        {
+            Debug.LogWarning("[PuzzleBoardSetup] RecalculateCompletedGroupBorder: 첫 번째 조각의 그룹이 null입니다.");
+            return;
+        }
+
+        // 조각들의 월드 위치 바운딩 박스 계산
+        Vector3 boardMin = _piecesOnBoard[0].transform.position;
+        Vector3 boardMax = _piecesOnBoard[0].transform.position;
+        foreach (var piece in _piecesOnBoard)
+        {
+            Vector3 pos = piece.transform.position;
+            boardMin = Vector3.Min(boardMin, pos);
+            boardMax = Vector3.Max(boardMax, pos);
+        }
+        Vector3 boardCenter = (boardMin + boardMax) / 2f;
+
+        Debug.Log($"[PuzzleBoardSetup] RecalculateCompletedGroupBorder: 그룹 테두리 재계산. 조각 수: {group.pieces.Count}, " +
+                  $"바운딩: min=({boardMin.x:F3}, {boardMin.y:F3}), max=({boardMax.x:F3}, {boardMax.y:F3}), center=({boardCenter.x:F3}, {boardCenter.y:F3})");
+
+        group.UpdateGroupBorder();
+
+        // 테두리 업데이트 후 조각 중심과 테두리 중심을 맞춤
+        group.AlignBorderToCenter(boardCenter);
+
+        Debug.Log($"[PuzzleBoardSetup] RecalculateCompletedGroupBorder: 그룹 테두리 재계산 완료");
+    }
+
+    /// <summary>
     /// 완성된 퍼즐 그룹의 테두리(LineRenderer)를 지정된 오프셋만큼 이동합니다.
     /// useWorldSpace=true인 LineRenderer는 Transform 이동으로 점이 이동하지 않으므로 직접 이동 필요.
     /// </summary>
@@ -1337,6 +1378,41 @@ public class PuzzleBoardSetup : MonoBehaviour
 
         Debug.Log($"[PuzzleBoardSetup] MoveBorderPoints 호출 전. group 조각 수: {group.pieces.Count}");
         group.MoveBorderPoints(offset);
+    }
+
+    /// <summary>
+    /// 모든 퍼즐 조각, 카드 슬롯, 그룹 테두리를 지정된 오프셋만큼 이동합니다.
+    /// 클리어 시퀀스에서 퍼즐을 위로 이동할 때 사용합니다.
+    /// </summary>
+    public void MoveAllPiecesAndBorder(Vector3 offset)
+    {
+        // 모든 퍼즐 조각 이동
+        foreach (var piece in _piecesOnBoard)
+        {
+            if (piece != null)
+            {
+                piece.transform.position += offset;
+            }
+        }
+
+        // 모든 카드 슬롯 이동
+        foreach (var slot in _cardSlots)
+        {
+            if (slot != null)
+            {
+                slot.transform.position += offset;
+            }
+        }
+
+        // 그룹 테두리도 함께 이동
+        if (_piecesOnBoard.Count > 0)
+        {
+            PieceGroup group = _piecesOnBoard[0].group;
+            if (group != null)
+            {
+                group.MoveBorderPoints(offset);
+            }
+        }
     }
 
     public void ClearBoard()

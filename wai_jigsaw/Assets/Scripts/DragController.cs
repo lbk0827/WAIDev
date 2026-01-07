@@ -1513,4 +1513,26 @@ public class PieceGroup
             Debug.LogWarning($"[PieceGroup] MoveBorderPoints: _borderRenderer가 null입니다. (조각 수: {pieces.Count})");
         }
     }
+
+    /// <summary>
+    /// 그룹 테두리를 조각들의 중심에 맞춰 보정합니다.
+    /// </summary>
+    public void AlignBorderToPieces()
+    {
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.AlignBorderToPieces();
+        }
+    }
+
+    /// <summary>
+    /// 그룹 테두리를 지정된 중심 위치에 맞춰 보정합니다.
+    /// </summary>
+    public void AlignBorderToCenter(Vector3 targetCenter)
+    {
+        if (_borderRenderer != null)
+        {
+            _borderRenderer.AlignBorderToCenter(targetCenter);
+        }
+    }
 }
