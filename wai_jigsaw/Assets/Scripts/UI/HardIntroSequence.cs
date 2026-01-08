@@ -21,7 +21,7 @@ namespace WaiJigsaw.UI
     public class HardIntroSequence : MonoBehaviour
     {
         [Header("====== Overlay ======")]
-        [Tooltip("레드 톤 오버레이 이미지 (반투명 빨간색)")]
+        [Tooltip("레드 톤 오버레이 이미지 (반투명 빨간색) - 전체 화면 Dim")]
         [SerializeField] private Image _redTintOverlay;
         [Tooltip("오버레이 최대 알파값 (0.15~0.25 권장)")]
         [SerializeField] private float _overlayMaxAlpha = 0.2f;
@@ -31,6 +31,8 @@ namespace WaiJigsaw.UI
         [SerializeField] private GameObject _hardBannerContainer;
         [Tooltip("HARD 텍스트 (TMP_Text)")]
         [SerializeField] private TMP_Text _hardText;
+        [Tooltip("배너 뒤 Dim 이미지 (HardBannerContainer의 자식인 경우 별도 제어)")]
+        [SerializeField] private Image _bannerDimImage;
 
         [Header("====== Animation Settings ======")]
         [Tooltip("오버레이 페이드 시간 (초)")]
@@ -131,7 +133,44 @@ namespace WaiJigsaw.UI
             _mainSequence?.Kill();
             _mainSequence = DOTween.Sequence();
 
-            // ====== Step 1: 레드 오버레이 페이드 인 ======
+            // Dim이 배너 자식인지 확인 (자식이면 별도 CanvasGroup으로 제어)
+            bool isDimChildOfBanner = _bannerDimImage != null && _hardBannerContainer != null &&
+                                      _bannerDimImage.transform.IsChildOf(_hardBannerContainer.transform);
+
+            CanvasGroup dimCanvasGroup = null;
+            if (isDimChildOfBanner && _bannerDimImage != null)
+            {
+                // Dim에 별도 CanvasGroup 추가하여 배너 CanvasGroup과 독립적으로 제어
+                dimCanvasGroup = _bannerDimImage.GetComponent<CanvasGroup>();
+                if (dimCanvasGroup == null)
+                {
+                    dimCanvasGroup = _bannerDimImage.gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            // ====== Step 1: Dim + 오버레이 페이드 인 ======
+            // 배너 Dim (HardTintDim) 페이드 인
+            if (_bannerDimImage != null)
+            {
+                _bannerDimImage.gameObject.SetActive(true);
+
+                if (isDimChildOfBanner && dimCanvasGroup != null)
+                {
+                    // 자식인 경우 CanvasGroup으로 알파 제어
+                    dimCanvasGroup.alpha = 0f;
+                    _mainSequence.Append(dimCanvasGroup.DOFade(_overlayMaxAlpha, _overlayFadeDuration));
+                }
+                else
+                {
+                    // 독립적인 경우 Image 알파 직접 제어
+                    Color dimColor = _bannerDimImage.color;
+                    dimColor.a = 0f;
+                    _bannerDimImage.color = dimColor;
+                    _mainSequence.Append(_bannerDimImage.DOFade(_overlayMaxAlpha, _overlayFadeDuration));
+                }
+            }
+
+            // 레드 오버레이도 함께 페이드 인 (있으면)
             if (_redTintOverlay != null)
             {
                 _redTintOverlay.gameObject.SetActive(true);
@@ -139,7 +178,16 @@ namespace WaiJigsaw.UI
                 overlayColor.a = 0f;
                 _redTintOverlay.color = overlayColor;
 
-                _mainSequence.Append(_redTintOverlay.DOFade(_overlayMaxAlpha, _overlayFadeDuration));
+                if (_bannerDimImage != null)
+                {
+                    // Dim과 동시에 페이드 인
+                    _mainSequence.Join(_redTintOverlay.DOFade(_overlayMaxAlpha, _overlayFadeDuration));
+                }
+                else
+                {
+                    // Dim이 없으면 오버레이만 페이드 인
+                    _mainSequence.Append(_redTintOverlay.DOFade(_overlayMaxAlpha, _overlayFadeDuration));
+                }
             }
 
             // ====== Step 2: Hard 배너 등장 (스케일 애니메이션) ======
@@ -147,6 +195,14 @@ namespace WaiJigsaw.UI
             {
                 _hardBannerContainer.SetActive(true);
                 _hardBannerContainer.transform.localScale = Vector3.zero;
+
+                // 배너 CanvasGroup 준비 (페이드 아웃용)
+                CanvasGroup bannerCG = _hardBannerContainer.GetComponent<CanvasGroup>();
+                if (bannerCG == null)
+                {
+                    bannerCG = _hardBannerContainer.AddComponent<CanvasGroup>();
+                }
+                bannerCG.alpha = 1f;
 
                 _mainSequence.Append(
                     _hardBannerContainer.transform
@@ -158,26 +214,65 @@ namespace WaiJigsaw.UI
             // ====== Step 3: 배너 유지 시간 ======
             _mainSequence.AppendInterval(_bannerHoldDuration);
 
-            // ====== Step 4: 배너 페이드 아웃 ======
+            // ====== Step 4: 배너 + Dim + 오버레이 동시 페이드 아웃 ======
+            bool hasFadeOutStarted = false;
+
+            // 배너 페이드 아웃
             if (_hardBannerContainer != null)
             {
-                // CanvasGroup으로 페이드 아웃
                 CanvasGroup bannerCG = _hardBannerContainer.GetComponent<CanvasGroup>();
-                if (bannerCG == null)
+                if (bannerCG != null)
                 {
-                    bannerCG = _hardBannerContainer.AddComponent<CanvasGroup>();
+                    _mainSequence.Append(bannerCG.DOFade(0f, _bannerFadeOutDuration));
+                    hasFadeOutStarted = true;
                 }
-
-                _mainSequence.Append(bannerCG.DOFade(0f, _bannerFadeOutDuration));
             }
 
-            // ====== Step 5: 레드 오버레이 페이드 아웃 ======
+            // Dim 동시 페이드 아웃
+            if (_bannerDimImage != null)
+            {
+                if (isDimChildOfBanner && dimCanvasGroup != null)
+                {
+                    // 자식인 경우 CanvasGroup으로 알파 제어
+                    if (hasFadeOutStarted)
+                    {
+                        _mainSequence.Join(dimCanvasGroup.DOFade(0f, _bannerFadeOutDuration));
+                    }
+                    else
+                    {
+                        _mainSequence.Append(dimCanvasGroup.DOFade(0f, _bannerFadeOutDuration));
+                        hasFadeOutStarted = true;
+                    }
+                }
+                else
+                {
+                    // 독립적인 경우 Image 알파 직접 제어
+                    if (hasFadeOutStarted)
+                    {
+                        _mainSequence.Join(_bannerDimImage.DOFade(0f, _bannerFadeOutDuration));
+                    }
+                    else
+                    {
+                        _mainSequence.Append(_bannerDimImage.DOFade(0f, _bannerFadeOutDuration));
+                        hasFadeOutStarted = true;
+                    }
+                }
+            }
+
+            // 레드 오버레이도 동시 페이드 아웃
             if (_redTintOverlay != null)
             {
-                _mainSequence.Join(_redTintOverlay.DOFade(0f, _overlayFadeDuration));
+                if (hasFadeOutStarted)
+                {
+                    _mainSequence.Join(_redTintOverlay.DOFade(0f, _bannerFadeOutDuration));
+                }
+                else
+                {
+                    _mainSequence.Append(_redTintOverlay.DOFade(0f, _bannerFadeOutDuration));
+                }
             }
 
-            // ====== Step 6: 시퀀스 완료 처리 ======
+            // ====== Step 5: 시퀀스 완료 처리 ======
             _mainSequence.OnComplete(() =>
             {
                 Debug.Log("[HardIntroSequence] Hard 인트로 시퀀스 완료");
@@ -208,6 +303,11 @@ namespace WaiJigsaw.UI
             if (_redTintOverlay != null)
             {
                 _redTintOverlay.gameObject.SetActive(false);
+            }
+
+            if (_bannerDimImage != null)
+            {
+                _bannerDimImage.gameObject.SetActive(false);
             }
 
             if (_hardBannerContainer != null)
