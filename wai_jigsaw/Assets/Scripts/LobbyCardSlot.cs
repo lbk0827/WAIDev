@@ -260,7 +260,7 @@ public class LobbyCardSlot : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float x = Random.Range(-1f, 1f) * magnitude * (1 - elapsed / duration);
+            float x = UnityEngine.Random.Range(-1f, 1f) * magnitude * (1 - elapsed / duration);
             transform.localPosition = originalPos + new Vector3(x, 0, 0);
             yield return null;
         }
