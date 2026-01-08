@@ -45,6 +45,8 @@ namespace WaiJigsaw.UI
         [SerializeField] private GameObject _coinDisplayObject;
 
         [Header("====== Clear Result UI ======")]
+        [Tooltip("클리어 타이틀 컨테이너 (IMG_ClearBg + ClearTitleText 포함)")]
+        [SerializeField] private GameObject _clearTitleContainer;
         [Tooltip("클리어 타이틀 텍스트")]
         [SerializeField] private TMP_Text _clearTitleText;
         [Tooltip("획득 코인 컨테이너")]
@@ -323,9 +325,16 @@ namespace WaiJigsaw.UI
             _mainSequence.AppendInterval(_stepDelay);
             _mainSequence.AppendCallback(() => SetupResultUI());
 
-            // 클리어 타이틀 등장 (스케일 애니메이션)
-            if (_clearTitleText != null)
+            // 클리어 타이틀 등장 (스케일 애니메이션) - 컨테이너 사용
+            if (_clearTitleContainer != null)
             {
+                _clearTitleContainer.SetActive(true);
+                _clearTitleContainer.transform.localScale = Vector3.zero;
+                _mainSequence.Append(_clearTitleContainer.transform.DOScale(1f, _uiAppearDuration).SetEase(Ease.OutBack));
+            }
+            else if (_clearTitleText != null)
+            {
+                // 폴백: 컨테이너 없으면 기존 방식
                 _clearTitleText.gameObject.SetActive(true);
                 _clearTitleText.transform.localScale = Vector3.zero;
                 _mainSequence.Append(_clearTitleText.transform.DOScale(1f, _uiAppearDuration).SetEase(Ease.OutBack));
@@ -386,7 +395,10 @@ namespace WaiJigsaw.UI
         /// </summary>
         private void HideResultUI()
         {
-            if (_clearTitleText != null)
+            // 컨테이너 우선, 없으면 텍스트만 숨김
+            if (_clearTitleContainer != null)
+                _clearTitleContainer.SetActive(false);
+            else if (_clearTitleText != null)
                 _clearTitleText.gameObject.SetActive(false);
 
             if (_rewardContainer != null)
