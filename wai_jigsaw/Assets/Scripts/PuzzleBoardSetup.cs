@@ -117,7 +117,7 @@ public class PuzzleBoardSetup : MonoBehaviour
         _unitWidth = pieceWidth / 100f;
         _unitHeight = pieceHeight / 100f;
 
-        // 슬롯 간격 = 조각 크기 (물리적 간격 없음, EdgeCover로 간격 표현)
+        // 슬롯 간격 = 조각 크기 (물리적 간격 없음)
         float slotWidth = _unitWidth;
         float slotHeight = _unitHeight;
 
@@ -142,8 +142,8 @@ public class PuzzleBoardSetup : MonoBehaviour
                 float y = (_rows - 1 - row) * pieceHeight;
 
                 // 오버랩 픽셀 (가장자리가 아닌 경우에만 적용)
-                // 합쳐진 카드 사이 틈 방지를 위해 3픽셀로 증가 (안티앨리어싱 영역 커버)
-                float overlapPixels = 3f;
+                // 0으로 설정하여 카드 테두리와 이미지 크기 일치
+                float overlapPixels = 0f;
                 float overlapLeft = (col > 0) ? overlapPixels : 0;
                 float overlapRight = (col < _cols - 1) ? overlapPixels : 0;
                 float overlapBottom = (row < _rows - 1) ? overlapPixels : 0;  // row가 작을수록 위쪽, texture y는 아래가 0

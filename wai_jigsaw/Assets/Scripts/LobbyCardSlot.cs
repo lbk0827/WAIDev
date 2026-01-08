@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System;
 using System.Collections;
+using DG.Tweening;
 
 /// <summary>
 /// 로비의 개별 카드 슬롯을 관리합니다.
@@ -134,7 +136,7 @@ public class LobbyCardSlot : MonoBehaviour
     }
 
     /// <summary>
-    /// 카드 플립 애니메이션 (뒷면 -> 앞면)
+    /// 카드 플립 애니메이션 (뒷면 -> 앞면) - Y축 스케일 방식 (기존)
     /// </summary>
     private IEnumerator FlipToFront()
     {
@@ -166,6 +168,72 @@ public class LobbyCardSlot : MonoBehaviour
 
         transform.localScale = Vector3.one;
         _isFlipping = false;
+    }
+
+    /// <summary>
+    /// X축 회전 플립 애니메이션 (뒷면 -> 앞면)
+    /// 스테이지 클리어 후 로비 복귀 시 사용됩니다.
+    /// </summary>
+    /// <param name="onComplete">애니메이션 완료 시 콜백</param>
+    public void PlayClearFlipAnimation(Action onComplete = null)
+    {
+        if (_isFlipping) return;
+
+        _isFlipping = true;
+
+        float duration = 0.6f;
+        float halfDuration = duration / 2f;
+
+        // RectTransform 가져오기
+        RectTransform rectTransform = GetComponent<RectTransform>();
+        if (rectTransform == null)
+        {
+            // 일반 Transform인 경우 폴백
+            StartCoroutine(FlipToFrontWithCallback(onComplete));
+            return;
+        }
+
+        // 시작 회전값 저장
+        Vector3 startRotation = rectTransform.localEulerAngles;
+
+        // 시퀀스 생성
+        Sequence flipSequence = DOTween.Sequence();
+
+        // 1단계: Y축 회전 0도 -> 90도 (뒷면이 사라짐)
+        flipSequence.Append(
+            rectTransform.DOLocalRotate(new Vector3(0f, 90f, 0f), halfDuration)
+                .SetEase(Ease.InQuad)
+        );
+
+        // 면 전환 콜백
+        flipSequence.AppendCallback(() =>
+        {
+            ShowFront();
+        });
+
+        // 2단계: Y축 회전 -90도 -> 0도 (앞면이 나타남)
+        flipSequence.Append(
+            rectTransform.DOLocalRotate(new Vector3(0f, 0f, 0f), halfDuration)
+                .From(new Vector3(0f, -90f, 0f))
+                .SetEase(Ease.OutQuad)
+        );
+
+        // 완료 콜백
+        flipSequence.OnComplete(() =>
+        {
+            _isFlipping = false;
+            rectTransform.localEulerAngles = Vector3.zero;
+            onComplete?.Invoke();
+        });
+    }
+
+    /// <summary>
+    /// 콜백 포함 폴백 코루틴 (DOTween 실패 시)
+    /// </summary>
+    private IEnumerator FlipToFrontWithCallback(Action onComplete)
+    {
+        yield return FlipToFront();
+        onComplete?.Invoke();
     }
 
     /// <summary>

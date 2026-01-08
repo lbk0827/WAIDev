@@ -83,6 +83,9 @@ namespace WaiJigsaw.Data
         private HashSet<int> _clearedLevels = new HashSet<int>();
         private int _coin = 0;
 
+        // 방금 클리어한 레벨 (로비 복귀 시 카드 플립 연출용, 메모리에만 저장)
+        private int _justClearedLevel = -1;
+
         // Observer 컬렉션
         private readonly ObserverCollection<LevelChangedEvent> _levelChangedObservers = new ObserverCollection<LevelChangedEvent>();
         private readonly ObserverCollection<LevelClearedEvent> _levelClearedObservers = new ObserverCollection<LevelClearedEvent>();
@@ -102,6 +105,12 @@ namespace WaiJigsaw.Data
         /// 현재 보유 코인
         /// </summary>
         public int Coin => _coin;
+
+        /// <summary>
+        /// 방금 클리어한 레벨 (로비에서 카드 플립 연출용)
+        /// -1이면 연출 불필요
+        /// </summary>
+        public int JustClearedLevel => _justClearedLevel;
 
         private GameDataContainer()
         {
@@ -242,8 +251,23 @@ namespace WaiJigsaw.Data
 
             _clearedLevels.Add(levelNumber);
 
+            // 방금 클리어한 레벨 저장 (로비 복귀 시 카드 플립 연출용)
+            _justClearedLevel = levelNumber;
+
             // Observer들에게 알림
             _levelClearedObservers.NotifyObservers(new LevelClearedEvent(levelNumber, _clearedLevels.Count));
+        }
+
+        /// <summary>
+        /// 방금 클리어한 레벨 정보를 소비합니다.
+        /// 로비에서 카드 플립 연출 후 호출하여 중복 연출 방지.
+        /// </summary>
+        /// <returns>방금 클리어한 레벨 번호 (-1이면 없음)</returns>
+        public int ConsumeJustClearedLevel()
+        {
+            int level = _justClearedLevel;
+            _justClearedLevel = -1;
+            return level;
         }
 
         /// <summary>

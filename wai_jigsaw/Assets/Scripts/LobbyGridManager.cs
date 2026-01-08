@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 using System.Collections.Generic;
 using WaiJigsaw.Data;
 using WaiJigsaw.Core;
@@ -34,6 +35,19 @@ public class LobbyGridManager : MonoObject
 
     private const int GRID_SIZE = 5;
     private const int CARDS_PER_GROUP = 25;
+
+    // 카드 플립 연출 상태
+    private bool _isPlayingClearAnimation = false;
+
+    /// <summary>
+    /// 카드 플립 연출이 재생 중인지 여부
+    /// </summary>
+    public bool IsPlayingClearAnimation => _isPlayingClearAnimation;
+
+    /// <summary>
+    /// 클리어 애니메이션 완료 이벤트 (UI 차단 해제용)
+    /// </summary>
+    public event Action OnClearAnimationComplete;
 
     /// <summary>
     /// 둥근 모서리 Material을 초기화합니다.
@@ -111,6 +125,68 @@ public class LobbyGridManager : MonoObject
         {
             Debug.Log($"LobbyGridManager: {_cardSlots.Count}개의 카드 슬롯 생성 완료");
         }
+
+        // 5. 방금 클리어한 레벨이 있으면 카드 플립 연출 실행
+        TryPlayClearAnimation();
+    }
+
+    /// <summary>
+    /// 방금 클리어한 레벨이 있으면 카드 플립 연출을 실행합니다.
+    /// </summary>
+    private void TryPlayClearAnimation()
+    {
+        int justClearedLevel = GameDataContainer.Instance.ConsumeJustClearedLevel();
+
+        if (justClearedLevel < 0)
+        {
+            // 연출할 레벨 없음
+            return;
+        }
+
+        // 현재 그룹에 해당하는 레벨인지 확인
+        if (_currentGroup == null)
+        {
+            return;
+        }
+
+        int index = justClearedLevel - _currentGroup.StartLevel;
+
+        if (index < 0 || index >= _cardSlots.Count)
+        {
+            // 다른 그룹의 레벨이면 무시
+            if (_showDebugInfo)
+            {
+                Debug.Log($"[LobbyGridManager] 클리어 레벨 {justClearedLevel}은 현재 그룹에 없음");
+            }
+            return;
+        }
+
+        LobbyCardSlot cardSlot = _cardSlots[index];
+        if (cardSlot == null)
+        {
+            return;
+        }
+
+        if (_showDebugInfo)
+        {
+            Debug.Log($"[LobbyGridManager] 레벨 {justClearedLevel} 카드 플립 연출 시작");
+        }
+
+        // 연출 상태 설정
+        _isPlayingClearAnimation = true;
+
+        // 카드 플립 애니메이션 실행
+        cardSlot.PlayClearFlipAnimation(() =>
+        {
+            // 연출 완료
+            _isPlayingClearAnimation = false;
+            OnClearAnimationComplete?.Invoke();
+
+            if (_showDebugInfo)
+            {
+                Debug.Log($"[LobbyGridManager] 레벨 {justClearedLevel} 카드 플립 연출 완료");
+            }
+        });
     }
 
     /// <summary>
