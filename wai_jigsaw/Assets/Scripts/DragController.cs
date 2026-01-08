@@ -69,6 +69,10 @@ public class DragController : MonoBehaviour
     private Vector4 _padding = Vector4.zero;  // 각 방향의 패딩값 (UV 비율)
     private float _defaultPaddingWorldSize = 0f;  // 기본 패딩값 (World Space 크기)
 
+    // ====== Edge Clip 비활성화 (합쳐진 방향 SDF 클리핑 해제) ======
+    private const string DISABLE_EDGE_CLIP_PROPERTY = "_DisableEdgeClip";  // Vector4 (Top, Bottom, Left, Right)
+    private Vector4 _disableEdgeClip = Vector4.zero;  // 합쳐진 방향 저장
+
     void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -366,6 +370,16 @@ public class DragController : MonoBehaviour
         }
         ApplyFrameHideDirections();
 
+        // 이미지 셰이더의 _DisableEdgeClip 업데이트 (합쳐진 방향 SDF 클리핑 해제)
+        switch (direction)
+        {
+            case 0: _disableEdgeClip.x = 1f; break; // Top
+            case 1: _disableEdgeClip.y = 1f; break; // Bottom
+            case 2: _disableEdgeClip.z = 1f; break; // Left
+            case 3: _disableEdgeClip.w = 1f; break; // Right
+        }
+        ApplyDisableEdgeClip();
+
         // 테두리 숨김 시 연결된 모서리도 직각 처리 (자연스러운 연결을 위해)
         // Top → TopLeft, TopRight 직각
         // Bottom → BottomLeft, BottomRight 직각
@@ -407,6 +421,16 @@ public class DragController : MonoBehaviour
         }
         ApplyFrameHideDirections();
 
+        // 이미지 셰이더의 _DisableEdgeClip도 복원 (SDF 클리핑 다시 활성화)
+        switch (direction)
+        {
+            case 0: _disableEdgeClip.x = 0f; break; // Top
+            case 1: _disableEdgeClip.y = 0f; break; // Bottom
+            case 2: _disableEdgeClip.z = 0f; break; // Left
+            case 3: _disableEdgeClip.w = 0f; break; // Right
+        }
+        ApplyDisableEdgeClip();
+
         // 테두리 복원 시 연결된 모서리도 복원 (인접 테두리가 모두 보일 때만)
         // 모서리는 인접한 두 테두리가 모두 보여야 둥글게 복원됨
         RecalculateCornerRadii();
@@ -443,6 +467,10 @@ public class DragController : MonoBehaviour
         _frameHideDirections = Vector4.zero;
         ApplyFrameHideDirections();
 
+        // 이미지 셰이더의 _DisableEdgeClip도 모두 복원
+        _disableEdgeClip = Vector4.zero;
+        ApplyDisableEdgeClip();
+
         // 모든 테두리가 보이면 모든 모서리도 둥글게 복원
         RecalculateCornerRadii();
     }
@@ -461,6 +489,19 @@ public class DragController : MonoBehaviour
         {
             _blackFramePropertyBlock.SetVector(HIDE_DIRECTIONS_PROPERTY, _frameHideDirections);
             _blackFrameRenderer.SetPropertyBlock(_blackFramePropertyBlock);
+        }
+    }
+
+    /// <summary>
+    /// 이미지 셰이더의 EdgeClip 비활성화 상태를 적용합니다.
+    /// 합쳐진 방향의 SDF 클리핑을 해제하여 반투명 틈을 방지합니다.
+    /// </summary>
+    private void ApplyDisableEdgeClip()
+    {
+        if (_propertyBlock != null && _spriteRenderer != null)
+        {
+            _propertyBlock.SetVector(DISABLE_EDGE_CLIP_PROPERTY, _disableEdgeClip);
+            _spriteRenderer.SetPropertyBlock(_propertyBlock);
         }
     }
 

@@ -18,6 +18,9 @@ Shader "Custom/RoundedSprite"
         [Header(UV Normalization)]
         [HideInInspector] _UVRect ("UV Rect (xy=min, zw=max)", Vector) = (0, 0, 1, 1)
 
+        [Header(Edge Clipping)]
+        [HideInInspector] _DisableEdgeClip ("Disable Edge Clip (Top, Bottom, Left, Right)", Vector) = (0, 0, 0, 0)
+
         [Header(Sprite Settings)]
         [MaterialToggle] PixelSnap ("Pixel snap", Float) = 0
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
@@ -76,6 +79,7 @@ Shader "Custom/RoundedSprite"
             float4 _Padding;
             float4 _UVRect;
             float _DebugMode;
+            float4 _DisableEdgeClip;  // (Top, Bottom, Left, Right) - 1이면 해당 방향 SDF 클리핑 비활성화
 
             struct appdata_t
             {
@@ -194,15 +198,50 @@ Shader "Custom/RoundedSprite"
                 // Convert to centered coordinates (-0.5 to 0.5)
                 float2 uv = paddedUV - 0.5;
 
+                // 합쳐진 방향 체크 (_DisableEdgeClip: x=Top, y=Bottom, z=Left, w=Right)
+                float disableTop = _DisableEdgeClip.x;
+                float disableBottom = _DisableEdgeClip.y;
+                float disableLeft = _DisableEdgeClip.z;
+                float disableRight = _DisableEdgeClip.w;
+
+                // 모든 방향이 비활성화되어 있으면 (모두 합쳐짐) 클리핑 완전 건너뜀
+                bool allDisabled = (disableTop > 0.5) && (disableBottom > 0.5) &&
+                                   (disableLeft > 0.5) && (disableRight > 0.5);
+
                 // Check if all corner radii are zero (no rounding needed)
                 float maxRadius = max(max(_CornerRadii.x, _CornerRadii.y), max(_CornerRadii.z, _CornerRadii.w));
 
-                if (maxRadius > 0.001)
+                if (maxRadius > 0.001 && !allDisabled)
                 {
+                    // 합쳐진 방향으로 UV를 확장하여 해당 방향의 클리핑 비활성화
+                    // 비활성화된 방향으로는 UV가 중앙에 가깝게 수정되어 클리핑되지 않음
+                    float2 adjustedUV = uv;
+
+                    // Top 방향 비활성화: y > 0인 영역에서 y를 줄여서 외곽으로 인식되지 않게
+                    if (disableTop > 0.5 && uv.y > 0)
+                    {
+                        adjustedUV.y = min(uv.y, 0.3);  // 상단 클리핑 영역 밖으로
+                    }
+                    // Bottom 방향 비활성화
+                    if (disableBottom > 0.5 && uv.y < 0)
+                    {
+                        adjustedUV.y = max(uv.y, -0.3);
+                    }
+                    // Left 방향 비활성화
+                    if (disableLeft > 0.5 && uv.x < 0)
+                    {
+                        adjustedUV.x = max(uv.x, -0.3);
+                    }
+                    // Right 방향 비활성화
+                    if (disableRight > 0.5 && uv.x > 0)
+                    {
+                        adjustedUV.x = min(uv.x, 0.3);
+                    }
+
                     // Calculate signed distance with selected radius
                     float2 size = float2(0.5, 0.5);
                     float selectedRadius;
-                    float dist = roundedBoxSDF4(uv, size, _CornerRadii, selectedRadius);
+                    float dist = roundedBoxSDF4(adjustedUV, size, _CornerRadii, selectedRadius);
 
                     // Only apply rounding/clipping if this corner has radius > 0
                     // 반경이 0인 모서리는 클리핑하지 않음 (정사각형 유지)
@@ -214,7 +253,7 @@ Shader "Custom/RoundedSprite"
                     }
                     // else: 반경 0인 모서리는 클리핑 없이 그대로 표시 (직선 가장자리)
                 }
-                // If all radii are 0, skip rounding entirely (full square)
+                // If all radii are 0 or all directions disabled, skip rounding entirely
 
                 // Premultiply alpha
                 c.rgb *= c.a;
