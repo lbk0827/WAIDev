@@ -348,6 +348,14 @@ public class DragController : MonoBehaviour
     public void HideBorder(int direction)
     {
         // 0:Top, 1:Bottom, 2:Left, 3:Right
+        string[] dirNames = { "Top", "Bottom", "Left", "Right" };
+
+        // [DEBUG] 프레임 숨김 로깅 (틈 버그 디버깅용)
+        Debug.Log($"[GapDebug] HideBorder - Grid({originalGridX},{originalGridY}) " +
+                  $"Direction: {dirNames[direction]}, " +
+                  $"SpriteSize: {_spriteRenderer?.bounds.size}, " +
+                  $"Position: {transform.position}");
+
         // 프레임 셰이더의 _HideDirections 업데이트
         switch (direction)
         {

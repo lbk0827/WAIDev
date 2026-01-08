@@ -142,11 +142,21 @@ public class PuzzleBoardSetup : MonoBehaviour
                 float y = (_rows - 1 - row) * pieceHeight;
 
                 // 오버랩 픽셀 (가장자리가 아닌 경우에만 적용)
-                float overlapPixels = 1f;
+                // 합쳐진 카드 사이 틈 방지를 위해 3픽셀로 증가 (안티앨리어싱 영역 커버)
+                float overlapPixels = 3f;
                 float overlapLeft = (col > 0) ? overlapPixels : 0;
                 float overlapRight = (col < _cols - 1) ? overlapPixels : 0;
                 float overlapBottom = (row < _rows - 1) ? overlapPixels : 0;  // row가 작을수록 위쪽, texture y는 아래가 0
                 float overlapTop = (row > 0) ? overlapPixels : 0;
+
+                // [DEBUG] 첫 번째 조각만 오버랩 정보 로깅 (틈 버그 디버깅용)
+                if (row == 0 && col == 0)
+                {
+                    Debug.Log($"[GapDebug] CreatePieces - OverlapPixels: {overlapPixels}, " +
+                              $"PieceWidth(px): {pieceWidth}, PieceHeight(px): {pieceHeight}, " +
+                              $"UnitWidth: {_unitWidth}, UnitHeight: {_unitHeight}, " +
+                              $"SlotWidth: {slotWidth}, SlotHeight: {slotHeight}");
+                }
 
                 // 텍스처 좌표 확장 (오버랩 적용)
                 float rectX = x - overlapLeft;

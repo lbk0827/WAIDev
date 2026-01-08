@@ -71,6 +71,12 @@ public class PieceGroup
     {
         if (otherGroup == this) return;
 
+        // [DEBUG] 그룹 병합 로깅 (틈 버그 디버깅용)
+        Debug.Log($"[GapDebug] MergeGroupWithSnap - " +
+                  $"Anchor: Grid({anchorPiece.originalGridX},{anchorPiece.originalGridY}) Pos:{anchorPiece.transform.position}, " +
+                  $"Connecting: Grid({connectingPiece.originalGridX},{connectingPiece.originalGridY}) Pos:{connectingPiece.transform.position}, " +
+                  $"ThisGroupCount: {pieces.Count}, OtherGroupCount: {otherGroup.pieces.Count}");
+
         // 이전 그룹의 테두리 제거
         otherGroup.DestroyGroupBorder();
 
@@ -82,6 +88,9 @@ public class PieceGroup
             pieces.Add(piece);
         }
         otherGroup.pieces.Clear();
+
+        // [DEBUG] 병합 후 상태 로깅
+        Debug.Log($"[GapDebug] MergeGroupWithSnap Complete - NewGroupCount: {pieces.Count}");
     }
 
     #endregion

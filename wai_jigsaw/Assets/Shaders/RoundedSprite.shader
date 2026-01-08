@@ -166,10 +166,19 @@ Shader "Custom/RoundedSprite"
                     return fixed4(0, 0, 0, 0);
                 }
 
-                // 텍스처 샘플링
-                fixed4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
+                // 음수 패딩: 현재는 사용하지 않음 (스프라이트 메시 바깥으로 확장 불가)
+                // 대신 PuzzleBoardSetup에서 오버랩 픽셀로 처리
 
-                // 양수 패딩만 적용 (음수 패딩은 이미지 확장으로 처리됨)
+                // 텍스처 UV (패딩 없이 그대로 사용)
+                float2 textureUV = normalizedUV;
+
+                // UV 정규화 해제 (텍스처 아틀라스 좌표로 변환)
+                float2 finalTexcoord = _UVRect.xy + textureUV * uvRange;
+
+                // 텍스처 샘플링
+                fixed4 c = tex2D(_MainTex, finalTexcoord) * IN.color;
+
+                // 양수 패딩만 적용 (음수 패딩은 위에서 처리됨)
                 float effectiveLeft = max(paddingLeft, 0.0);
                 float effectiveRight = max(paddingRight, 0.0);
                 float effectiveTop = max(paddingTop, 0.0);
