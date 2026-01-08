@@ -303,7 +303,7 @@ public class LobbyGridManager : MonoObject
 
         Image frontImage = frontObj.AddComponent<Image>();
         frontImage.preserveAspect = false; // 셀 크기에 맞게 채움
-        ApplyRoundedMaterial(frontImage);
+        // 앞면 이미지는 기본 머티리얼 사용 (둥근 모서리 적용 안 함)
         frontObj.SetActive(false); // 기본은 숨김
 
         // === 5. 레벨 번호 텍스트 ===
