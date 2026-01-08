@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using WaiJigsaw.Core;
+using WaiJigsaw.Data;
 
 namespace WaiJigsaw.UI
 {
@@ -45,6 +47,11 @@ namespace WaiJigsaw.UI
         [SerializeField] private Button _policyButton;     // 개인정보 처리방침
         [SerializeField] private Button _websiteButton;    // 웹사이트
         [SerializeField] private Button _languageButton;   // 언어 설정
+
+        [Header("Debug Level Change (Editor Only)")]
+        [SerializeField] private GameObject _debugLevelContainer;  // 디버그 레벨 변경 컨테이너
+        [SerializeField] private TMP_InputField _levelInputField;  // 레벨 입력 필드
+        [SerializeField] private Button _setLevelButton;           // 레벨 설정 버튼
 
         // 인게임 모드 여부
         private bool _isInGameMode = false;
@@ -106,6 +113,10 @@ namespace WaiJigsaw.UI
 
             if (_languageButton != null)
                 _languageButton.onClick.AddListener(OnLanguageClicked);
+
+            // 디버그 레벨 변경 버튼
+            if (_setLevelButton != null)
+                _setLevelButton.onClick.AddListener(OnSetLevelClicked);
         }
 
         #region InGame Button Events
@@ -127,12 +138,47 @@ namespace WaiJigsaw.UI
         private void OnResetDataClicked()
         {
             // 모든 진행 데이터 초기화
-            WaiJigsaw.Data.GameDataContainer.Instance.ResetAllProgress();
+            GameDataContainer.Instance.ResetAllProgress();
 
             Close();
 
             // 로비로 이동 (Level 1부터 다시 시작)
             GameManager.Instance?.LoadLobbyScene();
+        }
+
+        /// <summary>
+        /// 디버그용 레벨 변경 버튼 클릭 시 호출됩니다.
+        /// </summary>
+        private void OnSetLevelClicked()
+        {
+            if (_levelInputField == null) return;
+
+            string inputText = _levelInputField.text;
+
+            if (int.TryParse(inputText, out int targetLevel))
+            {
+                if (targetLevel >= 1)
+                {
+                    // 레벨 변경
+                    GameDataContainer.Instance.SetCurrentLevel(targetLevel);
+                    GameDataContainer.Instance.Save();
+
+                    Debug.Log($"[SettingsPopup] 레벨을 {targetLevel}로 변경했습니다.");
+
+                    Close();
+
+                    // 로비로 이동하여 변경 사항 반영
+                    GameManager.Instance?.LoadLobbyScene();
+                }
+                else
+                {
+                    Debug.LogWarning("[SettingsPopup] 레벨은 1 이상이어야 합니다.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[SettingsPopup] 유효하지 않은 레벨 입력: {inputText}");
+            }
         }
 
         #endregion
