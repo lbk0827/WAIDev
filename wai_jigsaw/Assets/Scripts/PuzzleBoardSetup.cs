@@ -1104,8 +1104,34 @@ public class PuzzleBoardSetup : MonoBehaviour
         // 테두리 업데이트 지연 플래그 해제 및 최종 업데이트
         _deferGroupBorderUpdate = false;
 
+        // [FIX] 연쇄 병합 위치 누락 버그 수정
+        // 연쇄 병합으로 새로 합류한 조각들의 위치를 슬롯 위치로 강제 정렬
+        // SmoothMoveGroup 스냅샷에 포함되지 않은 조각들이 위치가 틀어지는 문제 해결
+        SnapAllPiecesToSlotPositions(group);
+
         // 연쇄 병합이 완료된 후 최종 그룹 테두리 업데이트
         group.UpdateGroupBorder();
+    }
+
+    /// <summary>
+    /// 그룹 내 모든 조각의 위치를 현재 슬롯 위치로 강제 정렬합니다.
+    /// 연쇄 병합 후 위치가 틀어진 조각들을 수정하기 위해 사용됩니다.
+    /// </summary>
+    void SnapAllPiecesToSlotPositions(PieceGroup group)
+    {
+        foreach (var piece in group.pieces)
+        {
+            Vector3 slotPosition = _slotPositions[piece.currentSlotIndex];
+
+            // 위치가 틀어져 있으면 보정 (작은 오차 허용)
+            float positionError = Vector3.Distance(piece.transform.position, slotPosition);
+            if (positionError > 0.001f)
+            {
+                Debug.Log($"[PositionFix] Grid({piece.originalGridX},{piece.originalGridY}) " +
+                          $"Position corrected: {piece.transform.position} -> {slotPosition} (Error: {positionError:F4})");
+                piece.transform.position = slotPosition;
+            }
+        }
     }
 
     void CheckNeighbor(DragController piece, int colOffset, int rowOffset)
