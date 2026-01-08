@@ -23,6 +23,11 @@ namespace WaiJigsaw.UI
         [SerializeField] private Toggle _sfxToggle;
         [SerializeField] private Toggle _hapticToggle;
 
+        [Header("Off Indicator Images")]
+        [SerializeField] private GameObject _bgmOffImage;
+        [SerializeField] private GameObject _sfxOffImage;
+        [SerializeField] private GameObject _hapticOffImage;
+
         [Header("Animation (Optional)")]
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private RectTransform _popupPanel;
@@ -133,6 +138,7 @@ namespace WaiJigsaw.UI
             if (GameOptionManager.Instance == null) return;
 
             GameOptionManager.Instance.BGMEnabled = isOn;
+            UpdateOffIndicator(_bgmOffImage, isOn);
         }
 
         /// <summary>
@@ -143,6 +149,7 @@ namespace WaiJigsaw.UI
             if (GameOptionManager.Instance == null) return;
 
             GameOptionManager.Instance.SFXEnabled = isOn;
+            UpdateOffIndicator(_sfxOffImage, isOn);
         }
 
         /// <summary>
@@ -153,11 +160,24 @@ namespace WaiJigsaw.UI
             if (GameOptionManager.Instance == null) return;
 
             GameOptionManager.Instance.HapticEnabled = isOn;
+            UpdateOffIndicator(_hapticOffImage, isOn);
 
             // 진동 활성화 시 피드백
             if (isOn)
             {
                 GameOptionManager.Instance.PlayHaptic();
+            }
+        }
+
+        /// <summary>
+        /// Off 인디케이터 이미지 표시/숨김
+        /// </summary>
+        private void UpdateOffIndicator(GameObject offImage, bool isOn)
+        {
+            if (offImage != null)
+            {
+                // Off 상태일 때만 Off 이미지 표시
+                offImage.SetActive(!isOn);
             }
         }
 
@@ -172,15 +192,24 @@ namespace WaiJigsaw.UI
         {
             if (GameOptionManager.Instance == null) return;
 
+            bool bgmOn = GameOptionManager.Instance.BGMEnabled;
+            bool sfxOn = GameOptionManager.Instance.SFXEnabled;
+            bool hapticOn = GameOptionManager.Instance.HapticEnabled;
+
             // 이벤트 발생 없이 Toggle 값만 변경 (SetIsOnWithoutNotify)
             if (_bgmToggle != null)
-                _bgmToggle.SetIsOnWithoutNotify(GameOptionManager.Instance.BGMEnabled);
+                _bgmToggle.SetIsOnWithoutNotify(bgmOn);
 
             if (_sfxToggle != null)
-                _sfxToggle.SetIsOnWithoutNotify(GameOptionManager.Instance.SFXEnabled);
+                _sfxToggle.SetIsOnWithoutNotify(sfxOn);
 
             if (_hapticToggle != null)
-                _hapticToggle.SetIsOnWithoutNotify(GameOptionManager.Instance.HapticEnabled);
+                _hapticToggle.SetIsOnWithoutNotify(hapticOn);
+
+            // Off 이미지 상태 동기화
+            UpdateOffIndicator(_bgmOffImage, bgmOn);
+            UpdateOffIndicator(_sfxOffImage, sfxOn);
+            UpdateOffIndicator(_hapticOffImage, hapticOn);
         }
 
         #endregion
