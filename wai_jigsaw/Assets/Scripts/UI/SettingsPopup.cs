@@ -18,18 +18,10 @@ namespace WaiJigsaw.UI
         [Header("Close Button")]
         [SerializeField] private Button _closeButton;
 
-        [Header("Toggle Buttons")]
-        [SerializeField] private Button _bgmToggleButton;
-        [SerializeField] private Button _sfxToggleButton;
-        [SerializeField] private Button _hapticToggleButton;
-
-        [Header("Toggle Visual Elements")]
-        [SerializeField] private GameObject _bgmOnIndicator;
-        [SerializeField] private GameObject _bgmOffIndicator;
-        [SerializeField] private GameObject _sfxOnIndicator;
-        [SerializeField] private GameObject _sfxOffIndicator;
-        [SerializeField] private GameObject _hapticOnIndicator;
-        [SerializeField] private GameObject _hapticOffIndicator;
+        [Header("Toggles")]
+        [SerializeField] private Toggle _bgmToggle;
+        [SerializeField] private Toggle _sfxToggle;
+        [SerializeField] private Toggle _hapticToggle;
 
         [Header("Animation (Optional)")]
         [SerializeField] private CanvasGroup _canvasGroup;
@@ -65,7 +57,7 @@ namespace WaiJigsaw.UI
                 _isInitialized = true;
             }
 
-            RefreshToggleVisuals();
+            SyncToggleStates();
             PlayOpenAnimation();
         }
 
@@ -79,14 +71,14 @@ namespace WaiJigsaw.UI
             if (_closeButton != null)
                 _closeButton.onClick.AddListener(Close);
 
-            if (_bgmToggleButton != null)
-                _bgmToggleButton.onClick.AddListener(OnBGMToggleClicked);
+            if (_bgmToggle != null)
+                _bgmToggle.onValueChanged.AddListener(OnBGMToggleChanged);
 
-            if (_sfxToggleButton != null)
-                _sfxToggleButton.onClick.AddListener(OnSFXToggleClicked);
+            if (_sfxToggle != null)
+                _sfxToggle.onValueChanged.AddListener(OnSFXToggleChanged);
 
-            if (_hapticToggleButton != null)
-                _hapticToggleButton.onClick.AddListener(OnHapticToggleClicked);
+            if (_hapticToggle != null)
+                _hapticToggle.onValueChanged.AddListener(OnHapticToggleChanged);
 
             // InGame 전용 버튼
             if (_retryButton != null)
@@ -133,31 +125,37 @@ namespace WaiJigsaw.UI
 
         #region Toggle Events
 
-        private void OnBGMToggleClicked()
+        /// <summary>
+        /// BGM 토글 값 변경 시 호출됩니다.
+        /// </summary>
+        private void OnBGMToggleChanged(bool isOn)
         {
             if (GameOptionManager.Instance == null) return;
 
-            GameOptionManager.Instance.BGMEnabled = !GameOptionManager.Instance.BGMEnabled;
-            UpdateBGMVisual();
+            GameOptionManager.Instance.BGMEnabled = isOn;
         }
 
-        private void OnSFXToggleClicked()
+        /// <summary>
+        /// SFX 토글 값 변경 시 호출됩니다.
+        /// </summary>
+        private void OnSFXToggleChanged(bool isOn)
         {
             if (GameOptionManager.Instance == null) return;
 
-            GameOptionManager.Instance.SFXEnabled = !GameOptionManager.Instance.SFXEnabled;
-            UpdateSFXVisual();
+            GameOptionManager.Instance.SFXEnabled = isOn;
         }
 
-        private void OnHapticToggleClicked()
+        /// <summary>
+        /// Haptic 토글 값 변경 시 호출됩니다.
+        /// </summary>
+        private void OnHapticToggleChanged(bool isOn)
         {
             if (GameOptionManager.Instance == null) return;
 
-            GameOptionManager.Instance.HapticEnabled = !GameOptionManager.Instance.HapticEnabled;
-            UpdateHapticVisual();
+            GameOptionManager.Instance.HapticEnabled = isOn;
 
             // 진동 활성화 시 피드백
-            if (GameOptionManager.Instance.HapticEnabled)
+            if (isOn)
             {
                 GameOptionManager.Instance.PlayHaptic();
             }
@@ -165,52 +163,24 @@ namespace WaiJigsaw.UI
 
         #endregion
 
-        #region Visual Updates
+        #region Toggle Sync
 
-        private void RefreshToggleVisuals()
-        {
-            UpdateBGMVisual();
-            UpdateSFXVisual();
-            UpdateHapticVisual();
-        }
-
-        private void UpdateBGMVisual()
+        /// <summary>
+        /// 팝업 열릴 때 Toggle 상태를 GameOptionManager 값과 동기화합니다.
+        /// </summary>
+        private void SyncToggleStates()
         {
             if (GameOptionManager.Instance == null) return;
 
-            bool isOn = GameOptionManager.Instance.BGMEnabled;
+            // 이벤트 발생 없이 Toggle 값만 변경 (SetIsOnWithoutNotify)
+            if (_bgmToggle != null)
+                _bgmToggle.SetIsOnWithoutNotify(GameOptionManager.Instance.BGMEnabled);
 
-            if (_bgmOnIndicator != null)
-                _bgmOnIndicator.SetActive(isOn);
+            if (_sfxToggle != null)
+                _sfxToggle.SetIsOnWithoutNotify(GameOptionManager.Instance.SFXEnabled);
 
-            if (_bgmOffIndicator != null)
-                _bgmOffIndicator.SetActive(!isOn);
-        }
-
-        private void UpdateSFXVisual()
-        {
-            if (GameOptionManager.Instance == null) return;
-
-            bool isOn = GameOptionManager.Instance.SFXEnabled;
-
-            if (_sfxOnIndicator != null)
-                _sfxOnIndicator.SetActive(isOn);
-
-            if (_sfxOffIndicator != null)
-                _sfxOffIndicator.SetActive(!isOn);
-        }
-
-        private void UpdateHapticVisual()
-        {
-            if (GameOptionManager.Instance == null) return;
-
-            bool isOn = GameOptionManager.Instance.HapticEnabled;
-
-            if (_hapticOnIndicator != null)
-                _hapticOnIndicator.SetActive(isOn);
-
-            if (_hapticOffIndicator != null)
-                _hapticOffIndicator.SetActive(!isOn);
+            if (_hapticToggle != null)
+                _hapticToggle.SetIsOnWithoutNotify(GameOptionManager.Instance.HapticEnabled);
         }
 
         #endregion
