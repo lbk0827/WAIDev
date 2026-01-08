@@ -575,3 +575,46 @@ if (selectedRadius > 0.001) {
 | 테이블 JSON | `Assets/Resources/Tables/` |
 | Excel 원본 | `TableExporter/excel/` |
 | 테이블 도구 | `TableExporter/__TABLE_SCRIPT__.exe` |
+
+---
+
+## 향후 과제 (Future Tasks)
+
+### 출시 준비 단계
+
+#### SplashScene 구현
+- **목적**: 앱 실행 시 첫 화면 (로비 진입 전)
+- **구성 요소**:
+  1. 회사 로고 표시
+  2. 게임 로고 표시
+  3. 로딩 화면 (프로그레스 바)
+  4. 번들 패치 다운로드 UI (업데이트 있을 시)
+- **씬 플로우**: SplashScene → LobbyScene → GameScene
+
+#### Bundle System (에셋 번들)
+- **목적**: 스테이지 이미지 파일 용량 관리
+- **필요성**:
+  - 스테이지가 늘어날수록 이미지 파일 증가 → 앱 용량 급증
+  - 초기 다운로드 용량 최소화
+  - 필요한 스테이지만 다운로드 (On-Demand)
+- **구현 범위**:
+  1. 퍼즐 이미지 에셋 번들화
+  2. 번들 버전 관리 시스템
+  3. 다운로드 진행률 UI
+  4. 로컬 캐싱 시스템
+
+---
+
+### SettingsPopup 미구현 기능
+
+#### 개인정보 처리방침 (OnPolicyClicked)
+- 개인정보 처리방침 웹페이지 열기
+- `Application.OpenURL()` 사용 예정
+
+#### 웹사이트 (OnWebsiteClicked)
+- 회사/게임 웹사이트 열기
+- `Application.OpenURL()` 사용 예정
+
+#### 언어 설정 (OnLanguageClicked)
+- 언어 선택 팝업 열기
+- 지원 언어: 한국어, 영어 (추후 확장)

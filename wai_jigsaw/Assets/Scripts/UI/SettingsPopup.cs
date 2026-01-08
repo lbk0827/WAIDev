@@ -41,14 +41,17 @@ namespace WaiJigsaw.UI
         [Header("Data Reset")]
         [SerializeField] private Button _resetDataButton;  // 데이터 초기화 버튼
 
+        [Header("Setting Buttons")]
+        [SerializeField] private Button _policyButton;     // 개인정보 처리방침
+        [SerializeField] private Button _websiteButton;    // 웹사이트
+        [SerializeField] private Button _languageButton;   // 언어 설정
+
         // 인게임 모드 여부
         private bool _isInGameMode = false;
         private bool _isInitialized = false;
 
         private void Awake()
         {
-            // Awake는 비활성화 상태에서도 호출됨
-            Debug.Log("[SettingsPopup] Awake 호출됨");
             RegisterButtonEvents();
             _isInitialized = true;
         }
@@ -68,8 +71,6 @@ namespace WaiJigsaw.UI
 
         private void RegisterButtonEvents()
         {
-            Debug.Log($"[SettingsPopup] RegisterButtonEvents - dimButton: {_dimButton != null}, closeButton: {_closeButton != null}");
-
             if (_dimButton != null)
                 _dimButton.onClick.AddListener(Close);
 
@@ -95,6 +96,16 @@ namespace WaiJigsaw.UI
             // 데이터 초기화 버튼
             if (_resetDataButton != null)
                 _resetDataButton.onClick.AddListener(OnResetDataClicked);
+
+            // 설정 버튼들
+            if (_policyButton != null)
+                _policyButton.onClick.AddListener(OnPolicyClicked);
+
+            if (_websiteButton != null)
+                _websiteButton.onClick.AddListener(OnWebsiteClicked);
+
+            if (_languageButton != null)
+                _languageButton.onClick.AddListener(OnLanguageClicked);
         }
 
         #region InGame Button Events
@@ -118,12 +129,38 @@ namespace WaiJigsaw.UI
             // 모든 진행 데이터 초기화
             WaiJigsaw.Data.GameDataContainer.Instance.ResetAllProgress();
 
-            Debug.Log("[SettingsPopup] 플레이어 데이터 초기화 완료");
-
             Close();
 
             // 로비로 이동 (Level 1부터 다시 시작)
             GameManager.Instance?.LoadLobbyScene();
+        }
+
+        #endregion
+
+        #region Setting Button Events
+
+        /// <summary>
+        /// 개인정보 처리방침 버튼 클릭 시 호출됩니다.
+        /// </summary>
+        private void OnPolicyClicked()
+        {
+            // TODO: 개인정보 처리방침 페이지 열기
+        }
+
+        /// <summary>
+        /// 웹사이트 버튼 클릭 시 호출됩니다.
+        /// </summary>
+        private void OnWebsiteClicked()
+        {
+            // TODO: 웹사이트 열기
+        }
+
+        /// <summary>
+        /// 언어 설정 버튼 클릭 시 호출됩니다.
+        /// </summary>
+        private void OnLanguageClicked()
+        {
+            // TODO: 언어 설정 팝업 열기
         }
 
         #endregion

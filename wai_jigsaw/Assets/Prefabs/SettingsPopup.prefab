@@ -2503,6 +2503,9 @@ MonoBehaviour:
   _retryButton: {fileID: 5873656118087257930}
   _homeButton: {fileID: 6396611178050949880}
   _resetDataButton: {fileID: 2705423199161050159}
+  _policyButton: {fileID: 4536341934476573336}
+  _websiteButton: {fileID: 7175552183032359208}
+  _languageButton: {fileID: 2605377453993479552}
 --- !u!1 &6753816917813864203
 GameObject:
   m_ObjectHideFlags: 0
@@ -2826,8 +2829,8 @@ RectTransform:
   - {fileID: 8120067459108517296}
   - {fileID: 1734061704231457913}
   - {fileID: 6396262612673397934}
-  - {fileID: 5691570484917231471}
   - {fileID: 6575251834063037706}
+  - {fileID: 5691570484917231471}
   m_Father: {fileID: 2879673534505050651}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
