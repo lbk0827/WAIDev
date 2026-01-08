@@ -1527,4 +1527,34 @@ public class PuzzleBoardSetup : MonoBehaviour
         }
         #endif
     }
+
+    // ====== Input Lock (Hard 인트로 등에서 사용) ======
+
+    private bool _inputLocked = false;
+
+    /// <summary>
+    /// 모든 퍼즐 조각의 입력(드래그)을 잠금/해제합니다.
+    /// Hard 인트로 시퀀스 등에서 연출 중 입력을 차단할 때 사용합니다.
+    /// </summary>
+    /// <param name="locked">true: 드래그 잠금, false: 드래그 해제</param>
+    public void SetInputLock(bool locked)
+    {
+        _inputLocked = locked;
+
+        // 모든 조각의 드래그 상태 변경
+        foreach (var piece in _piecesOnBoard)
+        {
+            if (piece != null)
+            {
+                piece.SetDraggable(!locked);
+            }
+        }
+
+        Debug.Log($"[PuzzleBoardSetup] 입력 잠금: {locked}");
+    }
+
+    /// <summary>
+    /// 입력 잠금 상태를 반환합니다.
+    /// </summary>
+    public bool IsInputLocked => _inputLocked;
 }

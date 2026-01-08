@@ -53,6 +53,10 @@ namespace WaiJigsaw.UI
         [Tooltip("클리어 시퀀스 사용 여부 (false면 기존 방식 사용)")]
         [SerializeField] private bool _useClearSequence = true;
 
+        [Header("Hard Intro Sequence")]
+        [Tooltip("Hard 난이도 진입 시퀀스 컴포넌트")]
+        [SerializeField] private HardIntroSequence _hardIntroSequence;
+
         #region MonoObject Lifecycle
 
         protected override void OnInitialize()
@@ -143,6 +147,12 @@ namespace WaiJigsaw.UI
                 _levelClearSequence.ResetSequence();
             }
 
+            // Hard 인트로 시퀀스 리셋
+            if (_hardIntroSequence != null)
+            {
+                _hardIntroSequence.ResetSequence();
+            }
+
             ShowPuzzle();
 
             int currentLevel = GameDataContainer.Instance.CurrentLevel;
@@ -154,6 +164,41 @@ namespace WaiJigsaw.UI
             {
                 _puzzleBoardSetup.SetupCurrentLevel(currentLevel);
             }
+
+            // Hard 난이도인 경우 인트로 시퀀스 재생
+            CheckAndPlayHardIntro(currentLevel);
+        }
+
+        /// <summary>
+        /// Hard 난이도인지 확인하고 인트로 시퀀스를 재생합니다.
+        /// </summary>
+        private void CheckAndPlayHardIntro(int levelNumber)
+        {
+            // LevelTable에서 난이도 확인
+            LevelTableRecord levelRecord = LevelTable.Get(levelNumber);
+            if (levelRecord == null)
+            {
+                Debug.LogWarning($"[GameUIMediator] LevelTable에서 레벨 {levelNumber}를 찾을 수 없습니다.");
+                return;
+            }
+
+            // Hard 난이도인 경우 인트로 재생
+            bool isHard = string.Equals(levelRecord.difficulty, "Hard", System.StringComparison.OrdinalIgnoreCase);
+
+            if (isHard && _hardIntroSequence != null)
+            {
+                Debug.Log($"[GameUIMediator] 레벨 {levelNumber}은 Hard 난이도 - 인트로 시퀀스 시작");
+                _hardIntroSequence.PlayHardIntro(OnHardIntroComplete);
+            }
+        }
+
+        /// <summary>
+        /// Hard 인트로 시퀀스 완료 콜백
+        /// </summary>
+        private void OnHardIntroComplete()
+        {
+            Debug.Log("[GameUIMediator] Hard 인트로 시퀀스 완료 - 플레이 시작");
+            // 추가 로직이 필요하면 여기에 구현
         }
 
         /// <summary>
