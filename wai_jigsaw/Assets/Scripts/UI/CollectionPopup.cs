@@ -75,9 +75,15 @@ namespace WaiJigsaw.UI
         {
             ClearChapterCards();
 
+            // Inspector에서 할당되지 않았으면 싱글턴에서 가져오기
             if (_levelGroupManager == null)
             {
-                Debug.LogWarning("[CollectionPopup] LevelGroupManager가 할당되지 않았습니다.");
+                _levelGroupManager = LevelGroupManager.Instance;
+            }
+
+            if (_levelGroupManager == null)
+            {
+                Debug.LogWarning("[CollectionPopup] LevelGroupManager를 찾을 수 없습니다.");
                 return;
             }
 
