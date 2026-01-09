@@ -864,3 +864,77 @@ private void OnSetLevelClicked()
 **Collection 버튼 참조**
 1. 로비의 Collection 버튼 RectTransform 연결
 2. 펌핑 효과 및 이미지 날아가는 목적지로 사용
+
+---
+
+### 챕터 클리어 시퀀스 버그 수정 및 타이밍 개선
+
+#### ChapterClearSequence.cs 수정
+
+**버그 수정**
+- `_gridFadeDuration` → `_borderFadeDuration` 변수명 오류 수정
+  - 존재하지 않는 변수 참조로 인한 문제 해결
+
+**타이밍 개선**
+- Confetti를 경계선 페이드와 동시에 시작하도록 순서 변경
+  - 기존: 경계선 페이드 완료 → Confetti 시작
+  - 변경: Confetti 시작 → 경계선 페이드 시작 (동시 진행)
+- 연출이 더 자연스럽고 빠르게 진행됨
+
+**Inspector 타이밍 설정 (기본값)**
+- `_borderFadeDuration`: 0.4f (경계선 사라지는 시간)
+- `_confettiDuration`: 1.2f (Confetti 추가 재생 시간)
+- `_flyToCollectionDuration`: 0.7f (이미지 날아가는 시간)
+- `_nextChapterDelay`: 0.2f (다음 챕터 전환 딜레이)
+
+#### LobbyGridManager.cs 추가 메서드
+
+**FadeOutAllCardBorders(float duration)**
+- 모든 카드의 BlackBorder, WhiteBorder를 페이드 아웃
+- 카드 이미지는 유지하면서 경계선만 사라지는 효과
+
+**GetGridContainerRect()**
+- 그리드 컨테이너의 RectTransform 반환
+- CompletedImageOverlay 위치/크기 동기화에 사용
+
+#### GameDataContainer.cs 추가 메서드
+
+**PeekJustClearedLevel()**
+- 방금 클리어한 레벨을 Consume하지 않고 확인만 함
+- 챕터 클리어 체크를 위한 사전 확인용
+
+---
+
+### 카드 딜링 애니메이션 구현
+
+#### 문제 현상
+- Step 6에서 다음 챕터가 아닌 클리어한 챕터 그리드가 다시 표시됨
+- 카드가 즉시 나타나고 딜링 애니메이션이 없음
+
+#### 원인
+- `SetupGrid()`가 `PeekJustClearedLevel()`을 확인하여 클리어한 챕터를 다시 표시
+- 챕터 클리어 시퀀스 중에도 해당 로직이 적용됨
+
+#### LobbyGridManager.cs 수정
+
+**SetupGridWithDealingAnimation(int currentLevel)**
+- `PeekJustClearedLevel()` 무시하고 현재 레벨 기준 그룹 강제 표시
+- 카드 생성 후 딜링 애니메이션 자동 실행
+- 챕터 클리어 시퀀스 Step 6 전용 메서드
+
+**PlayDealingAnimation() 코루틴**
+- 모든 카드를 오른쪽 오프셋 위치에서 시작
+- 투명 → 불투명 페이드와 함께 원래 위치로 이동
+- 카드 간 딜레이로 순차적 등장 연출
+- DOTween 사용 (DOAnchorPos, DOFade)
+
+**Inspector 설정 필드**
+- `_cardDealDelay`: 0.05f (카드 간 딜레이)
+- `_cardDealDuration`: 0.3f (개별 카드 애니메이션 시간)
+- `_cardDealStartOffset`: (300, 0) (시작 오프셋)
+
+#### LobbyUIMediator.cs 수정
+
+**OnRequestNextChapterCards()**
+- `SetupGrid()` → `SetupGridWithDealingAnimation()` 변경
+- 다음 챕터 표시 시 딜링 애니메이션 적용

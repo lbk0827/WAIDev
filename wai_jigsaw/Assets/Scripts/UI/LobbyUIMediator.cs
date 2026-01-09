@@ -194,11 +194,11 @@ namespace WaiJigsaw.UI
         {
             Debug.Log("[LobbyUIMediator] 다음 챕터 카드 뿌리기 요청");
 
-            // 다음 레벨로 그리드 갱신 (다음 챕터 표시)
+            // 다음 레벨로 그리드 갱신 (딜링 애니메이션과 함께)
             int currentLevel = GameDataContainer.Instance.CurrentLevel;
             if (_lobbyGridManager != null)
             {
-                _lobbyGridManager.SetupGrid(currentLevel);
+                _lobbyGridManager.SetupGridWithDealingAnimation(currentLevel);
             }
 
             // 플레이 버튼 텍스트 업데이트

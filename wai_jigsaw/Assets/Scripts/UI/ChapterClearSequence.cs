@@ -17,19 +17,19 @@ namespace WaiJigsaw.UI
     public class ChapterClearSequence : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private RectTransform _gridContainer;        // 5x5 그리드 컨테이너
+        [SerializeField] private LobbyGridManager _lobbyGridManager;  // 로비 그리드 매니저
         [SerializeField] private RectTransform _collectionButton;     // Collection 버튼
         [SerializeField] private Image _completedImageOverlay;        // 완성 이미지 오버레이 (날아가는 용도)
-        [SerializeField] private CanvasGroup _gridCanvasGroup;        // 그리드 페이드용 CanvasGroup
+        [SerializeField] private CanvasGroup _gridCanvasGroup;        // 그리드 페이드용 CanvasGroup (6단계에서 사용)
 
         [Header("Confetti")]
         [SerializeField] private CelebrationController _celebrationController;
 
         [Header("Timing Settings")]
-        [SerializeField] private float _gridFadeDuration = 0.5f;      // 경계선 사라지는 시간
-        [SerializeField] private float _confettiDuration = 2.0f;      // Confetti 재생 시간
-        [SerializeField] private float _flyToCollectionDuration = 0.8f; // 이미지 날아가는 시간
-        [SerializeField] private float _nextChapterDelay = 0.3f;      // 다음 챕터 전환 딜레이
+        [SerializeField] private float _borderFadeDuration = 0.4f;    // 경계선 사라지는 시간
+        [SerializeField] private float _confettiDuration = 1.2f;      // Confetti 재생 시간
+        [SerializeField] private float _flyToCollectionDuration = 0.7f; // 이미지 날아가는 시간
+        [SerializeField] private float _nextChapterDelay = 0.2f;      // 다음 챕터 전환 딜레이
 
         [Header("Animation Settings")]
         [SerializeField] private float _imageStartScale = 1.0f;       // 날아가기 시작 스케일
@@ -104,36 +104,60 @@ namespace WaiJigsaw.UI
 
         /// <summary>
         /// 3단계: 그리드 경계선 사라짐 + Confetti 연출
+        /// 카드 이미지는 유지하고 테두리(BlackBorder, WhiteBorder)만 페이드 아웃
         /// </summary>
         private IEnumerator Step3_FadeGridAndPlayConfetti()
         {
             Debug.Log("[ChapterClearSequence] Step 3: 경계선 사라짐 + Confetti");
 
-            // 완성 이미지 오버레이 설정 및 표시
+            // Confetti 연출 먼저 시작 (경계선 페이드와 동시에)
+            PlayConfetti();
+
+            // 카드 테두리만 페이드 아웃 (카드 이미지는 유지)
+            if (_lobbyGridManager != null)
+            {
+                _lobbyGridManager.FadeOutAllCardBorders(_borderFadeDuration);
+            }
+
+            // 경계선 페이드 완료 대기
+            yield return new WaitForSeconds(_borderFadeDuration);
+
+            // Confetti 추가 재생 시간 대기
+            yield return new WaitForSeconds(_confettiDuration);
+
+            // 완성 이미지 오버레이 준비 (그리드 위치/크기에 맞춤)
             if (_completedImageOverlay != null && _completedSprite != null)
             {
                 _completedImageOverlay.sprite = _completedSprite;
-                _completedImageOverlay.gameObject.SetActive(true);
-                _completedImageOverlay.color = new Color(1f, 1f, 1f, 0f);
 
-                // 완성 이미지 페이드 인 (그리드 위에 덮어씌움)
-                _completedImageOverlay.DOFade(1f, _gridFadeDuration);
+                // 그리드 컨테이너 위치/크기에 맞춤
+                if (_lobbyGridManager != null)
+                {
+                    RectTransform gridRect = _lobbyGridManager.GetGridContainerRect();
+                    if (gridRect != null)
+                    {
+                        RectTransform overlayRect = _completedImageOverlay.rectTransform;
+                        // 그리드와 동일한 위치/크기로 설정
+                        overlayRect.position = gridRect.position;
+                        overlayRect.sizeDelta = gridRect.sizeDelta;
+                    }
+                }
+
+                _completedImageOverlay.gameObject.SetActive(true);
+                _completedImageOverlay.color = Color.white; // 즉시 표시
             }
 
-            // 그리드 페이드 아웃 (경계선 사라지는 효과)
+            // 그리드 숨기기 (완성 이미지가 대체)
             if (_gridCanvasGroup != null)
             {
-                _gridCanvasGroup.DOFade(0f, _gridFadeDuration);
+                _gridCanvasGroup.alpha = 0f;
             }
-
-            yield return new WaitForSeconds(_gridFadeDuration);
-
-            // Confetti 연출 시작
-            PlayConfetti();
-
-            // Confetti 재생 대기
-            yield return new WaitForSeconds(_confettiDuration);
         }
+
+        // 오버레이 원래 위치/크기 저장용
+        private Vector3 _originalOverlayPosition;
+        private Vector2 _originalOverlaySizeDelta;
+        private Vector3 _originalOverlayScale;
 
         /// <summary>
         /// 4단계 & 5단계: 완성 이미지가 Collection 버튼으로 날아감
@@ -148,25 +172,27 @@ namespace WaiJigsaw.UI
                 yield break;
             }
 
-            // Collection 버튼의 월드 위치를 화면 좌표로 변환
+            // Collection 버튼의 월드 위치
             Vector3 targetPosition = _collectionButton.position;
 
-            // 시작 위치 및 스케일 저장
-            Vector3 startPosition = _completedImageOverlay.rectTransform.position;
-            Vector3 startScale = _completedImageOverlay.rectTransform.localScale;
+            // 원래 위치/크기 저장 (나중에 복원용)
+            RectTransform overlayRect = _completedImageOverlay.rectTransform;
+            _originalOverlayPosition = overlayRect.position;
+            _originalOverlaySizeDelta = overlayRect.sizeDelta;
+            _originalOverlayScale = overlayRect.localScale;
 
             // DOTween 시퀀스로 이동 + 축소 동시 실행
             Sequence flySequence = DOTween.Sequence();
 
             // 이동 애니메이션
             flySequence.Append(
-                _completedImageOverlay.rectTransform.DOMove(targetPosition, _flyToCollectionDuration)
+                overlayRect.DOMove(targetPosition, _flyToCollectionDuration)
                     .SetEase(_flyEase)
             );
 
             // 축소 애니메이션 (동시 실행)
             flySequence.Join(
-                _completedImageOverlay.rectTransform.DOScale(_imageEndScale, _flyToCollectionDuration)
+                overlayRect.DOScale(_imageEndScale, _flyToCollectionDuration)
                     .SetEase(Ease.InQuad)
             );
 
@@ -186,7 +212,9 @@ namespace WaiJigsaw.UI
 
             // 오버레이 숨기기 및 초기화
             _completedImageOverlay.gameObject.SetActive(false);
-            _completedImageOverlay.rectTransform.localScale = Vector3.one;
+            overlayRect.position = _originalOverlayPosition;
+            overlayRect.sizeDelta = _originalOverlaySizeDelta;
+            overlayRect.localScale = _originalOverlayScale;
         }
 
         /// <summary>

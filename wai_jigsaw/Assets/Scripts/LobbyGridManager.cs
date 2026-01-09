@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using WaiJigsaw.Data;
 using WaiJigsaw.Core;
 
@@ -505,4 +507,166 @@ public class LobbyGridManager : MonoObject
         if (_currentGroup == null) return;
         SetupGrid(GameManager.Instance.CurrentLevel);
     }
+
+    /// <summary>
+    /// 모든 카드의 테두리를 페이드 아웃합니다 (챕터 클리어 연출용).
+    /// </summary>
+    /// <param name="duration">페이드 시간</param>
+    public void FadeOutAllCardBorders(float duration)
+    {
+        foreach (var cardSlot in _cardSlots)
+        {
+            if (cardSlot == null) continue;
+
+            // BlackBorder 찾기
+            Transform blackBorder = cardSlot.transform.Find("BlackBorder");
+            if (blackBorder != null)
+            {
+                Image blackImage = blackBorder.GetComponent<Image>();
+                if (blackImage != null)
+                {
+                    blackImage.DOFade(0f, duration);
+                }
+            }
+
+            // WhiteBorder 찾기
+            Transform whiteBorder = cardSlot.transform.Find("WhiteBorder");
+            if (whiteBorder != null)
+            {
+                Image whiteImage = whiteBorder.GetComponent<Image>();
+                if (whiteImage != null)
+                {
+                    whiteImage.DOFade(0f, duration);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 그리드 컨테이너의 RectTransform을 반환합니다.
+    /// </summary>
+    public RectTransform GetGridContainerRect()
+    {
+        return _gridContainer as RectTransform;
+    }
+
+    #region Card Dealing Animation
+
+    [Header("Card Dealing Animation")]
+    [SerializeField] private float _cardDealDelay = 0.05f;      // 카드 간 딜레이
+    [SerializeField] private float _cardDealDuration = 0.3f;    // 개별 카드 애니메이션 시간
+    [SerializeField] private Vector2 _cardDealStartOffset = new Vector2(300f, 0f);  // 시작 오프셋 (오른쪽에서)
+
+    // 딜링 애니메이션 완료 이벤트
+    public event Action OnDealingAnimationComplete;
+
+    /// <summary>
+    /// 다음 챕터 그리드를 딜링 애니메이션과 함께 생성합니다.
+    /// 챕터 클리어 시퀀스에서 사용됩니다.
+    /// </summary>
+    /// <param name="currentLevel">현재 레벨 (다음 챕터의 첫 레벨)</param>
+    public void SetupGridWithDealingAnimation(int currentLevel)
+    {
+        _currentLevel = currentLevel;
+
+        // 0. 둥근 모서리 Material 초기화
+        InitializeRoundedMaterial();
+
+        // 1. 현재 레벨 기준 그룹 표시 (PeekJustClearedLevel 무시)
+        LevelGroupTableRecord targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+        _currentGroup = targetGroup;
+
+        if (_showDebugInfo)
+        {
+            Debug.Log($"[LobbyGridManager] 딜링 애니메이션으로 그룹 {_currentGroup.GroupID} 로드 " +
+                      $"(레벨 {_currentGroup.StartLevel}~{_currentGroup.EndLevel})");
+        }
+
+        // 2. 기존 카드 슬롯 정리
+        ClearGrid();
+
+        // 3. 보상 이미지를 25조각으로 분할
+        Sprite[] pieceSprites = _levelGroupManager.GetSlicedSprites(_currentGroup);
+
+        if (pieceSprites == null || pieceSprites.Length != CARDS_PER_GROUP)
+        {
+            Debug.LogError("보상 이미지 분할에 실패했습니다!");
+            return;
+        }
+
+        // 4. 25개의 카드 슬롯 생성 (비활성화 상태로)
+        for (int i = 0; i < CARDS_PER_GROUP; i++)
+        {
+            int levelNumber = _currentGroup.StartLevel + i;
+            CreateCardSlot(levelNumber, pieceSprites[i]);
+        }
+
+        // 5. 딜링 애니메이션 시작
+        StartCoroutine(PlayDealingAnimation());
+    }
+
+    /// <summary>
+    /// 카드 딜링 애니메이션 코루틴
+    /// </summary>
+    private IEnumerator PlayDealingAnimation()
+    {
+        _isPlayingClearAnimation = true;
+
+        if (_showDebugInfo)
+        {
+            Debug.Log("[LobbyGridManager] 카드 딜링 애니메이션 시작");
+        }
+
+        // 모든 카드의 원래 위치 저장 및 시작 위치로 이동
+        List<Vector3> originalPositions = new List<Vector3>();
+        foreach (var cardSlot in _cardSlots)
+        {
+            if (cardSlot == null) continue;
+
+            RectTransform rect = cardSlot.GetComponent<RectTransform>();
+            originalPositions.Add(rect.anchoredPosition);
+
+            // 시작 위치로 이동 (오른쪽 바깥)
+            rect.anchoredPosition += _cardDealStartOffset;
+
+            // 처음에는 투명하게
+            CanvasGroup cg = cardSlot.GetComponent<CanvasGroup>();
+            if (cg == null)
+            {
+                cg = cardSlot.gameObject.AddComponent<CanvasGroup>();
+            }
+            cg.alpha = 0f;
+        }
+
+        // 카드 하나씩 날아오기
+        for (int i = 0; i < _cardSlots.Count; i++)
+        {
+            if (_cardSlots[i] == null) continue;
+
+            RectTransform rect = _cardSlots[i].GetComponent<RectTransform>();
+            CanvasGroup cg = _cardSlots[i].GetComponent<CanvasGroup>();
+            Vector3 targetPos = originalPositions[i];
+
+            // 이동 + 페이드 인 애니메이션
+            rect.DOAnchorPos(targetPos, _cardDealDuration).SetEase(Ease.OutQuad);
+            cg.DOFade(1f, _cardDealDuration * 0.5f);
+
+            // 다음 카드까지 딜레이
+            yield return new WaitForSeconds(_cardDealDelay);
+        }
+
+        // 마지막 카드 애니메이션 완료 대기
+        yield return new WaitForSeconds(_cardDealDuration);
+
+        _isPlayingClearAnimation = false;
+
+        if (_showDebugInfo)
+        {
+            Debug.Log("[LobbyGridManager] 카드 딜링 애니메이션 완료");
+        }
+
+        OnDealingAnimationComplete?.Invoke();
+    }
+
+    #endregion
 }

@@ -892,13 +892,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70091a570700a764d9a4a28be9800c63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _gridContainer: {fileID: 1563543197}
+  _lobbyGridManager: {fileID: 1380872573}
   _collectionButton: {fileID: 750201639}
   _completedImageOverlay: {fileID: 708838228}
   _gridCanvasGroup: {fileID: 1563543201}
   _celebrationController: {fileID: 388791041}
-  _gridFadeDuration: 0.5
-  _confettiDuration: 2
+  _borderFadeDuration: 0.4
+  _confettiDuration: 1.5
   _flyToCollectionDuration: 0.8
   _nextChapterDelay: 0.3
   _imageStartScale: 1
@@ -1051,11 +1051,47 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 956441263}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3626022669773721211, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 1200
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885133530775352038, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: looping
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885133530775352038, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: moveWithTransform
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4495511255454783919, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 4495511255454783919, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -800
+      objectReference: {fileID: 0}
+    - target: {fileID: 6315761971094576565, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -600
+      objectReference: {fileID: 0}
+    - target: {fileID: 6315761971094576565, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -800
+      objectReference: {fileID: 0}
     - target: {fileID: 6354669488604585162, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
       propertyPath: m_Name
       value: CelebrationController
+      objectReference: {fileID: 0}
+    - target: {fileID: 8063793623800875760, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: looping
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8063793623800875760, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: moveWithTransform
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
       propertyPath: m_Pivot.x
@@ -1090,6 +1126,18 @@ PrefabInstance:
       value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.004636296
+      objectReference: {fileID: 0}
+    - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.004636296
+      objectReference: {fileID: 0}
+    - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.004636296
+      objectReference: {fileID: 0}
+    - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -1099,7 +1147,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1142,11 +1190,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
---- !u!224 &388791040 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8397784947797782078, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
-  m_PrefabInstance: {fileID: 388791039}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &388791041 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8313874420659727958, guid: 3013b2eb5126d51499a6e2b9f7a554a9, type: 3}
@@ -1434,9 +1477,9 @@ Canvas:
   m_GameObject: {fileID: 956441259}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
+  m_RenderMode: 1
+  m_Camera: {fileID: 71230280}
+  m_PlaneDistance: 10
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
@@ -1464,7 +1507,6 @@ RectTransform:
   - {fileID: 35608274}
   - {fileID: 2082531441}
   - {fileID: 174693717}
-  - {fileID: 388791040}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2332,7 +2374,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0, y: -819}
+  m_AnchoredPosition: {x: 0, y: -819}
   m_SizeDelta: {x: 400, y: 188.1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1835821497
@@ -2742,3 +2784,4 @@ SceneRoots:
   - {fileID: 1380872575}
   - {fileID: 71230281}
   - {fileID: 1067852790}
+  - {fileID: 388791039}
