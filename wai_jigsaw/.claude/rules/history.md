@@ -786,3 +786,81 @@ private void OnSetLevelClicked()
 #### CanvasGroup 주의사항
 - ChapterDetailPopup에 CanvasGroup이 있으면 Fade 애니메이션에 사용됨
 - DimBackground가 보이지 않는 문제 발생 시 RectTransform이 stretch-stretch인지 확인
+
+---
+
+### 테이블 데이터 리로드 유틸리티
+
+#### TableReloader.cs 생성
+- **파일**: `Assets/Editor/TableReloader.cs`
+- Unity Editor 재시작 없이 테이블 JSON 데이터 리로드 기능
+- 메뉴: Tools → Reload Tables (Ctrl+Shift+R)
+- 개별 테이블 리로드: Tools → Reload LevelTable / Reload LevelGroupTable
+
+#### 사용법
+1. Excel에서 테이블 수정 후 JSON 내보내기
+2. Unity Editor에서 `Ctrl+Shift+R` 또는 `Tools → Reload Tables`
+3. 테이블 캐시가 클리어되고 새 데이터로 리로드됨
+
+---
+
+### 챕터 클리어 시퀀스 구현 (3~6단계)
+
+#### ChapterClearSequence.cs 생성
+- **파일**: `Assets/Scripts/UI/ChapterClearSequence.cs`
+- 챕터의 마지막 레벨 클리어 후 로비 복귀 시 재생되는 연출 시퀀스
+
+#### 연출 플로우
+1. **3단계**: 경계선 사라짐 + Confetti 연출
+   - 완성 이미지 오버레이 페이드 인 (그리드 위에 덮어씌움)
+   - 그리드 CanvasGroup 페이드 아웃
+   - CelebrationController.Play() 호출
+2. **4단계 & 5단계**: 완성 이미지가 Collection 버튼으로 날아감
+   - DOTween Sequence로 이동 + 축소 동시 실행
+   - 마지막에 페이드 아웃 (버튼에 흡수되는 느낌)
+   - Collection 버튼 펌핑 효과 (DOPunchScale)
+3. **6단계**: 다음 챕터 카드 뿌리기
+   - OnRequestNextChapterCards 이벤트 발생
+   - LobbyGridManager.SetupGrid() 호출로 다음 챕터 그리드 표시
+
+#### Inspector 설정 필드
+- `_gridContainer` - 5x5 그리드 컨테이너
+- `_collectionButton` - Collection 버튼
+- `_completedImageOverlay` - 완성 이미지 오버레이 Image
+- `_gridCanvasGroup` - 그리드 페이드용 CanvasGroup
+- `_celebrationController` - Confetti 컨트롤러
+- `_gridFadeDuration` (0.5f) - 경계선 사라지는 시간
+- `_confettiDuration` (2.0f) - Confetti 재생 시간
+- `_flyToCollectionDuration` (0.8f) - 이미지 날아가는 시간
+- `_nextChapterDelay` (0.3f) - 다음 챕터 전환 딜레이
+
+#### LobbyGridManager.cs 수정
+- `_justClearedLevelForChapterCheck` 필드 추가 (챕터 클리어 체크용)
+- `OnChapterCleared` 이벤트 추가 (마지막 레벨 클리어 시 발생)
+- `CurrentGroup` 프로퍼티 추가 (외부 접근용)
+- `CheckAndTriggerChapterClear()` 메서드 추가
+  - 카드 플립 애니메이션 완료 후 호출
+  - 마지막 레벨 클리어 + 25개 모두 앞면 확인
+  - 완성 이미지 로드 및 이벤트 발생
+
+#### LobbyUIMediator.cs 수정
+- `_chapterClearSequence` 필드 추가
+- `OnChapterCleared()` 핸들러 - 시퀀스 재생 시작
+- `OnChapterClearSequenceComplete()` 핸들러 - UI 차단 해제
+- `OnRequestNextChapterCards()` 핸들러 - 다음 챕터 그리드 설정
+
+#### UI 설정 가이드
+
+**CompletedImageOverlay 설정**
+1. LobbyScene의 HomePanel 아래에 Image 오브젝트 생성
+2. RectTransform: 그리드와 같은 위치/크기로 설정
+3. 기본 비활성화 상태로 유지
+4. ChapterClearSequence에 참조 연결
+
+**GridCanvasGroup 설정**
+1. 5x5 그리드 컨테이너(GridContainer)에 CanvasGroup 컴포넌트 추가
+2. ChapterClearSequence에 참조 연결
+
+**Collection 버튼 참조**
+1. 로비의 Collection 버튼 RectTransform 연결
+2. 펌핑 효과 및 이미지 날아가는 목적지로 사용

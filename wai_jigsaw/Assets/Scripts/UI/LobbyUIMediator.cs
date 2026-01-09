@@ -30,6 +30,9 @@ namespace WaiJigsaw.UI
         [SerializeField] private SettingsPopup _settingsPopup;
         [SerializeField] private CollectionPopup _collectionPopup;
 
+        [Header("Chapter Clear Sequence")]
+        [SerializeField] private ChapterClearSequence _chapterClearSequence;
+
         [Header("UI Blocking")]
         [SerializeField] private GameObject _blockingPanel;  // 연출 중 터치 차단용 (옵션)
 
@@ -47,6 +50,14 @@ namespace WaiJigsaw.UI
             if (_lobbyGridManager != null)
             {
                 _lobbyGridManager.OnClearAnimationComplete += OnClearAnimationComplete;
+                _lobbyGridManager.OnChapterCleared += OnChapterCleared;
+            }
+
+            // ChapterClearSequence 이벤트 구독
+            if (_chapterClearSequence != null)
+            {
+                _chapterClearSequence.OnSequenceComplete += OnChapterClearSequenceComplete;
+                _chapterClearSequence.OnRequestNextChapterCards += OnRequestNextChapterCards;
             }
         }
 
@@ -56,6 +67,13 @@ namespace WaiJigsaw.UI
             if (_lobbyGridManager != null)
             {
                 _lobbyGridManager.OnClearAnimationComplete -= OnClearAnimationComplete;
+                _lobbyGridManager.OnChapterCleared -= OnChapterCleared;
+            }
+
+            if (_chapterClearSequence != null)
+            {
+                _chapterClearSequence.OnSequenceComplete -= OnChapterClearSequenceComplete;
+                _chapterClearSequence.OnRequestNextChapterCards -= OnRequestNextChapterCards;
             }
         }
 
@@ -128,8 +146,63 @@ namespace WaiJigsaw.UI
         /// </summary>
         private void OnClearAnimationComplete()
         {
+            // 챕터 클리어 시퀀스가 재생 중이면 UI 차단 해제하지 않음
+            if (_chapterClearSequence != null && _chapterClearSequence.IsPlaying)
+            {
+                return;
+            }
+
             UnblockUI();
             Debug.Log("[LobbyUIMediator] 클리어 애니메이션 완료 - UI 차단 해제");
+        }
+
+        /// <summary>
+        /// 챕터 클리어 시 호출됩니다 (마지막 레벨 클리어 후).
+        /// </summary>
+        private void OnChapterCleared(LevelGroupTableRecord clearedGroup, Sprite completedSprite)
+        {
+            Debug.Log($"[LobbyUIMediator] 챕터 {clearedGroup.GroupID} 클리어 - 시퀀스 시작");
+
+            // UI 차단 유지
+            BlockUI();
+
+            // 챕터 클리어 시퀀스 재생
+            if (_chapterClearSequence != null)
+            {
+                _chapterClearSequence.Play(clearedGroup, completedSprite);
+            }
+            else
+            {
+                Debug.LogWarning("[LobbyUIMediator] ChapterClearSequence가 할당되지 않았습니다.");
+                UnblockUI();
+            }
+        }
+
+        /// <summary>
+        /// 챕터 클리어 시퀀스 완료 시 호출됩니다.
+        /// </summary>
+        private void OnChapterClearSequenceComplete()
+        {
+            UnblockUI();
+            Debug.Log("[LobbyUIMediator] 챕터 클리어 시퀀스 완료 - UI 차단 해제");
+        }
+
+        /// <summary>
+        /// 다음 챕터 카드 뿌리기 요청 시 호출됩니다.
+        /// </summary>
+        private void OnRequestNextChapterCards()
+        {
+            Debug.Log("[LobbyUIMediator] 다음 챕터 카드 뿌리기 요청");
+
+            // 다음 레벨로 그리드 갱신 (다음 챕터 표시)
+            int currentLevel = GameDataContainer.Instance.CurrentLevel;
+            if (_lobbyGridManager != null)
+            {
+                _lobbyGridManager.SetupGrid(currentLevel);
+            }
+
+            // 플레이 버튼 텍스트 업데이트
+            UpdatePlayButtonText(currentLevel);
         }
 
         #endregion

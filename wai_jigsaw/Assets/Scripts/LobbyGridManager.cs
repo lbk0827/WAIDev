@@ -39,6 +39,9 @@ public class LobbyGridManager : MonoObject
     // 카드 플립 연출 상태
     private bool _isPlayingClearAnimation = false;
 
+    // 방금 클리어한 레벨 (챕터 클리어 체크용)
+    private int _justClearedLevelForChapterCheck = -1;
+
     /// <summary>
     /// 카드 플립 연출이 재생 중인지 여부
     /// </summary>
@@ -48,6 +51,17 @@ public class LobbyGridManager : MonoObject
     /// 클리어 애니메이션 완료 이벤트 (UI 차단 해제용)
     /// </summary>
     public event Action OnClearAnimationComplete;
+
+    /// <summary>
+    /// 챕터 클리어 이벤트 (챕터의 마지막 레벨 클리어 시)
+    /// 매개변수: (클리어한 그룹 정보, 완성된 이미지 스프라이트)
+    /// </summary>
+    public event Action<LevelGroupTableRecord, Sprite> OnChapterCleared;
+
+    /// <summary>
+    /// 현재 그룹 정보 (외부 접근용)
+    /// </summary>
+    public LevelGroupTableRecord CurrentGroup => _currentGroup;
 
     /// <summary>
     /// 둥근 모서리 Material을 초기화합니다.
@@ -175,6 +189,9 @@ public class LobbyGridManager : MonoObject
         // 연출 상태 설정
         _isPlayingClearAnimation = true;
 
+        // 챕터 클리어 체크를 위해 클리어한 레벨 저장
+        _justClearedLevelForChapterCheck = justClearedLevel;
+
         // 카드 플립 애니메이션 실행
         cardSlot.PlayClearFlipAnimation(() =>
         {
@@ -186,7 +203,60 @@ public class LobbyGridManager : MonoObject
             {
                 Debug.Log($"[LobbyGridManager] 레벨 {justClearedLevel} 카드 플립 연출 완료");
             }
+
+            // 챕터 클리어 체크 (마지막 레벨 클리어 시)
+            CheckAndTriggerChapterClear();
         });
+    }
+
+    /// <summary>
+    /// 챕터 클리어 여부를 체크하고 이벤트를 발생시킵니다.
+    /// </summary>
+    private void CheckAndTriggerChapterClear()
+    {
+        if (_currentGroup == null || _justClearedLevelForChapterCheck < 0)
+        {
+            return;
+        }
+
+        // 마지막 레벨을 클리어한 경우에만 챕터 클리어
+        if (_justClearedLevelForChapterCheck != _currentGroup.EndLevel)
+        {
+            _justClearedLevelForChapterCheck = -1;
+            return;
+        }
+
+        // 모든 카드가 앞면 상태인지 확인 (25개 모두 클리어)
+        bool allCardsCleared = true;
+        for (int i = 0; i < _cardSlots.Count; i++)
+        {
+            int levelNumber = _currentGroup.StartLevel + i;
+            if (!GameManager.Instance.IsLevelCleared(levelNumber))
+            {
+                allCardsCleared = false;
+                break;
+            }
+        }
+
+        if (!allCardsCleared)
+        {
+            _justClearedLevelForChapterCheck = -1;
+            return;
+        }
+
+        if (_showDebugInfo)
+        {
+            Debug.Log($"[LobbyGridManager] 챕터 {_currentGroup.GroupID} 클리어! (레벨 {_currentGroup.StartLevel}~{_currentGroup.EndLevel})");
+        }
+
+        // 완성 이미지 로드
+        Sprite completedSprite = _levelGroupManager.LoadGroupImage(_currentGroup);
+
+        // 챕터 클리어 이벤트 발생
+        OnChapterCleared?.Invoke(_currentGroup, completedSprite);
+
+        // 체크 완료
+        _justClearedLevelForChapterCheck = -1;
     }
 
     /// <summary>
