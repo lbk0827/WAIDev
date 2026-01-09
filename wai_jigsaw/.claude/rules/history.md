@@ -706,3 +706,83 @@ HardBannerContainer
 
 #### 이미지 Flip 방법
 - RightIcon의 RectTransform Scale X를 **-1**로 설정하면 좌우 반전됨
+
+---
+
+## 2026-01-09
+
+### 컬렉션 시스템 구현
+
+#### CollectionPopup.cs 생성
+- **파일**: `Assets/Scripts/UI/CollectionPopup.cs`
+- 클리어한 챕터 이미지들을 보여주는 갤러리 팝업
+- 2열 그리드 형태로 챕터 카드 배치
+- 클리어된 챕터: 이미지 + 이름 + 레벨 구간 표시
+- 미클리어 챕터: 자물쇠 아이콘 표시
+- 클리어된 챕터 클릭 시 ChapterDetailPopup 열기
+
+#### CollectionChapterCard.cs 생성
+- **파일**: `Assets/Scripts/UI/CollectionChapterCard.cs`
+- 컬렉션 팝업 내 개별 챕터 카드 컴포넌트
+- 클리어 여부에 따른 UI 표시 분기
+- 클릭 이벤트 콜백 지원
+
+#### ChapterDetailPopup.cs 생성
+- **파일**: `Assets/Scripts/UI/ChapterDetailPopup.cs`
+- 챕터 이미지 확대 뷰 팝업
+- Dim 배경 + 닫기 버튼
+- AspectRatioFitter 지원 (이미지 비율 유지)
+- 열기/닫기 애니메이션 (Fade + Scale)
+
+#### LobbyUIMediator.cs 수정
+- `_collectionButton` 필드 추가
+- `_collectionPopup` 필드 추가
+- 컬렉션 버튼 클릭 시 CollectionPopup.Open() 호출
+
+---
+
+### SettingsPopup 레벨 이동 치트 개선
+
+#### 변경 내용
+- 레벨 이동 시 해당 레벨-1까지 모든 레벨 클리어 처리
+- 예: Lv.26으로 이동 시 Lv.1~25까지 모두 클리어 처리
+
+#### OnSetLevelClicked() 수정
+```csharp
+private void OnSetLevelClicked()
+{
+    if (int.TryParse(inputText, out int targetLevel))
+    {
+        if (targetLevel >= 1)
+        {
+            // 입력한 레벨의 -1까지 모든 레벨을 클리어 처리
+            for (int level = 1; level < targetLevel; level++)
+            {
+                GameDataContainer.Instance.MarkLevelCleared(level);
+            }
+
+            GameDataContainer.Instance.SetCurrentLevel(targetLevel);
+            GameDataContainer.Instance.Save();
+            GameManager.Instance?.LoadLobbyScene();
+        }
+    }
+}
+```
+
+---
+
+### ChapterDetailPopup UI 설정 가이드
+
+#### RectTransform 설정
+- ChapterDetailPopup: **Stretch-Stretch** (전체 화면)
+- DimButton: Stretch-Stretch (배경 클릭 영역)
+- ImageContainer: 중앙 정렬, 적절한 크기
+
+#### ChapterImage 설정 (AspectRatioFitter 사용 시)
+- AspectRatioFitter 컴포넌트 추가
+- Aspect Mode: **Fit In Parent**
+- Aspect Ratio: 1 (스크립트에서 동적 조정)
+
+#### CanvasGroup 주의사항
+- ChapterDetailPopup에 CanvasGroup이 있으면 Fade 애니메이션에 사용됨
+- DimBackground가 보이지 않는 문제 발생 시 RectTransform이 stretch-stretch인지 확인

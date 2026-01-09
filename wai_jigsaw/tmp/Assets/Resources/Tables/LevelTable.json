@@ -38,9 +38,9 @@
 	{
 		"levelID": 5,
 		"ImageName": "Level5",
-		"Rows": 3,
-		"Cols": 3,
-		"difficulty": "Normal",
+		"Rows": 4,
+		"Cols": 4,
+		"difficulty": "Hard",
 		"reward": 10,
 		"adreward": 20
 	},
@@ -220,7 +220,7 @@
 		"ImageName": "Level25",
 		"Rows": 6,
 		"Cols": 6,
-		"difficulty": "Normal",
+		"difficulty": "Hard",
 		"reward": 10,
 		"adreward": 20
 	},
@@ -442,6 +442,1356 @@
 	},
 	{
 		"levelID": 50,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 51,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 52,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 53,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 54,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 55,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 56,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 57,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 58,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 59,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 60,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 61,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 62,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 63,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 64,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 65,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 66,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 67,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 68,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 69,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 70,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 71,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 72,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 73,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 74,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 75,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 76,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 77,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 78,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 79,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 80,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 81,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 82,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 83,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 84,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 85,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 86,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 87,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 88,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 89,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 90,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 91,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 92,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 93,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 94,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 95,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 96,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 97,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 98,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 99,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 100,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 101,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 102,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 103,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 104,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 105,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 106,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 107,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 108,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 109,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 110,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 111,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 112,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 113,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 114,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 115,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 116,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 117,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 118,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 119,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 120,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 121,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 122,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 123,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 124,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 125,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 126,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 127,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 128,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 129,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 130,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 131,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 132,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 133,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 134,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 135,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 136,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 137,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 138,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 139,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 140,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 141,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 142,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 143,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 144,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 145,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 146,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 147,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 148,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 149,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 150,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 151,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 152,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 153,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 154,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 155,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 156,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 157,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 158,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 159,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 160,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 161,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 162,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 163,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 164,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 165,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 166,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 167,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 168,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 169,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 170,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 171,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 172,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 173,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 174,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 175,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 176,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 177,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 178,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 179,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 180,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 181,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 182,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 183,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 184,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 185,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 186,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 187,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 188,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 189,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 190,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 191,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 192,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 193,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 194,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 195,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 196,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 197,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 198,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 199,
+		"ImageName": "Level1",
+		"Rows": 3,
+		"Cols": 3,
+		"difficulty": "Normal",
+		"reward": 10,
+		"adreward": 20
+	},
+	{
+		"levelID": 200,
 		"ImageName": "Level1",
 		"Rows": 3,
 		"Cols": 3,
