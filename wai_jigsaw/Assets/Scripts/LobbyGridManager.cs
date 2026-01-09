@@ -107,8 +107,40 @@ public class LobbyGridManager : MonoObject
         // 0. 둥근 모서리 Material 초기화
         InitializeRoundedMaterial();
 
-        // 1. 현재 레벨이 속한 그룹 가져오기
-        _currentGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+        // 1. 방금 클리어한 레벨 확인 (Consume하지 않고 Peek만)
+        int justClearedLevel = GameDataContainer.Instance.PeekJustClearedLevel();
+
+        // 2. 표시할 그룹 결정
+        LevelGroupTableRecord targetGroup;
+
+        // 방금 클리어한 레벨이 있고, 해당 레벨이 챕터의 마지막 레벨인 경우
+        // → 클리어 연출을 위해 이전 챕터(클리어한 챕터)를 먼저 표시
+        if (justClearedLevel > 0)
+        {
+            LevelGroupTableRecord clearedGroup = _levelGroupManager.GetGroupForLevel(justClearedLevel);
+            if (clearedGroup != null && justClearedLevel == clearedGroup.EndLevel)
+            {
+                // 챕터의 마지막 레벨을 클리어함 → 클리어 연출을 위해 해당 챕터 표시
+                targetGroup = clearedGroup;
+
+                if (_showDebugInfo)
+                {
+                    Debug.Log($"[LobbyGridManager] 챕터 클리어 연출을 위해 그룹 {clearedGroup.GroupID} 유지");
+                }
+            }
+            else
+            {
+                // 일반 레벨 클리어 → 현재 레벨 기준 그룹 표시
+                targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+            }
+        }
+        else
+        {
+            // 클리어 연출 없음 → 현재 레벨 기준 그룹 표시
+            targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+        }
+
+        _currentGroup = targetGroup;
 
         if (_showDebugInfo)
         {
@@ -116,10 +148,10 @@ public class LobbyGridManager : MonoObject
                       $"(레벨 {_currentGroup.StartLevel}~{_currentGroup.EndLevel})");
         }
 
-        // 2. 기존 카드 슬롯 정리
+        // 3. 기존 카드 슬롯 정리
         ClearGrid();
 
-        // 3. 보상 이미지를 25조각으로 분할
+        // 4. 보상 이미지를 25조각으로 분할
         Sprite[] pieceSprites = _levelGroupManager.GetSlicedSprites(_currentGroup);
 
         if (pieceSprites == null || pieceSprites.Length != CARDS_PER_GROUP)
@@ -128,7 +160,7 @@ public class LobbyGridManager : MonoObject
             return;
         }
 
-        // 4. 25개의 카드 슬롯 생성
+        // 5. 25개의 카드 슬롯 생성
         for (int i = 0; i < CARDS_PER_GROUP; i++)
         {
             int levelNumber = _currentGroup.StartLevel + i;
@@ -140,7 +172,7 @@ public class LobbyGridManager : MonoObject
             Debug.Log($"LobbyGridManager: {_cardSlots.Count}개의 카드 슬롯 생성 완료");
         }
 
-        // 5. 방금 클리어한 레벨이 있으면 카드 플립 연출 실행
+        // 6. 방금 클리어한 레벨이 있으면 카드 플립 연출 실행
         TryPlayClearAnimation();
     }
 

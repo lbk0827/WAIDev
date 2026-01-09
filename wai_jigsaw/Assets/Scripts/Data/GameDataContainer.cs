@@ -259,6 +259,15 @@ namespace WaiJigsaw.Data
         }
 
         /// <summary>
+        /// 방금 클리어한 레벨 정보를 확인합니다 (소비하지 않음).
+        /// </summary>
+        /// <returns>방금 클리어한 레벨 번호 (-1이면 없음)</returns>
+        public int PeekJustClearedLevel()
+        {
+            return _justClearedLevel;
+        }
+
+        /// <summary>
         /// 방금 클리어한 레벨 정보를 소비합니다.
         /// 로비에서 카드 플립 연출 후 호출하여 중복 연출 방지.
         /// </summary>
