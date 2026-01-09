@@ -1942,6 +1942,9 @@ MonoBehaviour:
   _blackBorderWidth: 2
   _cornerRadius: 0.08
   _showDebugInfo: 1
+  _cardDealDelay: 0.05
+  _cardDealDuration: 0.3
+  _cardDealStartOffset: {x: 300, y: -600}
 --- !u!114 &1380872574
 MonoBehaviour:
   m_ObjectHideFlags: 0

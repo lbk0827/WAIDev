@@ -567,6 +567,14 @@ public class LobbyGridManager : MonoObject
     /// <param name="currentLevel">현재 레벨 (다음 챕터의 첫 레벨)</param>
     public void SetupGridWithDealingAnimation(int currentLevel)
     {
+        Debug.Log($"[LobbyGridManager] SetupGridWithDealingAnimation 호출 - currentLevel: {currentLevel}");
+
+        if (_levelGroupManager == null)
+        {
+            Debug.LogError("[LobbyGridManager] _levelGroupManager가 null입니다!");
+            return;
+        }
+
         _currentLevel = currentLevel;
 
         // 0. 둥근 모서리 Material 초기화
@@ -574,6 +582,13 @@ public class LobbyGridManager : MonoObject
 
         // 1. 현재 레벨 기준 그룹 표시 (PeekJustClearedLevel 무시)
         LevelGroupTableRecord targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+
+        if (targetGroup == null)
+        {
+            Debug.LogError($"[LobbyGridManager] GetGroupForLevel({currentLevel})이 null을 반환했습니다!");
+            return;
+        }
+
         _currentGroup = targetGroup;
 
         if (_showDebugInfo)

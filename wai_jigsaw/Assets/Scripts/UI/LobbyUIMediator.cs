@@ -46,6 +46,20 @@ namespace WaiJigsaw.UI
             // LevelChangedEvent 구독 (MonoObject가 자동 해제 관리)
             RegisterLevelChangedObserver(OnLevelChanged);
 
+            // LobbyGridManager가 null이면 자동으로 찾기 (비활성화된 오브젝트 포함)
+            if (_lobbyGridManager == null)
+            {
+                _lobbyGridManager = FindObjectOfType<LobbyGridManager>(true);
+                if (_lobbyGridManager != null)
+                {
+                    Debug.Log("[LobbyUIMediator] LobbyGridManager를 자동으로 찾았습니다.");
+                }
+                else
+                {
+                    Debug.LogError("[LobbyUIMediator] 씬에서 LobbyGridManager를 찾을 수 없습니다!");
+                }
+            }
+
             // LobbyGridManager의 클리어 애니메이션 이벤트 구독
             if (_lobbyGridManager != null)
             {
@@ -166,10 +180,10 @@ namespace WaiJigsaw.UI
             // UI 차단 유지
             BlockUI();
 
-            // 챕터 클리어 시퀀스 재생
+            // 챕터 클리어 시퀀스 재생 (LobbyGridManager 참조 전달)
             if (_chapterClearSequence != null)
             {
-                _chapterClearSequence.Play(clearedGroup, completedSprite);
+                _chapterClearSequence.Play(clearedGroup, completedSprite, _lobbyGridManager);
             }
             else
             {
@@ -192,13 +206,19 @@ namespace WaiJigsaw.UI
         /// </summary>
         private void OnRequestNextChapterCards()
         {
-            Debug.Log("[LobbyUIMediator] 다음 챕터 카드 뿌리기 요청");
+            int currentLevel = GameDataContainer.Instance.CurrentLevel;
+            Debug.Log($"[LobbyUIMediator] 다음 챕터 카드 뿌리기 요청 - CurrentLevel: {currentLevel}");
 
             // 다음 레벨로 그리드 갱신 (딜링 애니메이션과 함께)
-            int currentLevel = GameDataContainer.Instance.CurrentLevel;
             if (_lobbyGridManager != null)
             {
+                Debug.Log($"[LobbyUIMediator] _lobbyGridManager 호출 시작");
                 _lobbyGridManager.SetupGridWithDealingAnimation(currentLevel);
+                Debug.Log($"[LobbyUIMediator] _lobbyGridManager 호출 완료");
+            }
+            else
+            {
+                Debug.LogError("[LobbyUIMediator] _lobbyGridManager가 null입니다!");
             }
 
             // 플레이 버튼 텍스트 업데이트

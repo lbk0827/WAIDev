@@ -63,10 +63,32 @@ namespace WaiJigsaw.UI
         /// <param name="completedSprite">완성된 챕터 이미지</param>
         public void Play(LevelGroupTableRecord clearedGroup, Sprite completedSprite)
         {
+            Play(clearedGroup, completedSprite, null);
+        }
+
+        /// <summary>
+        /// 챕터 클리어 연출을 시작합니다. (LobbyGridManager 참조 포함)
+        /// </summary>
+        /// <param name="clearedGroup">클리어한 챕터 그룹 정보</param>
+        /// <param name="completedSprite">완성된 챕터 이미지</param>
+        /// <param name="lobbyGridManager">LobbyGridManager 참조 (null이면 기존 참조 사용)</param>
+        public void Play(LevelGroupTableRecord clearedGroup, Sprite completedSprite, LobbyGridManager lobbyGridManager)
+        {
             if (_isPlaying)
             {
                 Debug.LogWarning("[ChapterClearSequence] 이미 연출이 재생 중입니다.");
                 return;
+            }
+
+            // LobbyGridManager 참조 설정 (전달받은 값 우선)
+            if (lobbyGridManager != null)
+            {
+                _lobbyGridManager = lobbyGridManager;
+                Debug.Log($"[ChapterClearSequence] LobbyGridManager 참조를 전달받았습니다: {_lobbyGridManager.gameObject.name}");
+            }
+            else if (_lobbyGridManager == null)
+            {
+                Debug.LogWarning("[ChapterClearSequence] LobbyGridManager 참조가 없습니다. Step 6에서 이벤트로 처리됩니다.");
             }
 
             _clearedGroup = clearedGroup;
@@ -224,14 +246,27 @@ namespace WaiJigsaw.UI
         {
             Debug.Log("[ChapterClearSequence] Step 6: 다음 챕터 카드 뿌리기");
 
-            // 그리드 다시 표시 (다음 챕터용)
+            // 현재 레벨 가져오기
+            int currentLevel = WaiJigsaw.Data.GameDataContainer.Instance.CurrentLevel;
+            Debug.Log($"[ChapterClearSequence] 다음 챕터 로드 - CurrentLevel: {currentLevel}");
+
+            // 직접 LobbyGridManager 호출 (이벤트 대신)
+            if (_lobbyGridManager != null)
+            {
+                _lobbyGridManager.SetupGridWithDealingAnimation(currentLevel);
+            }
+            else
+            {
+                Debug.LogError("[ChapterClearSequence] _lobbyGridManager가 null입니다!");
+                // 이벤트도 발생시켜서 백업 처리
+                OnRequestNextChapterCards?.Invoke();
+            }
+
+            // 그리드 다시 표시 (새로 생성된 다음 챕터 카드들이 보임)
             if (_gridCanvasGroup != null)
             {
                 _gridCanvasGroup.alpha = 1f;
             }
-
-            // 다음 챕터 카드 뿌리기 요청
-            OnRequestNextChapterCards?.Invoke();
 
             yield return null;
         }
