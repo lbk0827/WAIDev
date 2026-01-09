@@ -62,9 +62,12 @@ namespace WaiJigsaw.UI
         public void Open(Sprite chapterSprite, string chapterName)
         {
             // 이미지 설정
-            if (_chapterImage != null)
+            if (_chapterImage != null && chapterSprite != null)
             {
                 _chapterImage.sprite = chapterSprite;
+
+                // 이미지 크기를 컨테이너에 맞게 조정 (비율 유지)
+                AdjustImageSize(chapterSprite);
             }
 
             // 챕터 이름 설정
@@ -74,6 +77,51 @@ namespace WaiJigsaw.UI
             }
 
             gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// 이미지 크기를 컨테이너에 맞게 조정합니다 (비율 유지).
+        /// </summary>
+        private void AdjustImageSize(Sprite sprite)
+        {
+            if (_imageContainer == null || _chapterImage == null) return;
+
+            RectTransform imageRect = _chapterImage.rectTransform;
+
+            // 컨테이너 크기 가져오기
+            float containerWidth = _imageContainer.rect.width;
+            float containerHeight = _imageContainer.rect.height;
+
+            // 여백 설정 (상단에 챕터 이름 공간 확보)
+            float topPadding = 80f;
+            float sidePadding = 40f;
+            float availableWidth = containerWidth - (sidePadding * 2);
+            float availableHeight = containerHeight - topPadding - sidePadding;
+
+            // 스프라이트 원본 크기
+            float spriteWidth = sprite.rect.width;
+            float spriteHeight = sprite.rect.height;
+            float spriteAspect = spriteWidth / spriteHeight;
+
+            // 컨테이너에 맞는 크기 계산 (비율 유지)
+            float targetWidth, targetHeight;
+            float availableAspect = availableWidth / availableHeight;
+
+            if (spriteAspect > availableAspect)
+            {
+                // 이미지가 더 넓음 - 너비에 맞춤
+                targetWidth = availableWidth;
+                targetHeight = availableWidth / spriteAspect;
+            }
+            else
+            {
+                // 이미지가 더 높음 - 높이에 맞춤
+                targetHeight = availableHeight;
+                targetWidth = availableHeight * spriteAspect;
+            }
+
+            // 이미지 크기 설정
+            imageRect.sizeDelta = new Vector2(targetWidth, targetHeight);
         }
 
         /// <summary>

@@ -2324,6 +2324,10 @@ PrefabInstance:
       propertyPath: m_Horizontal
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 590228914935335926, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 609505744739919212, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_AnchorMax.x
       value: 1
@@ -2370,7 +2374,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4334441478480041461, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5633737923342408765, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_CellSize.x
