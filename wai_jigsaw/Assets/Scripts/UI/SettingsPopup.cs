@@ -148,6 +148,7 @@ namespace WaiJigsaw.UI
 
         /// <summary>
         /// 디버그용 레벨 변경 버튼 클릭 시 호출됩니다.
+        /// 입력한 레벨로 이동하며, 해당 레벨 -1까지의 모든 레벨을 클리어 처리합니다.
         /// </summary>
         private void OnSetLevelClicked()
         {
@@ -159,11 +160,17 @@ namespace WaiJigsaw.UI
             {
                 if (targetLevel >= 1)
                 {
+                    // 입력한 레벨의 -1까지 모든 레벨을 클리어 처리
+                    for (int level = 1; level < targetLevel; level++)
+                    {
+                        GameDataContainer.Instance.MarkLevelCleared(level);
+                    }
+
                     // 레벨 변경
                     GameDataContainer.Instance.SetCurrentLevel(targetLevel);
                     GameDataContainer.Instance.Save();
 
-                    Debug.Log($"[SettingsPopup] 레벨을 {targetLevel}로 변경했습니다.");
+                    Debug.Log($"[SettingsPopup] 레벨을 {targetLevel}로 변경했습니다. (1~{targetLevel - 1} 레벨 클리어 처리)");
 
                     Close();
 
