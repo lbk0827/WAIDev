@@ -17,6 +17,7 @@ namespace WaiJigsaw.Data
 		public int GroupID;
 		public int StartLevel;
 		public int EndLevel;
+		public string GroupName;
 		public string ImageName;
 	}
 }

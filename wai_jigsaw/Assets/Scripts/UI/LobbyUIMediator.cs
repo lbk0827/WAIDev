@@ -21,12 +21,14 @@ namespace WaiJigsaw.UI
         [SerializeField] private Button _playButton;
         [SerializeField] private TMP_Text _playButtonText;
         [SerializeField] private Button _settingsButton;
+        [SerializeField] private Button _collectionButton;
 
         [Header("Lobby Grid")]
         [SerializeField] private LobbyGridManager _lobbyGridManager;
 
         [Header("Popups")]
         [SerializeField] private SettingsPopup _settingsPopup;
+        [SerializeField] private CollectionPopup _collectionPopup;
 
         [Header("UI Blocking")]
         [SerializeField] private GameObject _blockingPanel;  // 연출 중 터치 차단용 (옵션)
@@ -76,6 +78,9 @@ namespace WaiJigsaw.UI
 
             if (_settingsButton != null)
                 _settingsButton.onClick.AddListener(OnSettingsClicked);
+
+            if (_collectionButton != null)
+                _collectionButton.onClick.AddListener(OnCollectionClicked);
         }
 
         private void OnPlayClicked()
@@ -93,6 +98,18 @@ namespace WaiJigsaw.UI
             else
             {
                 Debug.LogWarning("[LobbyUIMediator] SettingsPopup이 할당되지 않았습니다.");
+            }
+        }
+
+        private void OnCollectionClicked()
+        {
+            if (_collectionPopup != null)
+            {
+                _collectionPopup.Open();
+            }
+            else
+            {
+                Debug.LogWarning("[LobbyUIMediator] CollectionPopup이 할당되지 않았습니다.");
             }
         }
 
@@ -177,6 +194,9 @@ namespace WaiJigsaw.UI
             if (_settingsButton != null)
                 _settingsButton.interactable = false;
 
+            if (_collectionButton != null)
+                _collectionButton.interactable = false;
+
             // 차단 패널 활성화 (설정된 경우)
             if (_blockingPanel != null)
                 _blockingPanel.SetActive(true);
@@ -197,6 +217,9 @@ namespace WaiJigsaw.UI
 
             if (_settingsButton != null)
                 _settingsButton.interactable = true;
+
+            if (_collectionButton != null)
+                _collectionButton.interactable = true;
 
             // 차단 패널 비활성화
             if (_blockingPanel != null)

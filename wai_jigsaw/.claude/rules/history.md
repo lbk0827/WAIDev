@@ -618,3 +618,91 @@ if (selectedRadius > 0.001) {
 #### 언어 설정 (OnLanguageClicked)
 - 언어 선택 팝업 열기
 - 지원 언어: 한국어, 영어 (추후 확장)
+
+---
+
+## 2026-01-08
+
+### Hard 난이도 인트로 시퀀스 구현
+
+#### HardIntroSequence.cs 생성
+- **파일**: `Assets/Scripts/UI/HardIntroSequence.cs`
+- Hard 난이도 레벨 진입 시 특별한 연출 재생
+- 연출 순서:
+  1. 입력 잠금 (InputLock = true)
+  2. 배너 Dim + 레드 톤 오버레이 페이드 인
+  3. "HARD" 배너 등장 (스케일 애니메이션 - OutBack)
+  4. 배너 유지 (0.7초)
+  5. 배너 + Dim + 오버레이 동시 페이드 아웃
+  6. 입력 잠금 해제 (InputLock = false)
+
+#### Inspector 설정 필드
+- `_redTintOverlay` - 레드 톤 오버레이 Image
+- `_hardBannerContainer` - HARD 배너 컨테이너
+- `_hardText` - HARD 텍스트 (TMP_Text)
+- `_bannerDimImage` - 배너 뒤 Dim 이미지
+- `_overlayMaxAlpha` (0.2f) - 오버레이 최대 알파값
+- `_overlayFadeDuration` (0.2초) - 오버레이 페이드 시간
+- `_bannerAppearDuration` (0.3초) - 배너 등장 시간
+- `_bannerHoldDuration` (0.7초) - 배너 유지 시간
+- `_bannerFadeOutDuration` (0.25초) - 배너 페이드 아웃 시간
+
+#### PuzzleBoardSetup.cs 수정
+- `SetInputLock(bool locked)` 메서드 추가
+- `_isInputLocked` 플래그로 드래그 차단
+
+#### GameUIMediator.cs 수정
+- `_hardIntroSequence` 필드 추가
+- `CheckAndPlayHardIntro()` - LevelTable.difficulty가 "Hard"인지 확인
+- `OnHardIntroComplete()` - 인트로 완료 콜백
+
+#### Dim 알파값 버그 수정
+- **문제**: HardTintDim이 HardBannerContainer의 자식일 때 알파값 적용 안됨
+- **원인**: 부모의 CanvasGroup이 자식 알파를 덮어씀
+- **해결**: `IsChildOf()`로 부모-자식 관계 감지 후 별도 CanvasGroup으로 Dim 알파 독립 제어
+
+---
+
+### SettingsPopup 디버그 레벨 변경 기능 추가
+
+#### 추가된 UI 요소
+- `_debugLevelContainer` - 디버그 레벨 변경 컨테이너
+- `_levelInputField` - 레벨 입력 필드 (TMP_InputField)
+- `_setLevelButton` - 레벨 설정 버튼
+
+#### OnSetLevelClicked() 메서드
+```csharp
+// 입력된 레벨로 이동
+GameDataContainer.Instance.SetCurrentLevel(targetLevel);
+GameDataContainer.Instance.Save();
+GameManager.Instance?.LoadLobbyScene();
+```
+
+#### 주의사항
+- GameScene과 LobbyScene에 각각 별도의 SettingsPopup 인스턴스가 있음
+- 두 씬 모두에서 디버그 기능을 사용하려면 양쪽 SettingsPopup에 UI 요소 연결 필요
+
+---
+
+### Hard 배너 폭탄 아이콘 추가 가이드
+
+#### 아이콘 리소스
+- `Assets/Sprites/IMG_BluckIcon_VeryHard` - 폭탄/위험 아이콘
+
+#### 권장 구조 (Horizontal Layout Group 사용)
+```
+HardBannerContainer
+├── HardTintDim
+└── BannerContent (Horizontal Layout Group)
+    ├── LeftIcon (IMG_BluckIcon_VeryHard)
+    ├── HardText ("HARD")
+    └── RightIcon (IMG_BluckIcon_VeryHard, Scale X = -1로 좌우 반전)
+```
+
+#### Horizontal Layout Group 설정
+- Child Alignment: Middle Center
+- Spacing: 30
+- Child Force Expand Width: 체크 해제
+
+#### 이미지 Flip 방법
+- RightIcon의 RectTransform Scale X를 **-1**로 설정하면 좌우 반전됨

@@ -141,4 +141,37 @@ public class LevelGroupManager : MonoBehaviour
     {
         return LevelGroupTable.GetAll();
     }
+
+    /// <summary>
+    /// 그룹의 원본 이미지를 Sprite로 로드합니다 (컬렉션용).
+    /// </summary>
+    /// <param name="group">로드할 그룹 정보</param>
+    /// <returns>그룹의 원본 이미지 Sprite</returns>
+    public Sprite LoadGroupImage(LevelGroupTableRecord group)
+    {
+        if (group == null)
+        {
+            Debug.LogWarning("[LevelGroupManager] group이 null입니다.");
+            return null;
+        }
+
+        // Sprite로 로드 시도
+        Sprite sprite = Resources.Load<Sprite>(group.ImageName);
+        if (sprite != null)
+        {
+            return sprite;
+        }
+
+        // Texture2D로 로드 후 Sprite 생성
+        Texture2D texture = Resources.Load<Texture2D>(group.ImageName);
+        if (texture != null)
+        {
+            Rect rect = new Rect(0, 0, texture.width, texture.height);
+            Vector2 pivot = new Vector2(0.5f, 0.5f);
+            return Sprite.Create(texture, rect, pivot);
+        }
+
+        Debug.LogWarning($"[LevelGroupManager] 그룹 이미지를 찾을 수 없습니다: {group.ImageName}");
+        return null;
+    }
 }

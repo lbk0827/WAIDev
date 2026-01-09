@@ -3,12 +3,14 @@
 		"GroupID": 1,
 		"StartLevel": 1,
 		"EndLevel": 25,
+		"GroupName": "Name1",
 		"ImageName": "Sprites/Reward_Group01"
 	},
 	{
 		"GroupID": 2,
 		"StartLevel": 26,
 		"EndLevel": 50,
+		"GroupName": "Name2",
 		"ImageName": "Sprites/Reward_Group02"
 	}
 ]
