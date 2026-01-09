@@ -81,10 +81,24 @@ namespace WaiJigsaw.UI
 
         /// <summary>
         /// 이미지 크기를 컨테이너에 맞게 조정합니다 (비율 유지).
+        /// AspectRatioFitter가 있으면 비율만 업데이트, 없으면 직접 크기 계산.
         /// </summary>
         private void AdjustImageSize(Sprite sprite)
         {
-            if (_imageContainer == null || _chapterImage == null) return;
+            if (_chapterImage == null) return;
+
+            float spriteAspect = sprite.rect.width / sprite.rect.height;
+
+            // AspectRatioFitter가 있으면 비율만 업데이트
+            var aspectFitter = _chapterImage.GetComponent<AspectRatioFitter>();
+            if (aspectFitter != null)
+            {
+                aspectFitter.aspectRatio = spriteAspect;
+                return;
+            }
+
+            // AspectRatioFitter가 없으면 직접 크기 계산
+            if (_imageContainer == null) return;
 
             RectTransform imageRect = _chapterImage.rectTransform;
 
@@ -97,11 +111,6 @@ namespace WaiJigsaw.UI
             float sidePadding = 40f;
             float availableWidth = containerWidth - (sidePadding * 2);
             float availableHeight = containerHeight - topPadding - sidePadding;
-
-            // 스프라이트 원본 크기
-            float spriteWidth = sprite.rect.width;
-            float spriteHeight = sprite.rect.height;
-            float spriteAspect = spriteWidth / spriteHeight;
 
             // 컨테이너에 맞는 크기 계산 (비율 유지)
             float targetWidth, targetHeight;
