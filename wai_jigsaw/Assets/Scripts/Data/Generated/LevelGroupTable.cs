@@ -14,6 +14,7 @@ namespace WaiJigsaw.Data
         public int StartLevel;
         public int EndLevel;
         public string ImageName;
+        public string GroupName;  // 챕터 이름 (예: "Italy")
     }
 
     /// <summary>
