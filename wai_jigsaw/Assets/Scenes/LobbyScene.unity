@@ -218,6 +218,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0.0000028312206
       objectReference: {fileID: 0}
+    - target: {fileID: 1846118406053672967, guid: f0c3297dd40a4cd4099e8d0a2a3506c0, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1969157292097353753, guid: f0c3297dd40a4cd4099e8d0a2a3506c0, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -328,6 +332,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3780604853289717228, guid: f0c3297dd40a4cd4099e8d0a2a3506c0, type: 3}
       propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5691570484917231471, guid: f0c3297dd40a4cd4099e8d0a2a3506c0, type: 3}
+      propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5777870531235560475, guid: f0c3297dd40a4cd4099e8d0a2a3506c0, type: 3}
@@ -960,7 +968,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 455, y: 730}
+  m_AnchoredPosition: {x: 400, y: 730}
   m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &369439437
@@ -1324,7 +1332,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -455, y: 730}
+  m_AnchoredPosition: {x: -400, y: 730}
   m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &750201640
@@ -1461,8 +1469,8 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1080, y: 1920}
-  m_ScreenMatchMode: 1
-  m_MatchWidthOrHeight: 0
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -2469,7 +2477,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gridContainer: {fileID: 1563543197}
   _cardSlotPrefab: {fileID: 0}
-  _cardBackSprite: {fileID: 21300000, guid: ff495b38e93854e49a3e8e7fd5380068, type: 3}
+  _cardBackSprite: {fileID: 21300000, guid: a20931af44b74664998b0942a7ba084d, type: 3}
   _whiteBorderWidth: 3
   _blackBorderWidth: 2
   _cornerRadius: 0.08

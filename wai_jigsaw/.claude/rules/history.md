@@ -938,3 +938,85 @@ private void OnSetLevelClicked()
 **OnRequestNextChapterCards()**
 - `SetupGrid()` → `SetupGridWithDealingAnimation()` 변경
 - 다음 챕터 표시 시 딜링 애니메이션 적용
+
+---
+
+## 2026-01-12
+
+### 리소스 폴더 구조 정리
+
+#### 변경된 폴더 구조
+```
+Assets/Resources/Sprites/
+├── Levels/           # 레벨 퍼즐 이미지 (Level1.png ~ Level25.png)
+├── LevelGroups/      # 챕터 완성 이미지 (Reward_Group01.png ~)
+└── CardBacks/        # 카드 뒷면 이미지 (Card_Back_Dog.png 등)
+```
+
+#### 수정된 파일
+- **LevelManager.cs**: 이미지 경로 `Sprites/Levels/{ImageName}`으로 변경
+- **LevelGroupTable.json**: ImageName 경로 `Sprites/LevelGroups/Reward_Group01` 형식으로 변경
+- **CardTable.json**: CardBackSprite 경로 `Sprites/CardBacks/Card_Back_Dog` 형식으로 변경
+
+---
+
+## 향후 과제: AppLovin MAX 광고 시스템 구현
+
+### ReferenceProject 광고 구현 구조
+
+ReferenceProject(`C:\Users\DG-2507-PC-061\ReferenceProejct`)에 AppLovin MAX SDK가 완전히 구현되어 있음.
+
+| 파일 | 경로 | 역할 |
+|------|------|------|
+| AppLovinAdsManager.cs | `Assets/Application/Scripts/NGFE/AppLovin/` | 메인 매니저 (싱글턴) |
+| BaseAdFormat.cs | 동일 | 광고 포맷 베이스 클래스 |
+| BannerAds.cs | 동일 | 배너 광고 |
+| InterstitialAds.cs | 동일 | 전면 광고 |
+| RewardedVideoAds.cs | 동일 | 보상형 비디오 광고 |
+| AdFormatSettings.cs | 동일 | Ad Unit ID 설정 |
+
+### 핵심 API 패턴
+
+```csharp
+// SDK 초기화
+MaxSdk.InitializeSdk();
+MaxSdkCallbacks.OnSdkInitializedEvent += OnSdkInitializedEvent;
+
+// 배너 광고
+MaxSdk.CreateBanner(adUnitId, position);
+MaxSdk.ShowBanner(adUnitId);
+MaxSdk.HideBanner(adUnitId);
+
+// 전면 광고
+MaxSdk.LoadInterstitial(adUnitId);
+MaxSdk.IsInterstitialReady(adUnitId);
+MaxSdk.ShowInterstitial(adUnitId);
+
+// 보상형 비디오
+MaxSdk.LoadRewardedAd(adUnitId);
+MaxSdk.IsRewardedAdReady(adUnitId);
+MaxSdk.ShowRewardedAd(adUnitId);
+```
+
+### wai_jigsaw 설치 순서
+
+1. **AppLovin 계정 생성** - https://dash.applovin.com
+2. **앱 등록 및 Ad Unit ID 발급**
+   - Banner Ad Unit ID
+   - Interstitial Ad Unit ID
+   - (선택) Rewarded Video Ad Unit ID
+3. **SDK Key 발급** - AppLovin 대시보드에서 확인
+4. **Unity Package Manager로 SDK 설치**
+   - Package name: `com.applovin.mediation.ads`
+   - 또는 `.unitypackage` 다운로드
+5. **Integration Manager에서 설정**
+   - Unity → AppLovin → Integration Manager
+   - SDK Key 입력
+6. **광고 매니저 스크립트 작성**
+   - ReferenceProject 참고하여 wai_jigsaw에 맞게 간소화
+
+### 구현 시 참고사항
+
+- ReferenceProject는 UniTask 비동기 패턴 사용 (wai_jigsaw는 Coroutine 사용)
+- ReferenceProject는 GameSystemSettings ScriptableObject로 Ad Unit ID 관리
+- wai_jigsaw에서는 간단하게 상수로 관리하거나 별도 설정 파일 사용 가능
