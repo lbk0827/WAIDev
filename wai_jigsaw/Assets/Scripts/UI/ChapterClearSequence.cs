@@ -74,27 +74,70 @@ namespace WaiJigsaw.UI
         /// <param name="lobbyGridManager">LobbyGridManager 참조 (null이면 기존 참조 사용)</param>
         public void Play(LevelGroupTableRecord clearedGroup, Sprite completedSprite, LobbyGridManager lobbyGridManager)
         {
+            Debug.Log("[ChapterClearSequence] ===== Play() 메서드 진입 =====");
+            Debug.Log($"[ChapterClearSequence] this: {(this != null ? gameObject.name : "null")}, enabled: {enabled}, activeInHierarchy: {gameObject.activeInHierarchy}");
+            Debug.Log($"[ChapterClearSequence] Play() 호출됨 - clearedGroup: {clearedGroup?.GroupID}, completedSprite: {completedSprite?.name}, lobbyGridManager: {lobbyGridManager?.gameObject.name}");
+            Debug.Log($"[ChapterClearSequence] _isPlaying: {_isPlaying}");
+
             if (_isPlaying)
             {
                 Debug.LogWarning("[ChapterClearSequence] 이미 연출이 재생 중입니다.");
                 return;
             }
 
-            // LobbyGridManager 참조 설정 (전달받은 값 우선)
+            // LobbyGridManager 참조 설정 (전달받은 값 우선, 없으면 자동 찾기)
+            bool lobbyGridManagerValid = false;
             if (lobbyGridManager != null)
             {
-                _lobbyGridManager = lobbyGridManager;
-                Debug.Log($"[ChapterClearSequence] LobbyGridManager 참조를 전달받았습니다: {_lobbyGridManager.gameObject.name}");
+                // 전달받은 참조가 유효한지 확인 (파괴된 오브젝트일 수 있음)
+                try
+                {
+                    var testAccess = lobbyGridManager.gameObject;
+                    _lobbyGridManager = lobbyGridManager;
+                    lobbyGridManagerValid = true;
+                    Debug.Log($"[ChapterClearSequence] LobbyGridManager 참조를 전달받았습니다: {testAccess.name}");
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning("[ChapterClearSequence] 전달받은 LobbyGridManager가 파괴됨 - FindObjectOfType으로 재검색");
+                    lobbyGridManager = null;
+                }
             }
-            else if (_lobbyGridManager == null)
+
+            if (!lobbyGridManagerValid)
             {
-                Debug.LogWarning("[ChapterClearSequence] LobbyGridManager 참조가 없습니다. Step 6에서 이벤트로 처리됩니다.");
+                // LevelGroupManager.Instance를 통해 LobbyGridManager 찾기
+                // (LobbyGridManager가 LevelGroupManager 오브젝트에 붙어있음)
+                if (LevelGroupManager.Instance != null)
+                {
+                    _lobbyGridManager = LevelGroupManager.Instance.GetComponent<LobbyGridManager>();
+                    if (_lobbyGridManager != null)
+                    {
+                        Debug.Log($"[ChapterClearSequence] LevelGroupManager.Instance에서 LobbyGridManager를 찾았습니다: {_lobbyGridManager.gameObject.name}");
+                        lobbyGridManagerValid = true;
+                    }
+                }
+
+                // 여전히 못 찾았으면 FindObjectOfType 시도
+                if (!lobbyGridManagerValid)
+                {
+                    _lobbyGridManager = FindObjectOfType<LobbyGridManager>(true);
+                    if (_lobbyGridManager != null)
+                    {
+                        Debug.Log($"[ChapterClearSequence] FindObjectOfType으로 LobbyGridManager를 찾았습니다: {_lobbyGridManager.gameObject.name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[ChapterClearSequence] LobbyGridManager를 찾을 수 없습니다. Step 6에서 이벤트로 처리됩니다.");
+                    }
+                }
             }
 
             _clearedGroup = clearedGroup;
             _completedSprite = completedSprite;
             _isPlaying = true;
 
+            Debug.Log("[ChapterClearSequence] StartCoroutine(PlaySequenceCoroutine) 호출");
             StartCoroutine(PlaySequenceCoroutine());
         }
 
@@ -170,8 +213,21 @@ namespace WaiJigsaw.UI
             }
 
             // 그리드 숨기기 (완성 이미지가 대체)
-            if (_gridCanvasGroup != null)
+            // LobbyGridManager의 그리드 컨테이너를 직접 사용 (Inspector 참조가 유실될 수 있으므로)
+            CanvasGroup gridCanvasGroup = null;
+            if (_lobbyGridManager != null)
             {
+                gridCanvasGroup = _lobbyGridManager.GetGridContainerCanvasGroup();
+            }
+
+            if (gridCanvasGroup != null)
+            {
+                Debug.Log("[ChapterClearSequence] Step 3: LobbyGridManager 그리드 컨테이너 alpha = 0f 설정");
+                gridCanvasGroup.alpha = 0f;
+            }
+            else if (_gridCanvasGroup != null)
+            {
+                Debug.Log("[ChapterClearSequence] Step 3: _gridCanvasGroup.alpha = 0f 설정 (폴백)");
                 _gridCanvasGroup.alpha = 0f;
             }
         }
@@ -239,6 +295,9 @@ namespace WaiJigsaw.UI
             overlayRect.localScale = _originalOverlayScale;
         }
 
+        // 딜링 애니메이션 완료 대기용 플래그
+        private bool _isDealingAnimationComplete = false;
+
         /// <summary>
         /// 6단계: 다음 챕터 카드 뿌리기
         /// </summary>
@@ -250,25 +309,126 @@ namespace WaiJigsaw.UI
             int currentLevel = WaiJigsaw.Data.GameDataContainer.Instance.CurrentLevel;
             Debug.Log($"[ChapterClearSequence] 다음 챕터 로드 - CurrentLevel: {currentLevel}");
 
+            // _lobbyGridManager 상태 체크 - Unity 오브젝트가 파괴되었는지 명시적 검사
+            bool isLobbyGridManagerValid = _lobbyGridManager != null && !ReferenceEquals(_lobbyGridManager, null);
+            if (isLobbyGridManagerValid)
+            {
+                // Unity 오브젝트가 파괴되었는지 추가 검사 (== null 연산자는 Unity에서 오버로드됨)
+                try
+                {
+                    var testAccess = _lobbyGridManager.gameObject;
+                    Debug.Log($"[ChapterClearSequence] _lobbyGridManager 유효함: {testAccess.name}");
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning("[ChapterClearSequence] _lobbyGridManager가 MissingReferenceException - 파괴된 것으로 간주");
+                    isLobbyGridManagerValid = false;
+                    _lobbyGridManager = null;
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[ChapterClearSequence] _lobbyGridManager 접근 예외: {ex.Message}");
+                    isLobbyGridManagerValid = false;
+                    _lobbyGridManager = null;
+                }
+            }
+
+            // LobbyGridManager가 null이면 다시 찾기
+            if (!isLobbyGridManagerValid)
+            {
+                Debug.Log("[ChapterClearSequence] _lobbyGridManager가 유효하지 않음 - 재검색 시작");
+
+                // 1. LevelGroupManager.Instance에서 찾기 (가장 신뢰할 수 있는 방법)
+                if (LevelGroupManager.Instance != null)
+                {
+                    _lobbyGridManager = LevelGroupManager.Instance.GetComponent<LobbyGridManager>();
+                    if (_lobbyGridManager != null)
+                    {
+                        Debug.Log($"[ChapterClearSequence] Step6: LevelGroupManager.Instance에서 LobbyGridManager를 찾았습니다: {_lobbyGridManager.gameObject.name}");
+                        isLobbyGridManagerValid = true;
+                    }
+                }
+
+                // 2. 여전히 못 찾았으면 FindObjectOfType으로 대기
+                if (!isLobbyGridManagerValid)
+                {
+                    Debug.Log("[ChapterClearSequence] LevelGroupManager.Instance에서 찾지 못함 - FindObjectOfType으로 대기 (최대 60프레임)");
+
+                    int maxWaitFrames = 60;
+                    int waitedFrames = 0;
+
+                    while (_lobbyGridManager == null && waitedFrames < maxWaitFrames)
+                    {
+                        _lobbyGridManager = FindObjectOfType<LobbyGridManager>(true);
+                        if (_lobbyGridManager == null)
+                        {
+                            waitedFrames++;
+                            yield return null;
+                        }
+                    }
+
+                    Debug.Log($"[ChapterClearSequence] FindObjectOfType 결과: {(_lobbyGridManager != null ? _lobbyGridManager.gameObject.name : "null")} (대기 프레임: {waitedFrames})");
+                }
+            }
+
+            // 그리드 먼저 표시 (딜링 애니메이션이 보이도록)
+            // LobbyGridManager의 그리드 컨테이너를 직접 사용 (Inspector 참조가 유실될 수 있으므로)
+            CanvasGroup gridCanvasGroup = null;
+            if (_lobbyGridManager != null)
+            {
+                gridCanvasGroup = _lobbyGridManager.GetGridContainerCanvasGroup();
+            }
+
+            if (gridCanvasGroup != null)
+            {
+                Debug.Log("[ChapterClearSequence] LobbyGridManager 그리드 컨테이너 alpha = 1f 설정");
+                gridCanvasGroup.alpha = 1f;
+            }
+            else if (_gridCanvasGroup != null)
+            {
+                Debug.Log("[ChapterClearSequence] _gridCanvasGroup.alpha = 1f 설정 (폴백)");
+                _gridCanvasGroup.alpha = 1f;
+            }
+
             // 직접 LobbyGridManager 호출 (이벤트 대신)
             if (_lobbyGridManager != null)
             {
+                Debug.Log($"[ChapterClearSequence] SetupGridWithDealingAnimation 호출 - currentLevel: {currentLevel}");
+
+                // 딜링 애니메이션 완료 이벤트 구독
+                _isDealingAnimationComplete = false;
+                _lobbyGridManager.OnDealingAnimationComplete += OnDealingAnimationComplete;
+
                 _lobbyGridManager.SetupGridWithDealingAnimation(currentLevel);
+
+                // 딜링 애니메이션 완료 대기
+                Debug.Log("[ChapterClearSequence] 딜링 애니메이션 완료 대기 중...");
+                while (!_isDealingAnimationComplete)
+                {
+                    yield return null;
+                }
+                Debug.Log("[ChapterClearSequence] 딜링 애니메이션 완료됨");
+
+                // 이벤트 구독 해제
+                _lobbyGridManager.OnDealingAnimationComplete -= OnDealingAnimationComplete;
             }
             else
             {
-                Debug.LogError("[ChapterClearSequence] _lobbyGridManager가 null입니다!");
+                Debug.LogError("[ChapterClearSequence] _lobbyGridManager를 찾을 수 없습니다! 이벤트로 폴백합니다.");
                 // 이벤트도 발생시켜서 백업 처리
                 OnRequestNextChapterCards?.Invoke();
             }
 
-            // 그리드 다시 표시 (새로 생성된 다음 챕터 카드들이 보임)
-            if (_gridCanvasGroup != null)
-            {
-                _gridCanvasGroup.alpha = 1f;
-            }
-
             yield return null;
+        }
+
+        /// <summary>
+        /// 딜링 애니메이션 완료 콜백
+        /// </summary>
+        private void OnDealingAnimationComplete()
+        {
+            Debug.Log("[ChapterClearSequence] OnDealingAnimationComplete 콜백 호출됨");
+            _isDealingAnimationComplete = true;
         }
 
         /// <summary>

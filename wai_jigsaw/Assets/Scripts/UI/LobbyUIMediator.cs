@@ -46,18 +46,15 @@ namespace WaiJigsaw.UI
             // LevelChangedEvent 구독 (MonoObject가 자동 해제 관리)
             RegisterLevelChangedObserver(OnLevelChanged);
 
-            // LobbyGridManager가 null이면 자동으로 찾기 (비활성화된 오브젝트 포함)
-            if (_lobbyGridManager == null)
+            // LobbyGridManager 항상 새로 찾기 (씬 전환 시 참조가 Missing될 수 있음)
+            _lobbyGridManager = FindObjectOfType<LobbyGridManager>(true);
+            if (_lobbyGridManager != null)
             {
-                _lobbyGridManager = FindObjectOfType<LobbyGridManager>(true);
-                if (_lobbyGridManager != null)
-                {
-                    Debug.Log("[LobbyUIMediator] LobbyGridManager를 자동으로 찾았습니다.");
-                }
-                else
-                {
-                    Debug.LogError("[LobbyUIMediator] 씬에서 LobbyGridManager를 찾을 수 없습니다!");
-                }
+                Debug.Log($"[LobbyUIMediator] LobbyGridManager를 찾았습니다: {_lobbyGridManager.gameObject.name}");
+            }
+            else
+            {
+                Debug.LogError("[LobbyUIMediator] 씬에서 LobbyGridManager를 찾을 수 없습니다!");
             }
 
             // LobbyGridManager의 클리어 애니메이션 이벤트 구독
@@ -209,6 +206,39 @@ namespace WaiJigsaw.UI
             int currentLevel = GameDataContainer.Instance.CurrentLevel;
             Debug.Log($"[LobbyUIMediator] 다음 챕터 카드 뿌리기 요청 - CurrentLevel: {currentLevel}");
 
+            // _lobbyGridManager가 null이면 다시 찾기
+            if (_lobbyGridManager == null)
+            {
+                Debug.Log("[LobbyUIMediator] _lobbyGridManager가 null - 재검색 시작");
+
+                // 1. LevelGroupManager.Instance에서 찾기 (가장 신뢰할 수 있는 방법)
+                if (LevelGroupManager.Instance != null)
+                {
+                    _lobbyGridManager = LevelGroupManager.Instance.GetComponent<LobbyGridManager>();
+                    if (_lobbyGridManager != null)
+                    {
+                        Debug.Log($"[LobbyUIMediator] LevelGroupManager.Instance에서 LobbyGridManager를 찾았습니다: {_lobbyGridManager.gameObject.name}");
+                    }
+                }
+
+                // 2. 여전히 못 찾았으면 FindObjectOfType 시도
+                if (_lobbyGridManager == null)
+                {
+                    _lobbyGridManager = FindObjectOfType<LobbyGridManager>(true);
+                    if (_lobbyGridManager != null)
+                    {
+                        Debug.Log($"[LobbyUIMediator] FindObjectOfType으로 LobbyGridManager를 찾았습니다: {_lobbyGridManager.gameObject.name}");
+                    }
+                }
+
+                if (_lobbyGridManager != null)
+                {
+                    // 이벤트 재구독
+                    _lobbyGridManager.OnClearAnimationComplete += OnClearAnimationComplete;
+                    _lobbyGridManager.OnChapterCleared += OnChapterCleared;
+                }
+            }
+
             // 다음 레벨로 그리드 갱신 (딜링 애니메이션과 함께)
             if (_lobbyGridManager != null)
             {
@@ -218,7 +248,7 @@ namespace WaiJigsaw.UI
             }
             else
             {
-                Debug.LogError("[LobbyUIMediator] _lobbyGridManager가 null입니다!");
+                Debug.LogError("[LobbyUIMediator] _lobbyGridManager가 null입니다! 찾을 수 없습니다.");
             }
 
             // 플레이 버튼 텍스트 업데이트

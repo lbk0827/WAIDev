@@ -843,7 +843,7 @@ MonoBehaviour:
   _playButtonText: {fileID: 1052401116}
   _settingsButton: {fileID: 369439437}
   _collectionButton: {fileID: 750201640}
-  _lobbyGridManager: {fileID: 1380872573}
+  _lobbyGridManager: {fileID: 1929371206}
   _settingsPopup: {fileID: 738814586}
   _collectionPopup: {fileID: 2082531442}
   _chapterClearSequence: {fileID: 174693716}
@@ -892,7 +892,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70091a570700a764d9a4a28be9800c63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _lobbyGridManager: {fileID: 1380872573}
+  _lobbyGridManager: {fileID: 1929371206}
   _collectionButton: {fileID: 750201639}
   _completedImageOverlay: {fileID: 708838228}
   _gridCanvasGroup: {fileID: 1563543201}
@@ -1914,7 +1914,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1380872575}
   - component: {fileID: 1380872574}
-  - component: {fileID: 1380872573}
   m_Layer: 0
   m_Name: LevelGroupManager
   m_TagString: Untagged
@@ -1922,29 +1921,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1380872573
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380872572}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9bca01d0945eab44981620f60403ce3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _levelGroupManager: {fileID: 1380872574}
-  _gridContainer: {fileID: 1563543197}
-  _cardSlotPrefab: {fileID: 0}
-  _cardBackSprite: {fileID: 21300000, guid: a20931af44b74664998b0942a7ba084d, type: 3}
-  _whiteBorderWidth: 3
-  _blackBorderWidth: 2
-  _cornerRadius: 0.08
-  _showDebugInfo: 1
-  _cardDealDelay: 0.05
-  _cardDealDuration: 0.3
-  _cardDealStartOffset: {x: 300, y: -600}
 --- !u!114 &1380872574
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2462,6 +2438,61 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1835821495}
   m_CullTransparentMesh: 1
+--- !u!1 &1929371205
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1929371207}
+  - component: {fileID: 1929371206}
+  m_Layer: 0
+  m_Name: LobbyGridManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1929371206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1929371205}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9bca01d0945eab44981620f60403ce3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _levelGroupManager: {fileID: 1380872574}
+  _gridContainer: {fileID: 1563543197}
+  _cardSlotPrefab: {fileID: 0}
+  _cardBackSprite: {fileID: 21300000, guid: bbfec2ea6c0007b40ab71a2c1587fe5a, type: 3}
+  _whiteBorderWidth: 3
+  _blackBorderWidth: 2
+  _cornerRadius: 0.08
+  _showDebugInfo: 1
+  _cardDealDelay: 0.05
+  _cardDealDuration: 0.3
+  _cardDealStartOffset: {x: 300, y: -600}
+--- !u!4 &1929371207
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1929371205}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1975969458
 GameObject:
   m_ObjectHideFlags: 0
@@ -2788,3 +2819,4 @@ SceneRoots:
   - {fileID: 71230281}
   - {fileID: 1067852790}
   - {fileID: 388791039}
+  - {fileID: 1929371207}

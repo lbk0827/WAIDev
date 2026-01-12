@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using WaiJigsaw.Data;
 using WaiJigsaw.Core;
+using WaiJigsaw.UI;
 
 /// <summary>
 /// 로비의 5x5 레벨 그리드를 생성하고 관리합니다.
@@ -15,7 +16,6 @@ using WaiJigsaw.Core;
 public class LobbyGridManager : MonoObject
 {
     [Header("References")]
-    [SerializeField] private LevelGroupManager _levelGroupManager;
     [SerializeField] private Transform _gridContainer;      // GridLayoutGroup이 붙은 부모
     [SerializeField] private GameObject _cardSlotPrefab;    // LobbyCardSlot 프리팹
 
@@ -104,6 +104,8 @@ public class LobbyGridManager : MonoObject
     /// </summary>
     public void SetupGrid(int currentLevel)
     {
+        Debug.Log($"[LobbyGridManager] SetupGrid 호출됨 - currentLevel: {currentLevel}");
+
         _currentLevel = currentLevel;
 
         // 0. 둥근 모서리 Material 초기화
@@ -119,7 +121,7 @@ public class LobbyGridManager : MonoObject
         // → 클리어 연출을 위해 이전 챕터(클리어한 챕터)를 먼저 표시
         if (justClearedLevel > 0)
         {
-            LevelGroupTableRecord clearedGroup = _levelGroupManager.GetGroupForLevel(justClearedLevel);
+            LevelGroupTableRecord clearedGroup = LevelGroupManager.Instance.GetGroupForLevel(justClearedLevel);
             if (clearedGroup != null && justClearedLevel == clearedGroup.EndLevel)
             {
                 // 챕터의 마지막 레벨을 클리어함 → 클리어 연출을 위해 해당 챕터 표시
@@ -133,13 +135,13 @@ public class LobbyGridManager : MonoObject
             else
             {
                 // 일반 레벨 클리어 → 현재 레벨 기준 그룹 표시
-                targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+                targetGroup = LevelGroupManager.Instance.GetGroupForLevel(currentLevel);
             }
         }
         else
         {
             // 클리어 연출 없음 → 현재 레벨 기준 그룹 표시
-            targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+            targetGroup = LevelGroupManager.Instance.GetGroupForLevel(currentLevel);
         }
 
         _currentGroup = targetGroup;
@@ -154,7 +156,7 @@ public class LobbyGridManager : MonoObject
         ClearGrid();
 
         // 4. 보상 이미지를 25조각으로 분할
-        Sprite[] pieceSprites = _levelGroupManager.GetSlicedSprites(_currentGroup);
+        Sprite[] pieceSprites = LevelGroupManager.Instance.GetSlicedSprites(_currentGroup);
 
         if (pieceSprites == null || pieceSprites.Length != CARDS_PER_GROUP)
         {
@@ -183,37 +185,43 @@ public class LobbyGridManager : MonoObject
     /// </summary>
     private void TryPlayClearAnimation()
     {
+        Debug.Log("[LobbyGridManager] TryPlayClearAnimation 호출됨");
+
         int justClearedLevel = GameDataContainer.Instance.ConsumeJustClearedLevel();
+        Debug.Log($"[LobbyGridManager] ConsumeJustClearedLevel 결과: {justClearedLevel}");
 
         if (justClearedLevel < 0)
         {
             // 연출할 레벨 없음
+            Debug.Log("[LobbyGridManager] justClearedLevel < 0 - 연출할 레벨 없음");
             return;
         }
 
         // 현재 그룹에 해당하는 레벨인지 확인
         if (_currentGroup == null)
         {
+            Debug.Log("[LobbyGridManager] _currentGroup == null");
             return;
         }
 
         int index = justClearedLevel - _currentGroup.StartLevel;
+        Debug.Log($"[LobbyGridManager] index 계산: {index} (justClearedLevel: {justClearedLevel}, StartLevel: {_currentGroup.StartLevel})");
 
         if (index < 0 || index >= _cardSlots.Count)
         {
             // 다른 그룹의 레벨이면 무시
-            if (_showDebugInfo)
-            {
-                Debug.Log($"[LobbyGridManager] 클리어 레벨 {justClearedLevel}은 현재 그룹에 없음");
-            }
+            Debug.Log($"[LobbyGridManager] index 범위 초과: index={index}, _cardSlots.Count={_cardSlots.Count}");
             return;
         }
 
         LobbyCardSlot cardSlot = _cardSlots[index];
         if (cardSlot == null)
         {
+            Debug.Log("[LobbyGridManager] cardSlot == null");
             return;
         }
+
+        Debug.Log($"[LobbyGridManager] 카드 플립 연출 시작 준비 완료 - 레벨 {justClearedLevel}");
 
         if (_showDebugInfo)
         {
@@ -227,37 +235,50 @@ public class LobbyGridManager : MonoObject
         _justClearedLevelForChapterCheck = justClearedLevel;
 
         // 카드 플립 애니메이션 실행
+        Debug.Log($"[LobbyGridManager] PlayClearFlipAnimation 호출 시작");
         cardSlot.PlayClearFlipAnimation(() =>
         {
+            Debug.Log($"[LobbyGridManager] PlayClearFlipAnimation 콜백 진입");
+
             // 연출 완료
             _isPlayingClearAnimation = false;
-            OnClearAnimationComplete?.Invoke();
 
-            if (_showDebugInfo)
+            Debug.Log($"[LobbyGridManager] 레벨 {justClearedLevel} 카드 플립 연출 완료 - CheckAndTriggerChapterClear 호출 예정");
+
+            // 챕터 클리어 체크 (마지막 레벨 클리어 시) - OnClearAnimationComplete보다 먼저 호출
+            // 챕터 클리어면 ChapterClearSequence가 시작되고, 그 후 OnClearAnimationComplete가 호출됨
+            bool isChapterClear = CheckAndTriggerChapterClear();
+
+            // 챕터 클리어가 아닌 경우에만 OnClearAnimationComplete 호출
+            // (챕터 클리어 시에는 ChapterClearSequence.OnSequenceComplete에서 UI 차단 해제됨)
+            if (!isChapterClear)
             {
-                Debug.Log($"[LobbyGridManager] 레벨 {justClearedLevel} 카드 플립 연출 완료");
+                OnClearAnimationComplete?.Invoke();
             }
-
-            // 챕터 클리어 체크 (마지막 레벨 클리어 시)
-            CheckAndTriggerChapterClear();
         });
     }
 
     /// <summary>
     /// 챕터 클리어 여부를 체크하고 이벤트를 발생시킵니다.
     /// </summary>
-    private void CheckAndTriggerChapterClear()
+    /// <returns>챕터 클리어 시퀀스가 시작되었으면 true, 아니면 false</returns>
+    private bool CheckAndTriggerChapterClear()
     {
+        Debug.Log($"[LobbyGridManager] CheckAndTriggerChapterClear 호출 - _currentGroup: {(_currentGroup != null ? _currentGroup.GroupID.ToString() : "null")}, _justClearedLevelForChapterCheck: {_justClearedLevelForChapterCheck}");
+
         if (_currentGroup == null || _justClearedLevelForChapterCheck < 0)
         {
-            return;
+            Debug.Log("[LobbyGridManager] 조건 불충족: _currentGroup null 또는 _justClearedLevelForChapterCheck < 0");
+            return false;
         }
 
         // 마지막 레벨을 클리어한 경우에만 챕터 클리어
+        Debug.Log($"[LobbyGridManager] 마지막 레벨 체크 - _justClearedLevelForChapterCheck: {_justClearedLevelForChapterCheck}, EndLevel: {_currentGroup.EndLevel}");
         if (_justClearedLevelForChapterCheck != _currentGroup.EndLevel)
         {
+            Debug.Log("[LobbyGridManager] 마지막 레벨이 아님 - 챕터 클리어 스킵");
             _justClearedLevelForChapterCheck = -1;
-            return;
+            return false;
         }
 
         // 모든 카드가 앞면 상태인지 확인 (25개 모두 클리어)
@@ -267,6 +288,7 @@ public class LobbyGridManager : MonoObject
             int levelNumber = _currentGroup.StartLevel + i;
             if (!GameManager.Instance.IsLevelCleared(levelNumber))
             {
+                Debug.Log($"[LobbyGridManager] 레벨 {levelNumber}가 아직 클리어되지 않음");
                 allCardsCleared = false;
                 break;
             }
@@ -274,9 +296,12 @@ public class LobbyGridManager : MonoObject
 
         if (!allCardsCleared)
         {
+            Debug.Log("[LobbyGridManager] 모든 카드가 클리어되지 않음 - 챕터 클리어 스킵");
             _justClearedLevelForChapterCheck = -1;
-            return;
+            return false;
         }
+
+        Debug.Log("[LobbyGridManager] 모든 조건 충족 - 챕터 클리어 진행");
 
         if (_showDebugInfo)
         {
@@ -284,13 +309,75 @@ public class LobbyGridManager : MonoObject
         }
 
         // 완성 이미지 로드
-        Sprite completedSprite = _levelGroupManager.LoadGroupImage(_currentGroup);
+        Debug.Log("[LobbyGridManager] LoadGroupImage 호출 시작");
+        Sprite completedSprite = LevelGroupManager.Instance.LoadGroupImage(_currentGroup);
+        Debug.Log($"[LobbyGridManager] LoadGroupImage 완료 - completedSprite: {(completedSprite != null ? completedSprite.name : "null")}");
 
-        // 챕터 클리어 이벤트 발생
-        OnChapterCleared?.Invoke(_currentGroup, completedSprite);
+        // ChapterClearSequence 직접 호출 (this 전달로 참조 문제 해결)
+        Debug.Log("[LobbyGridManager] FindObjectOfType<ChapterClearSequence> 호출 시작");
+        ChapterClearSequence clearSequence = FindObjectOfType<ChapterClearSequence>(true);
+        Debug.Log($"[LobbyGridManager] FindObjectOfType 결과: {(clearSequence != null ? clearSequence.gameObject.name : "null")}");
+
+        if (clearSequence != null)
+        {
+            Debug.Log($"[LobbyGridManager] ChapterClearSequence 찾음 - GameObject: {clearSequence.gameObject.name}, Active: {clearSequence.gameObject.activeInHierarchy}, Enabled: {clearSequence.enabled}");
+
+            // 비활성화 상태면 활성화
+            if (!clearSequence.gameObject.activeInHierarchy)
+            {
+                Debug.Log("[LobbyGridManager] ChapterClearSequence GameObject가 비활성화 상태 - 활성화 시도");
+                clearSequence.gameObject.SetActive(true);
+            }
+
+            try
+            {
+                Debug.Log($"[LobbyGridManager] try 블록 진입");
+                Debug.Log($"[LobbyGridManager] _currentGroup: {(_currentGroup != null ? _currentGroup.GroupID.ToString() : "null")}");
+                Debug.Log($"[LobbyGridManager] completedSprite: {(completedSprite != null ? completedSprite.name : "null")}");
+
+                // this가 파괴되었는지 확인 (Unity 오브젝트의 == null 체크)
+                // DOTween 콜백 내에서 this는 C# 참조로는 존재하지만 Unity 네이티브 오브젝트가 파괴될 수 있음
+                bool isThisValid = this != null;
+                if (isThisValid)
+                {
+                    try
+                    {
+                        var testAccess = gameObject; // 네이티브 오브젝트 접근 테스트
+                        Debug.Log($"[LobbyGridManager] this 유효함: {testAccess.name}");
+                    }
+                    catch (MissingReferenceException)
+                    {
+                        Debug.LogWarning("[LobbyGridManager] this가 MissingReferenceException - 파괴된 것으로 간주");
+                        isThisValid = false;
+                    }
+                }
+
+                // this가 파괴되었으면 null 전달 (ChapterClearSequence에서 FindObjectOfType으로 다시 찾음)
+                LobbyGridManager lobbyGridManagerToPass = isThisValid ? this : null;
+                Debug.Log($"[LobbyGridManager] 전달할 LobbyGridManager: {(lobbyGridManagerToPass != null ? "유효" : "null")}");
+
+                Debug.Log($"[LobbyGridManager] ChapterClearSequence.Play() 호출 시작");
+                clearSequence.Play(_currentGroup, completedSprite, lobbyGridManagerToPass);
+                Debug.Log("[LobbyGridManager] ChapterClearSequence.Play() 호출 완료");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LobbyGridManager] ChapterClearSequence.Play() 호출 중 예외 발생: {ex.Message}");
+                Debug.LogError($"[LobbyGridManager] 스택 트레이스: {ex.StackTrace}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[LobbyGridManager] ChapterClearSequence를 찾을 수 없습니다. 이벤트로 폴백합니다.");
+            // 폴백: 이벤트 방식
+            OnChapterCleared?.Invoke(_currentGroup, completedSprite);
+        }
 
         // 체크 완료
         _justClearedLevelForChapterCheck = -1;
+
+        // 챕터 클리어 시퀀스가 시작됨
+        return true;
     }
 
     /// <summary>
@@ -550,6 +637,21 @@ public class LobbyGridManager : MonoObject
         return _gridContainer as RectTransform;
     }
 
+    /// <summary>
+    /// 그리드 컨테이너의 CanvasGroup을 반환합니다 (없으면 추가).
+    /// </summary>
+    public CanvasGroup GetGridContainerCanvasGroup()
+    {
+        if (_gridContainer == null) return null;
+
+        CanvasGroup cg = _gridContainer.GetComponent<CanvasGroup>();
+        if (cg == null)
+        {
+            cg = _gridContainer.gameObject.AddComponent<CanvasGroup>();
+        }
+        return cg;
+    }
+
     #region Card Dealing Animation
 
     [Header("Card Dealing Animation")]
@@ -569,9 +671,9 @@ public class LobbyGridManager : MonoObject
     {
         Debug.Log($"[LobbyGridManager] SetupGridWithDealingAnimation 호출 - currentLevel: {currentLevel}");
 
-        if (_levelGroupManager == null)
+        if (LevelGroupManager.Instance == null)
         {
-            Debug.LogError("[LobbyGridManager] _levelGroupManager가 null입니다!");
+            Debug.LogError("[LobbyGridManager] LevelGroupManager.Instance가 null입니다!");
             return;
         }
 
@@ -581,7 +683,7 @@ public class LobbyGridManager : MonoObject
         InitializeRoundedMaterial();
 
         // 1. 현재 레벨 기준 그룹 표시 (PeekJustClearedLevel 무시)
-        LevelGroupTableRecord targetGroup = _levelGroupManager.GetGroupForLevel(currentLevel);
+        LevelGroupTableRecord targetGroup = LevelGroupManager.Instance.GetGroupForLevel(currentLevel);
 
         if (targetGroup == null)
         {
@@ -601,7 +703,7 @@ public class LobbyGridManager : MonoObject
         ClearGrid();
 
         // 3. 보상 이미지를 25조각으로 분할
-        Sprite[] pieceSprites = _levelGroupManager.GetSlicedSprites(_currentGroup);
+        Sprite[] pieceSprites = LevelGroupManager.Instance.GetSlicedSprites(_currentGroup);
 
         if (pieceSprites == null || pieceSprites.Length != CARDS_PER_GROUP)
         {
@@ -632,6 +734,16 @@ public class LobbyGridManager : MonoObject
             Debug.Log("[LobbyGridManager] 카드 딜링 애니메이션 시작");
         }
 
+        // GridLayoutGroup이 레이아웃을 계산할 때까지 한 프레임 대기
+        // (카드 생성 직후에는 anchoredPosition이 아직 계산되지 않음)
+        yield return null;
+
+        // 레이아웃 강제 재계산 (더 확실하게)
+        if (_gridContainer != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_gridContainer as RectTransform);
+        }
+
         // 모든 카드의 원래 위치 저장 및 시작 위치로 이동
         List<Vector3> originalPositions = new List<Vector3>();
         foreach (var cardSlot in _cardSlots)
@@ -640,6 +752,11 @@ public class LobbyGridManager : MonoObject
 
             RectTransform rect = cardSlot.GetComponent<RectTransform>();
             originalPositions.Add(rect.anchoredPosition);
+
+            if (_showDebugInfo)
+            {
+                Debug.Log($"[LobbyGridManager] 카드 원래 위치: {rect.anchoredPosition}");
+            }
 
             // 시작 위치로 이동 (오른쪽 바깥)
             rect.anchoredPosition += _cardDealStartOffset;
