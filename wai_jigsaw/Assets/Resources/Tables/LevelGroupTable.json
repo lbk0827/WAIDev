@@ -4,55 +4,55 @@
 		"StartLevel": 1,
 		"EndLevel": 25,
 		"GroupName": "Name1",
-		"ImageName": "Sprites/Reward_Group01"
+		"ImageName": "Sprites/LevelGroups/Reward_Group01"
 	},
 	{
 		"GroupID": 2,
 		"StartLevel": 26,
 		"EndLevel": 50,
 		"GroupName": "Name2",
-		"ImageName": "Sprites/Reward_Group02"
+		"ImageName": "Sprites/LevelGroups/Reward_Group02"
 	},
 	{
 		"GroupID": 3,
 		"StartLevel": 51,
 		"EndLevel": 75,
 		"GroupName": "Name3",
-		"ImageName": "Sprites/Reward_Group03"
+		"ImageName": "Sprites/LevelGroups/Reward_Group03"
 	},
 	{
 		"GroupID": 4,
 		"StartLevel": 76,
 		"EndLevel": 100,
 		"GroupName": "Name4",
-		"ImageName": "Sprites/Reward_Group04"
+		"ImageName": "Sprites/LevelGroups/Reward_Group04"
 	},
 	{
 		"GroupID": 5,
 		"StartLevel": 101,
 		"EndLevel": 125,
 		"GroupName": "Name5",
-		"ImageName": "Sprites/Reward_Group05"
+		"ImageName": "Sprites/LevelGroups/Reward_Group05"
 	},
 	{
 		"GroupID": 6,
 		"StartLevel": 126,
 		"EndLevel": 150,
 		"GroupName": "Name6",
-		"ImageName": "Sprites/Reward_Group06"
+		"ImageName": "Sprites/LevelGroups/Reward_Group06"
 	},
 	{
 		"GroupID": 7,
 		"StartLevel": 151,
 		"EndLevel": 175,
 		"GroupName": "Name7",
-		"ImageName": "Sprites/Reward_Group07"
+		"ImageName": "Sprites/LevelGroups/Reward_Group07"
 	},
 	{
 		"GroupID": 8,
 		"StartLevel": 176,
 		"EndLevel": 200,
 		"GroupName": "Name8",
-		"ImageName": "Sprites/Reward_Group08"
+		"ImageName": "Sprites/LevelGroups/Reward_Group08"
 	}
 ]

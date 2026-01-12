@@ -63,8 +63,8 @@ public class LevelManager : MonoBehaviour
         // PuzzleData 생성 (ScriptableObject를 런타임에 생성)
         config.puzzleData = ScriptableObject.CreateInstance<PuzzleData>();
 
-        // 이미지 로드 (Resources/Sprites 폴더)
-        Sprite loadedSprite = Resources.Load<Sprite>($"Sprites/{record.ImageName}");
+        // 이미지 로드 (Resources/Sprites/Levels 폴더)
+        Sprite loadedSprite = Resources.Load<Sprite>($"Sprites/Levels/{record.ImageName}");
         if (loadedSprite == null)
         {
             // 루트에서도 찾아봄
