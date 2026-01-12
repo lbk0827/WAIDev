@@ -2682,13 +2682,25 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 966179904361904853, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 900
+      objectReference: {fileID: 0}
     - target: {fileID: 1233888454310419548, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2128644902756642953, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 400
+      objectReference: {fileID: 0}
     - target: {fileID: 2134513298143440278, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_SizeDelta.x
-      value: -223
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2714736649485031065, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 4334441478480041461, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_IsActive
@@ -2719,16 +2731,36 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7210289481840684925, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: _lockIconSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4de24551281608440a59f0ef51463437, type: 3}
+    - target: {fileID: 7210289481840684925, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: _levelGroupManager
       value: 
       objectReference: {fileID: 1380872574}
+    - target: {fileID: 7210289481840684925, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: _levelRangeFontSize
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 7210289481840684925, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: _chapterNameFontSize
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 7210289481840684925, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: _levelRangeFontSizeMax
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 7210289481840684925, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
+      propertyPath: _chapterNameFontSizeMax
+      value: 35
+      objectReference: {fileID: 0}
     - target: {fileID: 7283840901170810264, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_Name
       value: CollectionPopup
       objectReference: {fileID: 0}
     - target: {fileID: 7283840901170810264, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7613996486070051521, guid: 471b6f9dbd1f339429c02e30b4a9eee3, type: 3}
       propertyPath: m_Pivot.x

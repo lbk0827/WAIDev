@@ -38,6 +38,54 @@ namespace WaiJigsaw.UI
         [Header("Lock Icon")]
         [SerializeField] private Sprite _lockIconSprite;  // 자물쇠 아이콘
 
+        [Header("Card Layout Settings")]
+        [Tooltip("챕터 카드 크기")]
+        [SerializeField] private Vector2 _cardSize = new Vector2(200, 300);
+
+        [Header("Chapter Image Settings")]
+        [Tooltip("챕터 이미지 영역 (앵커 Min)")]
+        [SerializeField] private Vector2 _chapterImageAnchorMin = new Vector2(0.05f, 0.15f);
+        [Tooltip("챕터 이미지 영역 (앵커 Max)")]
+        [SerializeField] private Vector2 _chapterImageAnchorMax = new Vector2(0.95f, 0.95f);
+
+        [Header("Lock Icon Settings")]
+        [Tooltip("자물쇠 아이콘 영역 (앵커 Min)")]
+        [SerializeField] private Vector2 _lockIconAnchorMin = new Vector2(0.3f, 0.4f);
+        [Tooltip("자물쇠 아이콘 영역 (앵커 Max)")]
+        [SerializeField] private Vector2 _lockIconAnchorMax = new Vector2(0.7f, 0.7f);
+
+        [Header("Chapter Name Settings")]
+        [Tooltip("챕터 이름 영역 (앵커 Min)")]
+        [SerializeField] private Vector2 _chapterNameAnchorMin = new Vector2(0f, 0.85f);
+        [Tooltip("챕터 이름 영역 (앵커 Max)")]
+        [SerializeField] private Vector2 _chapterNameAnchorMax = new Vector2(1f, 1f);
+        [Tooltip("챕터 이름 좌우 패딩")]
+        [SerializeField] private float _chapterNamePadding = 10f;
+        [Tooltip("챕터 이름 상하 마진")]
+        [SerializeField] private float _chapterNameMargin = 10f;
+        [Tooltip("챕터 이름 Auto Size 최소 폰트")]
+        [SerializeField] private float _chapterNameFontSizeMin = 10f;
+        [Tooltip("챕터 이름 Auto Size 최대 폰트")]
+        [SerializeField] private float _chapterNameFontSizeMax = 24f;
+
+        [Header("Level Range Settings")]
+        [Tooltip("레벨 구간 영역 (앵커 Min)")]
+        [SerializeField] private Vector2 _levelRangeAnchorMin = new Vector2(0.1f, 0f);
+        [Tooltip("레벨 구간 영역 (앵커 Max)")]
+        [SerializeField] private Vector2 _levelRangeAnchorMax = new Vector2(0.9f, 0.12f);
+        [Tooltip("레벨 구간 배경 색상")]
+        [SerializeField] private Color _levelRangeBgColor = new Color(0, 0, 0, 0.5f);
+        [Tooltip("레벨 구간 상하 마진")]
+        [SerializeField] private float _levelRangeMargin = 10f;
+        [Tooltip("레벨 구간 Auto Size 최소 폰트")]
+        [SerializeField] private float _levelRangeFontSizeMin = 10f;
+        [Tooltip("레벨 구간 Auto Size 최대 폰트")]
+        [SerializeField] private float _levelRangeFontSizeMax = 20f;
+
+        [Header("Card Background")]
+        [Tooltip("카드 배경 색상")]
+        [SerializeField] private Color _cardBackgroundColor = new Color(0.2f, 0.3f, 0.25f, 1f);
+
         // 생성된 챕터 카드들
         private List<CollectionChapterCard> _chapterCards = new List<CollectionChapterCard>();
         private bool _isInitialized = false;
@@ -155,11 +203,11 @@ namespace WaiJigsaw.UI
 
             // RectTransform
             RectTransform rectTransform = cardObj.AddComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(200, 300);
+            rectTransform.sizeDelta = _cardSize;
 
             // Image (배경)
             Image bgImage = cardObj.AddComponent<Image>();
-            bgImage.color = new Color(0.2f, 0.3f, 0.25f, 1f);
+            bgImage.color = _cardBackgroundColor;
 
             // Button
             Button button = cardObj.AddComponent<Button>();
@@ -168,8 +216,8 @@ namespace WaiJigsaw.UI
             GameObject imageObj = new GameObject("ChapterImage");
             imageObj.transform.SetParent(cardObj.transform, false);
             RectTransform imageRect = imageObj.AddComponent<RectTransform>();
-            imageRect.anchorMin = new Vector2(0.05f, 0.15f);
-            imageRect.anchorMax = new Vector2(0.95f, 0.95f);
+            imageRect.anchorMin = _chapterImageAnchorMin;
+            imageRect.anchorMax = _chapterImageAnchorMax;
             imageRect.offsetMin = Vector2.zero;
             imageRect.offsetMax = Vector2.zero;
 
@@ -180,40 +228,43 @@ namespace WaiJigsaw.UI
             GameObject lockObj = new GameObject("LockIcon");
             lockObj.transform.SetParent(cardObj.transform, false);
             RectTransform lockRect = lockObj.AddComponent<RectTransform>();
-            lockRect.anchorMin = new Vector2(0.3f, 0.4f);
-            lockRect.anchorMax = new Vector2(0.7f, 0.7f);
+            lockRect.anchorMin = _lockIconAnchorMin;
+            lockRect.anchorMax = _lockIconAnchorMax;
             lockRect.offsetMin = Vector2.zero;
             lockRect.offsetMax = Vector2.zero;
 
             Image lockImage = lockObj.AddComponent<Image>();
             lockImage.color = Color.white;
+            lockImage.preserveAspect = true;
 
             // === 챕터 이름 ===
             GameObject nameObj = new GameObject("ChapterName");
             nameObj.transform.SetParent(cardObj.transform, false);
             RectTransform nameRect = nameObj.AddComponent<RectTransform>();
-            nameRect.anchorMin = new Vector2(0f, 0.85f);
-            nameRect.anchorMax = new Vector2(1f, 1f);
-            nameRect.offsetMin = new Vector2(10, 0);
-            nameRect.offsetMax = new Vector2(-10, 0);
+            nameRect.anchorMin = _chapterNameAnchorMin;
+            nameRect.anchorMax = _chapterNameAnchorMax;
+            nameRect.offsetMin = new Vector2(_chapterNamePadding, _chapterNameMargin);
+            nameRect.offsetMax = new Vector2(-_chapterNamePadding, -_chapterNameMargin);
 
-            TMP_Text nameText = nameObj.AddComponent<TextMeshProUGUI>();
-            nameText.alignment = TextAlignmentOptions.TopLeft;
-            nameText.fontSize = 18;
+            TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
+            nameText.alignment = TextAlignmentOptions.Center;
+            nameText.enableAutoSizing = true;
+            nameText.fontSizeMin = _chapterNameFontSizeMin;
+            nameText.fontSizeMax = _chapterNameFontSizeMax;
             nameText.color = Color.white;
 
             // === 레벨 구간 ===
             GameObject levelRangeObj = new GameObject("LevelRange");
             levelRangeObj.transform.SetParent(cardObj.transform, false);
             RectTransform levelRect = levelRangeObj.AddComponent<RectTransform>();
-            levelRect.anchorMin = new Vector2(0.1f, 0f);
-            levelRect.anchorMax = new Vector2(0.9f, 0.12f);
+            levelRect.anchorMin = _levelRangeAnchorMin;
+            levelRect.anchorMax = _levelRangeAnchorMax;
             levelRect.offsetMin = Vector2.zero;
             levelRect.offsetMax = Vector2.zero;
 
             // 레벨 구간 배경
             Image levelBgImage = levelRangeObj.AddComponent<Image>();
-            levelBgImage.color = new Color(0, 0, 0, 0.5f);
+            levelBgImage.color = _levelRangeBgColor;
 
             // 레벨 구간 텍스트
             GameObject levelTextObj = new GameObject("LevelText");
@@ -221,12 +272,14 @@ namespace WaiJigsaw.UI
             RectTransform levelTextRect = levelTextObj.AddComponent<RectTransform>();
             levelTextRect.anchorMin = Vector2.zero;
             levelTextRect.anchorMax = Vector2.one;
-            levelTextRect.offsetMin = Vector2.zero;
-            levelTextRect.offsetMax = Vector2.zero;
+            levelTextRect.offsetMin = new Vector2(0, _levelRangeMargin);
+            levelTextRect.offsetMax = new Vector2(0, -_levelRangeMargin);
 
-            TMP_Text levelText = levelTextObj.AddComponent<TextMeshProUGUI>();
+            TextMeshProUGUI levelText = levelTextObj.AddComponent<TextMeshProUGUI>();
             levelText.alignment = TextAlignmentOptions.Center;
-            levelText.fontSize = 16;
+            levelText.enableAutoSizing = true;
+            levelText.fontSizeMin = _levelRangeFontSizeMin;
+            levelText.fontSizeMax = _levelRangeFontSizeMax;
             levelText.color = Color.white;
 
             // CollectionChapterCard에 참조 연결
