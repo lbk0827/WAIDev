@@ -19,6 +19,8 @@ namespace WaiJigsaw.UI
         [SerializeField] private TMP_Text _chapterName;  // 챕터 이름 (예: "Italy")
         [SerializeField] private TMP_Text _levelRange;   // 레벨 구간 (예: "1-25")
         [SerializeField] private Button _button;         // 클릭용 버튼
+        [SerializeField] private Image _containerBg;     // 이미지 컨테이너 배경 (잠김 상태용)
+        [SerializeField] private GameObject _nameDimBg;  // 상단 딤 배경
 
         // 데이터
         private LevelGroupTableRecord _groupData;
@@ -28,13 +30,15 @@ namespace WaiJigsaw.UI
         /// <summary>
         /// 외부에서 참조를 설정합니다 (프리팹 없이 코드로 생성 시).
         /// </summary>
-        public void SetReferences(Image chapterImage, Image lockIcon, TMP_Text chapterName, TMP_Text levelRange, Button button)
+        public void SetReferences(Image chapterImage, Image lockIcon, TMP_Text chapterName, TMP_Text levelRange, Button button, Image containerBg = null, GameObject nameDimBg = null)
         {
             _chapterImage = chapterImage;
             _lockIcon = lockIcon;
             _chapterName = chapterName;
             _levelRange = levelRange;
             _button = button;
+            _containerBg = containerBg;
+            _nameDimBg = nameDimBg;
         }
 
         /// <summary>
@@ -93,7 +97,17 @@ namespace WaiJigsaw.UI
                 _chapterImage.sprite = chapterSprite;
             }
 
-            // 챕터 이름 표시
+            // 컨테이너 배경 숨김 (이미지가 보이도록)
+            if (_containerBg != null)
+            {
+                _containerBg.enabled = false;
+            }
+
+            // 챕터 이름 + 딤 배경 표시
+            if (_nameDimBg != null)
+            {
+                _nameDimBg.SetActive(true);
+            }
             if (_chapterName != null)
             {
                 _chapterName.gameObject.SetActive(true);
@@ -118,7 +132,17 @@ namespace WaiJigsaw.UI
                 _chapterImage.gameObject.SetActive(false);
             }
 
-            // 챕터 이름 숨김
+            // 컨테이너 배경 표시 (잠긴 카드 배경)
+            if (_containerBg != null)
+            {
+                _containerBg.enabled = true;
+            }
+
+            // 챕터 이름 + 딤 배경 숨김
+            if (_nameDimBg != null)
+            {
+                _nameDimBg.SetActive(false);
+            }
             if (_chapterName != null)
             {
                 _chapterName.gameObject.SetActive(false);
