@@ -84,6 +84,31 @@ public class LobbyGridManager : MonoObject
         }
     }
 
+    /// <summary>
+    /// 내부 이미지용 둥근 모서리 Material을 생성합니다.
+    /// 외부 테두리와 자연스럽게 이어지도록 동일한 비율의 반경을 적용합니다.
+    /// </summary>
+    private Material CreateInnerRoundedMaterial()
+    {
+        // _roundedUIMaterial이 없으면 초기화 시도
+        if (_roundedUIMaterial == null)
+        {
+            InitializeRoundedMaterial();
+        }
+
+        if (_roundedUIMaterial == null)
+        {
+            Debug.LogWarning("[LobbyGridManager] CreateInnerRoundedMaterial: _roundedUIMaterial이 여전히 null입니다.");
+            return null;
+        }
+
+        // 내부 이미지에도 외부와 동일한 _cornerRadius를 적용
+        Material innerMaterial = new Material(_roundedUIMaterial);
+        innerMaterial.SetFloat("_CornerRadius", _cornerRadius);
+
+        return innerMaterial;
+    }
+
     #region MonoObject Lifecycle
 
     protected override void OnEnabled()
@@ -461,17 +486,38 @@ public class LobbyGridManager : MonoObject
         whiteBorderImage.color = Color.white;
         ApplyRoundedMaterial(whiteBorderImage);
 
-        // === 3. 뒷면 이미지 (배경) - 테두리 안쪽 ===
+        // === 3. 마스크 컨테이너 (하얀 테두리 안쪽, 내용물을 클리핑) ===
+        GameObject maskObj = new GameObject("ContentMask");
+        maskObj.transform.SetParent(slotObj.transform, false);
+        RectTransform maskRect = maskObj.AddComponent<RectTransform>();
+        maskRect.anchorMin = Vector2.zero;
+        maskRect.anchorMax = Vector2.one;
+        maskRect.sizeDelta = Vector2.zero;
+        maskRect.offsetMin = new Vector2(totalBorderWidth, totalBorderWidth);
+        maskRect.offsetMax = new Vector2(-totalBorderWidth, -totalBorderWidth);
+
+        // Mask용 이미지 (둥근 모서리 셰이더 적용 - 개별 Material 인스턴스)
+        Image maskImage = maskObj.AddComponent<Image>();
+        maskImage.color = Color.white;
+        // 마스크는 챕터 클리어 시 _CornerRadius가 0으로 변경되므로 개별 Material 사용
+        ApplyIndividualRoundedMaterial(maskImage);
+
+        // Mask 컴포넌트 추가 (자식 이미지들이 이 모양에 맞게 클리핑됨)
+        Mask mask = maskObj.AddComponent<Mask>();
+        mask.showMaskGraphic = false;  // 마스크 자체는 보이지 않게
+
+        // === 4. 뒷면 이미지 (배경) - 마스크 안에 배치 ===
         GameObject backObj = new GameObject("BackImage");
-        backObj.transform.SetParent(slotObj.transform, false);
+        backObj.transform.SetParent(maskObj.transform, false);  // 마스크의 자식으로
         RectTransform backRect = backObj.AddComponent<RectTransform>();
         backRect.anchorMin = Vector2.zero;
         backRect.anchorMax = Vector2.one;
         backRect.sizeDelta = Vector2.zero;
-        backRect.offsetMin = new Vector2(totalBorderWidth, totalBorderWidth);
-        backRect.offsetMax = new Vector2(-totalBorderWidth, -totalBorderWidth);
+        backRect.offsetMin = Vector2.zero;
+        backRect.offsetMax = Vector2.zero;
 
         Image backImage = backObj.AddComponent<Image>();
+        backImage.type = Image.Type.Simple;
         if (_cardBackSprite != null)
         {
             backImage.sprite = _cardBackSprite;
@@ -480,21 +526,20 @@ public class LobbyGridManager : MonoObject
         {
             backImage.color = new Color(0.3f, 0.3f, 0.4f, 1f); // 기본 어두운 색
         }
-        ApplyRoundedMaterial(backImage);
 
-        // === 4. 앞면 이미지 (조각) - 테두리 안쪽 ===
+        // === 5. 앞면 이미지 (조각) - 마스크 안에 배치 ===
         GameObject frontObj = new GameObject("FrontImage");
-        frontObj.transform.SetParent(slotObj.transform, false);
+        frontObj.transform.SetParent(maskObj.transform, false);  // 마스크의 자식으로
         RectTransform frontRect = frontObj.AddComponent<RectTransform>();
         frontRect.anchorMin = Vector2.zero;
         frontRect.anchorMax = Vector2.one;
         frontRect.sizeDelta = Vector2.zero;
-        frontRect.offsetMin = new Vector2(totalBorderWidth, totalBorderWidth);
-        frontRect.offsetMax = new Vector2(-totalBorderWidth, -totalBorderWidth);
+        frontRect.offsetMin = Vector2.zero;
+        frontRect.offsetMax = Vector2.zero;
 
         Image frontImage = frontObj.AddComponent<Image>();
+        frontImage.type = Image.Type.Simple;
         frontImage.preserveAspect = false; // 셀 크기에 맞게 채움
-        // 앞면 이미지는 기본 머티리얼 사용 (둥근 모서리 적용 안 함)
         frontObj.SetActive(false); // 기본은 숨김
 
         // === 5. 레벨 번호 텍스트 ===
@@ -521,13 +566,28 @@ public class LobbyGridManager : MonoObject
     }
 
     /// <summary>
-    /// 이미지에 둥근 모서리 Material을 적용합니다.
+    /// 이미지에 둥근 모서리 Material을 적용합니다 (공유 Material).
     /// </summary>
     private void ApplyRoundedMaterial(Image image)
     {
         if (_roundedUIMaterial != null && image != null)
         {
             image.material = _roundedUIMaterial;
+        }
+    }
+
+    /// <summary>
+    /// 이미지에 개별 둥근 모서리 Material 인스턴스를 적용합니다.
+    /// 챕터 클리어 시 _CornerRadius가 변경되는 마스크 등에 사용합니다.
+    /// </summary>
+    private void ApplyIndividualRoundedMaterial(Image image)
+    {
+        if (_roundedUIMaterial != null && image != null)
+        {
+            // 새 Material 인스턴스 생성 (공유 Material 영향 받지 않음)
+            Material individualMaterial = new Material(_roundedUIMaterial);
+            individualMaterial.SetFloat("_CornerRadius", _cornerRadius);
+            image.material = individualMaterial;
         }
     }
 
@@ -627,16 +687,23 @@ public class LobbyGridManager : MonoObject
                 }
             }
 
-            // FrontImage를 전체 셀 크기로 확장 (테두리 영역까지)
-            Transform frontImage = cardSlot.transform.Find("FrontImage");
-            if (frontImage != null)
+            // ContentMask를 전체 셀 크기로 확장 (테두리 영역까지)
+            Transform contentMask = cardSlot.transform.Find("ContentMask");
+            if (contentMask != null)
             {
-                RectTransform frontRect = frontImage.GetComponent<RectTransform>();
-                if (frontRect != null)
+                RectTransform maskRect = contentMask.GetComponent<RectTransform>();
+                if (maskRect != null)
                 {
-                    // 현재 offset에서 0으로 애니메이션 (전체 셀 크기로 확장)
-                    DOTween.To(() => frontRect.offsetMin, x => frontRect.offsetMin = x, Vector2.zero, duration);
-                    DOTween.To(() => frontRect.offsetMax, x => frontRect.offsetMax = x, Vector2.zero, duration);
+                    // 마스크를 전체 셀 크기로 확장 (자식 이미지들도 함께 확장됨)
+                    DOTween.To(() => maskRect.offsetMin, x => maskRect.offsetMin = x, Vector2.zero, duration);
+                    DOTween.To(() => maskRect.offsetMax, x => maskRect.offsetMax = x, Vector2.zero, duration);
+                }
+
+                // 마스크의 둥근 모서리 제거 (사각형으로 변경)
+                Image maskImage = contentMask.GetComponent<Image>();
+                if (maskImage != null && maskImage.material != null)
+                {
+                    maskImage.material.DOFloat(0f, "_CornerRadius", duration);
                 }
             }
         }

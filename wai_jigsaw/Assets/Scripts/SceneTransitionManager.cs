@@ -17,6 +17,7 @@ public class SceneTransitionManager : MonoBehaviour
     [SerializeField] private Color _fadeColor = Color.black;
 
     [Header("Scene Names")]
+    public const string SPLASH_SCENE = "SplashScene";
     public const string LOBBY_SCENE = "LobbyScene";
     public const string GAME_SCENE = "GameScene";
 
