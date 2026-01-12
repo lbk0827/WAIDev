@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using WaiJigsaw.Core;
 using WaiJigsaw.Data;
+using WaiJigsaw.Ads;
 
 namespace WaiJigsaw.UI
 {
@@ -57,12 +58,19 @@ namespace WaiJigsaw.UI
         [Tooltip("Hard 난이도 진입 시퀀스 컴포넌트")]
         [SerializeField] private HardIntroSequence _hardIntroSequence;
 
+        [Header("Banner Ad")]
+        [Tooltip("배너 광고 영역만큼 위로 올라갈 콘텐츠 영역")]
+        [SerializeField] private RectTransform _contentArea;
+        [Tooltip("배너 Placeholder를 생성할 Canvas")]
+        [SerializeField] private Transform _canvasTransform;
+
         #region MonoObject Lifecycle
 
         protected override void OnInitialize()
         {
             RegisterButtonEvents();
             SetupLevelClearSequence();
+            ApplyBannerArea();
         }
 
         protected override void Start()
@@ -323,6 +331,32 @@ namespace WaiJigsaw.UI
             if (_resultLevelText != null)
             {
                 _resultLevelText.text = $"LEVEL {clearedLevel} COMPLETE";
+            }
+        }
+
+        #endregion
+
+        #region Banner Ad
+
+        /// <summary>
+        /// 배너 광고 영역을 적용합니다.
+        /// - 콘텐츠 영역 하단 오프셋 설정
+        /// - 배너 Placeholder 생성 (디버그용)
+        /// </summary>
+        private void ApplyBannerArea()
+        {
+            if (BannerManager.Instance == null) return;
+
+            // 콘텐츠 영역에 배너 높이만큼 하단 오프셋 적용
+            if (_contentArea != null)
+            {
+                BannerManager.Instance.ApplyBannerOffset(_contentArea);
+            }
+
+            // 배너 Placeholder 생성 (디버그 모드에서만 표시)
+            if (_canvasTransform != null)
+            {
+                BannerManager.Instance.CreateBannerPlaceholder(_canvasTransform);
             }
         }
 

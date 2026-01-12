@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using WaiJigsaw.Core;
 using WaiJigsaw.Data;
+using WaiJigsaw.Ads;
 
 namespace WaiJigsaw.UI
 {
@@ -36,6 +37,12 @@ namespace WaiJigsaw.UI
         [Header("UI Blocking")]
         [SerializeField] private GameObject _blockingPanel;  // 연출 중 터치 차단용 (옵션)
 
+        [Header("Banner Ad")]
+        [Tooltip("배너 광고 영역만큼 위로 올라갈 콘텐츠 영역")]
+        [SerializeField] private RectTransform _contentArea;
+        [Tooltip("배너 Placeholder를 생성할 Canvas")]
+        [SerializeField] private Transform _canvasTransform;
+
         // UI 차단 상태
         private bool _isUIBlocked = false;
 
@@ -43,6 +50,9 @@ namespace WaiJigsaw.UI
 
         protected override void OnEnabled()
         {
+            // 배너 영역 적용
+            ApplyBannerArea();
+
             // LevelChangedEvent 구독 (MonoObject가 자동 해제 관리)
             RegisterLevelChangedObserver(OnLevelChanged);
 
@@ -294,6 +304,30 @@ namespace WaiJigsaw.UI
             if (_playButtonText != null)
             {
                 _playButtonText.text = $"PLAY\n<size=60%>Level {currentLevel}</size>";
+            }
+        }
+
+        #endregion
+
+        #region Banner Ad
+
+        /// <summary>
+        /// 배너 광고 영역을 적용합니다.
+        /// </summary>
+        private void ApplyBannerArea()
+        {
+            if (BannerManager.Instance == null) return;
+
+            // 콘텐츠 영역에 배너 오프셋 적용
+            if (_contentArea != null)
+            {
+                BannerManager.Instance.ApplyBannerOffset(_contentArea);
+            }
+
+            // 배너 Placeholder 생성 (개발용)
+            if (_canvasTransform != null)
+            {
+                BannerManager.Instance.CreateBannerPlaceholder(_canvasTransform);
             }
         }
 
