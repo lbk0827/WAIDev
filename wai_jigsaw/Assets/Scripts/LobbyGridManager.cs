@@ -596,7 +596,7 @@ public class LobbyGridManager : MonoObject
     }
 
     /// <summary>
-    /// 모든 카드의 테두리를 페이드 아웃합니다 (챕터 클리어 연출용).
+    /// 모든 카드의 테두리를 페이드 아웃하고 이미지를 전체 셀로 확장합니다 (챕터 클리어 연출용).
     /// </summary>
     /// <param name="duration">페이드 시간</param>
     public void FadeOutAllCardBorders(float duration)
@@ -625,6 +625,29 @@ public class LobbyGridManager : MonoObject
                 {
                     whiteImage.DOFade(0f, duration);
                 }
+            }
+
+            // FrontImage를 전체 셀 크기로 확장 (테두리 영역까지)
+            Transform frontImage = cardSlot.transform.Find("FrontImage");
+            if (frontImage != null)
+            {
+                RectTransform frontRect = frontImage.GetComponent<RectTransform>();
+                if (frontRect != null)
+                {
+                    // 현재 offset에서 0으로 애니메이션 (전체 셀 크기로 확장)
+                    DOTween.To(() => frontRect.offsetMin, x => frontRect.offsetMin = x, Vector2.zero, duration);
+                    DOTween.To(() => frontRect.offsetMax, x => frontRect.offsetMax = x, Vector2.zero, duration);
+                }
+            }
+        }
+
+        // GridLayoutGroup의 Spacing도 0으로 줄여서 카드 간 간격 제거
+        if (_gridContainer != null)
+        {
+            GridLayoutGroup gridLayout = _gridContainer.GetComponent<GridLayoutGroup>();
+            if (gridLayout != null)
+            {
+                DOTween.To(() => gridLayout.spacing, x => gridLayout.spacing = x, Vector2.zero, duration);
             }
         }
     }
